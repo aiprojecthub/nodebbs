@@ -21,8 +21,6 @@
     "seed:list": "dotenvx run -- node src/scripts/init/index.js --list"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "@dotenvx/dotenvx": "^1.51.0",
     "@fastify/autoload": "^6.0.0",
