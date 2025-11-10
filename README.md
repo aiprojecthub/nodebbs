@@ -1,42 +1,42 @@
 # NodeBBS
 
-A modern, high-performance forum platform built with Turborepo monorepo architecture.
+一个基于 Turborepo 单体仓库架构构建的现代化、高性能论坛平台。
 
-English | [简体中文](./README.zh-CN.md)
+简体中文 | [English](./README.en.md)
 
-## 📋 Tech Stack
+## 📋 技术栈
 
-### Backend (API)
-- **Framework**: [Fastify](https://fastify.dev/) - High-performance Node.js web framework
-- **Database**: PostgreSQL 16 with [Drizzle ORM](https://orm.drizzle.team/)
-- **Authentication**: JWT + OAuth2
-- **Cache**: Redis 7
-- **Email**: Nodemailer
-- **API Documentation**: Swagger/OpenAPI
-- **Process Management**: PM2
+### 后端 (API)
+- **框架**: [Fastify](https://fastify.dev/) - 高性能 Node.js Web 框架
+- **数据库**: PostgreSQL 16 + [Drizzle ORM](https://orm.drizzle.team/)
+- **身份验证**: JWT + OAuth2
+- **缓存**: Redis 7
+- **邮件服务**: Nodemailer
+- **API 文档**: Swagger/OpenAPI
+- **进程管理**: PM2
 
-### Frontend (Web)
-- **Framework**: [Next.js 15](https://nextjs.org/) with Turbopack
-- **UI Library**: React 19
-- **Styling**: Tailwind CSS 4
-- **Components**: Radix UI
-- **Form Handling**: React Hook Form
-- **Markdown**: React Markdown with GitHub Flavored Markdown
-- **Theme**: next-themes (dark/light mode)
+### 前端 (Web)
+- **框架**: [Next.js 15](https://nextjs.org/) (支持 Turbopack)
+- **UI 库**: React 19
+- **样式**: Tailwind CSS 4
+- **组件库**: Radix UI
+- **表单处理**: React Hook Form
+- **Markdown**: React Markdown (支持 GitHub 风格)
+- **主题**: next-themes (支持深色/浅色模式)
 
-### Development & Deployment
-- **Monorepo**: Turborepo
-- **Package Manager**: pnpm 9+
-- **Environment Variables**: dotenvx
-- **Containerization**: Docker + Docker Compose
-- **Reverse Proxy**: Nginx (production)
+### 开发与部署
+- **单体仓库**: Turborepo
+- **包管理器**: pnpm 9+
+- **环境变量**: dotenvx
+- **容器化**: Docker + Docker Compose
+- **反向代理**: Nginx (生产环境)
 
-## 🏗️ Architecture
+## 🏗️ 系统架构
 
 ```
 ┌─────────────────────────────┐
-│    Nginx (Production)       │
-│  SSL/HTTPS + Reverse Proxy  │
+│    Nginx (生产环境)          │
+│  SSL/HTTPS + 反向代理        │
 └─────────────┬───────────────┘
               │
       ┌───────┴────────┐
@@ -54,331 +54,331 @@ English | [简体中文](./README.zh-CN.md)
     └────────────┘         └───────────┘
 ```
 
-| Service | Technology | Port | Description |
-|---------|-----------|------|-------------|
-| **web** | Next.js 15 | 3100 | Frontend application |
-| **api** | Fastify | 7100 | Backend API service |
-| **postgres** | PostgreSQL 16 | 5432 | Main database |
-| **redis** | Redis 7 | 6379 | Cache service |
+| 服务 | 技术 | 端口 | 说明 |
+|------|------|------|------|
+| **web** | Next.js 15 | 3100 | 前端应用 |
+| **api** | Fastify | 7100 | 后端 API 服务 |
+| **postgres** | PostgreSQL 16 | 5432 | 主数据库 |
+| **redis** | Redis 7 | 6379 | 缓存服务 |
 
-## 🚀 Quick Start
+## 🚀 快速开始
 
-### Prerequisites
+### 前置要求
 
 - **Docker**: Docker Engine 20.10+
 - **Docker Compose**: 2.0+
-- **Make**: (optional, for simplified commands)
+- **Make**: (可选，用于简化命令)
 
-### Method 1: Auto Deploy Script (Recommended)
+### 方式一：自动部署脚本（推荐）
 
 ```bash
-# Run the automated deployment script
+# 运行自动部署脚本
 ./deploy.sh
 ```
 
-The script will:
-- Check Docker environment
-- Initialize `.env` file
-- Validate configuration
-- Build images
-- Start services
-- Initialize database
+该脚本会自动：
+- 检查 Docker 环境
+- 初始化 `.env` 文件
+- 验证配置
+- 构建镜像
+- 启动服务
+- 初始化数据库
 
-### Method 2: Using Makefile
+### 方式二：使用 Makefile
 
 ```bash
-# Initialize environment
+# 初始化环境
 make init
 
-# Edit .env file (IMPORTANT!)
+# 编辑 .env 文件（重要！）
 vi .env
 
-# Start all services
+# 启动所有服务
 make up
 
-# Initialize database
+# 初始化数据库
 make db-push
 make seed
 
-# View logs
+# 查看日志
 make logs
 
-# Check service health
+# 检查服务健康
 make health
 ```
 
-### Method 3: Using Docker Compose
+### 方式三：使用 Docker Compose
 
 ```bash
-# 1. Copy environment file
+# 1. 复制环境变量文件
 cp .env.docker.example .env
 
-# 2. Edit configuration
+# 2. 编辑配置
 vi .env
 
-# 3. Start services
+# 3. 启动服务
 docker compose up -d
 
-# 4. Initialize database
+# 4. 初始化数据库
 docker compose exec api npm run db:push:dev
 docker compose exec api npm run seed
 ```
 
-## 🔐 Security Configuration
+## 🔐 安全配置
 
-**IMPORTANT**: Before deploying, modify these values in `.env`:
+**重要提醒**：部署前，请在 `.env` 文件中修改以下配置：
 
 ```bash
-# Generate secure JWT secret
+# 生成安全的 JWT 密钥
 openssl rand -base64 32
 
-# Required changes:
+# 必须修改的配置：
 POSTGRES_PASSWORD=your_secure_postgres_password
 REDIS_PASSWORD=your_secure_redis_password
 JWT_SECRET=generated_secure_jwt_secret
-CORS_ORIGIN=https://yourdomain.com  # Production only
+CORS_ORIGIN=https://yourdomain.com  # 生产环境
 ```
 
-## 🌐 Access Points
+## 🌐 访问地址
 
-After deployment, access:
+部署完成后，访问以下地址：
 
-- **Web Frontend**: http://localhost:3100
-- **API Documentation**: http://localhost:7100/docs
-- **API Health Check**: http://localhost:7100/api
+- **Web 前端**: http://localhost:3100
+- **API 文档**: http://localhost:7100/docs
+- **API 健康检查**: http://localhost:7100/api
 
-## 📝 Common Commands
+## 📝 常用命令
 
-### Using Makefile (Recommended)
+### 使用 Makefile（推荐）
 
 ```bash
-make help              # Show all available commands
+make help              # 显示所有可用命令
 
-# Container Management
-make up                # Start all services
-make down              # Stop all services
-make restart           # Restart all services
-make build             # Rebuild images
-make ps                # Show container status
+# 容器管理
+make up                # 启动所有服务
+make down              # 停止所有服务
+make restart           # 重启所有服务
+make build             # 重新构建镜像
+make ps                # 查看容器状态
 
-# Logs
-make logs              # View all logs
-make logs-api          # View API logs
-make logs-web          # View Web logs
+# 日志
+make logs              # 查看所有日志
+make logs-api          # 查看 API 日志
+make logs-web          # 查看 Web 日志
 
-# Database Operations
-make db-push           # Push database schema
-make db-generate       # Generate migrations
-make db-migrate        # Run migrations
-make db-studio         # Open Drizzle Studio
-make seed              # Initialize seed data
-make seed-reset        # Reset and reseed data
+# 数据库操作
+make db-push           # 推送数据库模式
+make db-generate       # 生成迁移文件
+make db-migrate        # 运行迁移
+make db-studio         # 打开 Drizzle Studio
+make seed              # 初始化种子数据
+make seed-reset        # 重置并重新填充数据
 
-# Container Access
-make exec-api          # Enter API container
-make exec-web          # Enter Web container
-make exec-db           # Enter PostgreSQL
-make exec-redis        # Enter Redis
+# 容器访问
+make exec-api          # 进入 API 容器
+make exec-web          # 进入 Web 容器
+make exec-db           # 进入 PostgreSQL
+make exec-redis        # 进入 Redis
 
-# Health & Cleanup
-make health            # Check service health
-make clean             # Remove containers and networks
-make clean-all         # Remove everything including volumes (DANGER!)
+# 健康检查与清理
+make health            # 检查服务健康状态
+make clean             # 删除容器和网络
+make clean-all         # 删除所有内容包括数据卷（危险！）
 ```
 
-### Using Docker Compose
+### 使用 Docker Compose
 
 ```bash
-# Start/Stop
+# 启动/停止
 docker compose up -d
 docker compose down
 docker compose restart
 
-# Logs
+# 日志
 docker compose logs -f
 docker compose logs -f api
 
-# Rebuild
+# 重新构建
 docker compose build --no-cache
 docker compose up -d --build
 
-# Status
+# 状态
 docker compose ps
 ```
 
-## 🛠️ Development Setup (Without Docker)
+## 🛠️ 开发环境设置（不使用 Docker）
 
-### Prerequisites
+### 前置要求
 - Node.js >= 18
 - pnpm >= 9.0.0
 - PostgreSQL
 - Redis
 
-### Steps
+### 步骤
 
 ```bash
-# 1. Install dependencies
+# 1. 安装依赖
 pnpm install
 
-# 2. Configure environment
+# 2. 配置环境变量
 cd apps/api
 cp .env.example .env
-# Edit .env with your database and Redis credentials
+# 编辑 .env，配置数据库和 Redis 连接信息
 
 cd ../web
 cp .env.example .env
-# Edit .env with API URL
+# 编辑 .env，配置 API 地址
 
-# 3. Setup database
+# 3. 设置数据库
 cd ../api
 pnpm db:push:dev
 pnpm seed
 
-# 4. Start development servers
+# 4. 启动开发服务器
 cd ../..
 pnpm dev
 
-# API will run on port 7100
-# Web will run on port 3100
+# API 将运行在 7100 端口
+# Web 将运行在 3100 端口
 ```
 
-## 📦 Project Structure
+## 📦 项目结构
 
 ```
 nodebbs/
 ├── apps/
-│   ├── api/                 # Fastify backend
+│   ├── api/                 # Fastify 后端
 │   │   ├── src/
-│   │   │   ├── routes/      # API routes
-│   │   │   ├── plugins/     # Fastify plugins
-│   │   │   ├── db/          # Database schemas
-│   │   │   └── utils/       # Utilities
+│   │   │   ├── routes/      # API 路由
+│   │   │   ├── plugins/     # Fastify 插件
+│   │   │   ├── db/          # 数据库模式
+│   │   │   └── utils/       # 工具函数
 │   │   ├── Dockerfile
 │   │   ├── .dockerignore
 │   │   └── package.json
-│   └── web/                 # Next.js frontend
+│   └── web/                 # Next.js 前端
 │       ├── app/             # Next.js App Router
-│       ├── components/      # React components
+│       ├── components/      # React 组件
 │       ├── Dockerfile
 │       ├── .dockerignore
 │       └── package.json
-├── packages/                # Shared packages (future)
-├── scripts/                 # Deployment scripts
-├── docker-compose.yml       # Docker Compose config
-├── docker-compose.prod.yml  # Production config
-├── Makefile                 # Command shortcuts
-├── deploy.sh                # Auto deployment script
-├── nginx.conf.example       # Nginx configuration template
-├── .env.docker.example      # Environment variables template
-└── turbo.json               # Turborepo configuration
+├── packages/                # 共享包（未来）
+├── scripts/                 # 部署脚本
+├── docker-compose.yml       # Docker Compose 配置
+├── docker-compose.prod.yml  # 生产环境配置
+├── Makefile                 # 命令快捷方式
+├── deploy.sh                # 自动部署脚本
+├── nginx.conf.example       # Nginx 配置模板
+├── .env.docker.example      # 环境变量模板
+└── turbo.json               # Turborepo 配置
 ```
 
-## 🚀 Production Deployment
+## 🚀 生产环境部署
 
-### 1. Prepare Environment
+### 1. 准备环境
 
 ```bash
-# Clone repository
+# 克隆仓库
 git clone <repository-url>
 cd nodebbs
 
-# Initialize environment
+# 初始化环境
 cp .env.docker.example .env
-vi .env  # Configure production settings
+vi .env  # 配置生产环境设置
 ```
 
-### 2. Configure Nginx (Recommended)
+### 2. 配置 Nginx（推荐）
 
-Copy and modify `nginx.conf.example`:
+复制并修改 `nginx.conf.example`：
 
 ```bash
 cp nginx.conf.example /etc/nginx/sites-available/nodebbs
-# Edit the file with your domain and SSL certificates
+# 编辑文件，配置域名和 SSL 证书
 sudo ln -s /etc/nginx/sites-available/nodebbs /etc/nginx/sites-enabled/
 sudo nginx -t && sudo nginx -s reload
 ```
 
-### 3. Deploy with Docker
+### 3. 使用 Docker 部署
 
 ```bash
-# Using deployment script
+# 使用部署脚本
 ./deploy.sh
 
-# Or manually
+# 或手动部署
 docker compose -f docker-compose.prod.yml up -d
 make db-push
 make seed
 ```
 
-### 4. Setup Database Backups
+### 4. 设置数据库备份
 
 ```bash
-# Backup database
+# 备份数据库
 docker compose exec postgres pg_dump -U postgres nodebbs > backup_$(date +%Y%m%d).sql
 
-# Restore database
+# 恢复数据库
 docker compose exec -T postgres psql -U postgres nodebbs < backup_20241110.sql
 ```
 
-## 🔍 Troubleshooting
+## 🔍 故障排查
 
-### View Service Logs
+### 查看服务日志
 ```bash
 make logs
 docker compose logs -f [service_name]
 ```
 
-### Check Service Health
+### 检查服务健康状态
 ```bash
 make health
 docker compose ps
 ```
 
-### Restart Specific Service
+### 重启特定服务
 ```bash
 docker compose restart api
 docker compose restart web
 ```
 
-### Database Connection Issues
+### 数据库连接问题
 ```bash
-# Check database status
+# 检查数据库状态
 docker compose exec postgres pg_isready
 
-# Access database
+# 访问数据库
 make exec-db
 ```
 
-### Redis Connection Issues
+### Redis 连接问题
 ```bash
-# Check Redis status
+# 检查 Redis 状态
 docker compose exec redis redis-cli ping
 
-# Access Redis
+# 访问 Redis
 make exec-redis
 ```
 
-## 📚 Documentation
+## 📚 文档
 
-- [Docker Deployment Guide](./DOCKER_DEPLOY.md) - Detailed deployment instructions
+- [Docker 部署指南](./DOCKER_DEPLOY.md) - 详细的部署说明
 
-## 🤝 Contributing
+## 🤝 贡献
 
-Contributions are welcome! Please follow these steps:
+欢迎贡献！请遵循以下步骤：
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Fork 本仓库
+2. 创建你的特性分支 (`git checkout -b feature/amazing-feature`)
+3. 提交你的更改 (`git commit -m 'Add amazing feature'`)
+4. 推送到分支 (`git push origin feature/amazing-feature`)
+5. 打开一个 Pull Request
 
-## 📄 License
+## 📄 许可证
 
 MIT
 
-## 🐛 Support
+## 🐛 支持
 
-For issues and questions:
-- Open an issue on GitHub
-- Check existing documentation in `/docs`
-- Review `DOCKER_DEPLOY.md` for deployment issues
+如有问题：
+- 在 GitHub 上提交 issue
+- 查看 `/docs` 目录中的现有文档
+- 查阅 `DOCKER_DEPLOY.md` 了解部署相关问题
