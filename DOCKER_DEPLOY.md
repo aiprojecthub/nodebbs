@@ -140,6 +140,22 @@ web (3100) → api (7100) → postgres (5432)
 - Docker Compose 2.0+
 - Make (可选，用于简化命令)
 
+### 部署方式选择
+
+本项目支持两种部署方式：
+
+1. **Docker Compose 部署**（推荐用于开发/测试/小型生产环境）
+   - 一键启动所有服务（数据库、缓存、API、Web）
+   - 统一管理环境变量
+   - 适合快速部署和开发
+
+2. **独立 Docker 部署**（推荐用于大型生产环境）
+   - 每个服务独立部署和扩展
+   - 灵活的资源分配
+   - 适合微服务架构和分布式部署
+
+详细的独立部署方法请参考 [独立 Docker 部署](#独立-docker-部署) 章节。
+
 ### 方式一：自动部署脚本（推荐）⭐
 
 使用自动化脚本，一键完成所有部署步骤：
@@ -487,7 +503,453 @@ docker compose exec postgres psql -U postgres -d nodebbs
 \q               # 退出
 ```
 
-## 🚀 生产环境部署
+## 🐳 独立 Docker 部署
+
+当你只需要部署单个服务（API 或 Web），或者需要将服务分布在不同的服务器上时，可以使用独立 Docker 部署方式。
+
+### 适用场景
+
+- 只需要 API 服务（例如作为后端 API）
+- 只需要 Web 前端（API 部署在其他地方）
+- 微服务架构，每个服务独立部署
+- 需要独立扩展某个服务
+- 使用外部托管的数据库和 Redis
+
+### API 服务独立部署
+
+#### 1. 准备环境变量文件
+
+在 `apps/api/` 目录下创建或编辑 `.env` 文件：
+
+```bash
+cd apps/api
+cp .env.example .env
+vi .env
+```
+
+配置示例（`apps/api/.env`）：
+
+```env
+NODE_ENV=production
+
+# 应用配置
+APP_NAME=nodebbs
+HOST=0.0.0.0
+PORT=7100
+
+# 数据库连接（使用实际的数据库地址）
+DATABASE_URL=postgres://postgres:your_password@your-db-host:5432/nodebbs
+
+# Redis 连接（使用实际的 Redis 地址）
+REDIS_URL=redis://default:your_redis_password@your-redis-host:6379/0
+
+# 用户缓存配置
+USER_CACHE_TTL=120
+
+# JWT 配置（使用 openssl rand -base64 32 生成）
+JWT_SECRET=your-secure-jwt-secret-here
+JWT_ACCESS_TOKEN_EXPIRES_IN=1y
+
+# CORS 配置（生产环境设置具体域名）
+CORS_ORIGIN=https://yourdomain.com
+
+# 前端 URL（用于 OAuth 回调和邮件链接）
+APP_URL=https://yourdomain.com
+```
+
+#### 2. 构建 API 镜像
+
+```bash
+# 在 apps/api 目录下构建
+cd apps/api
+docker build -t nodebbs-api:latest .
+
+# 或指定版本号
+docker build -t nodebbs-api:1.0.0 .
+```
+
+#### 3. 运行 API 容器
+
+使用 `--env-file` 参数加载环境变量：
+
+```bash
+# 基本运行
+docker run -d \
+  --name nodebbs-api \
+  --env-file .env \
+  -p 7100:7100 \
+  -v $(pwd)/uploads:/app/uploads \
+  --restart unless-stopped \
+  nodebbs-api:latest
+
+# 查看日志
+docker logs -f nodebbs-api
+
+# 检查健康状态
+curl http://localhost:7100/api
+```
+
+#### 4. 高级配置选项
+
+```bash
+# 使用自定义网络
+docker network create nodebbs-network
+
+docker run -d \
+  --name nodebbs-api \
+  --network nodebbs-network \
+  --env-file .env \
+  -p 7100:7100 \
+  -v nodebbs-api-uploads:/app/uploads \
+  --restart unless-stopped \
+  --memory="2g" \
+  --cpus="2" \
+  nodebbs-api:latest
+
+# 覆盖特定环境变量
+docker run -d \
+  --name nodebbs-api \
+  --env-file .env \
+  -e NODE_ENV=production \
+  -e PORT=8080 \
+  -p 8080:8080 \
+  nodebbs-api:latest
+```
+
+#### 5. 初始化数据库
+
+```bash
+# 进入容器执行数据库操作
+docker exec -it nodebbs-api sh
+
+# 推送数据库 schema
+npm run db:push:dev
+
+# 初始化种子数据
+npm run seed
+
+# 退出容器
+exit
+```
+
+### Web 前端独立部署
+
+#### 1. 准备环境变量文件
+
+在 `apps/web/` 目录下创建或编辑 `.env` 文件：
+
+```bash
+cd apps/web
+cp .env.example .env
+vi .env
+```
+
+配置示例（`apps/web/.env`）：
+
+```env
+# 应用配置
+APP_NAME=nodebbs
+PORT=3100
+
+# API 地址（公网可访问的地址）
+NEXT_PUBLIC_API_URL=https://api.yourdomain.com
+
+# 应用地址（公网可访问的地址）
+NEXT_PUBLIC_APP_URL=https://yourdomain.com
+```
+
+#### 2. 构建 Web 镜像
+
+**重要**：Next.js 需要在构建时注入 `NEXT_PUBLIC_*` 环境变量。
+
+```bash
+cd apps/web
+
+# 方式 1：使用 --build-arg 传入（推荐）
+docker build \
+  --build-arg NEXT_PUBLIC_API_URL=https://api.yourdomain.com \
+  --build-arg NEXT_PUBLIC_APP_URL=https://yourdomain.com \
+  -t nodebbs-web:latest .
+
+# 方式 2：从 .env 文件读取并传入
+source .env
+docker build \
+  --build-arg NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+  --build-arg NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL \
+  -t nodebbs-web:latest .
+```
+
+#### 3. 运行 Web 容器
+
+```bash
+# 基本运行
+docker run -d \
+  --name nodebbs-web \
+  --env-file .env \
+  -p 3100:3100 \
+  --restart unless-stopped \
+  nodebbs-web:latest
+
+# 查看日志
+docker logs -f nodebbs-web
+
+# 检查健康状态
+curl http://localhost:3100
+```
+
+#### 4. 高级配置选项
+
+```bash
+# 使用自定义网络
+docker run -d \
+  --name nodebbs-web \
+  --network nodebbs-network \
+  --env-file .env \
+  -p 3100:3100 \
+  --restart unless-stopped \
+  --memory="1g" \
+  --cpus="1" \
+  nodebbs-web:latest
+
+# 如果 API 和 Web 在同一网络，可以使用内部地址
+docker run -d \
+  --name nodebbs-web \
+  --network nodebbs-network \
+  -e NEXT_PUBLIC_API_URL=http://nodebbs-api:7100 \
+  -e NEXT_PUBLIC_APP_URL=https://yourdomain.com \
+  -p 3100:3100 \
+  nodebbs-web:latest
+```
+
+### 独立部署完整示例
+
+#### 场景：API 和 Web 分别部署在不同服务器
+
+**服务器 A（API 服务器）：**
+
+```bash
+# 1. 准备 API 环境变量
+cd apps/api
+cat > .env << EOF
+NODE_ENV=production
+APP_NAME=nodebbs
+HOST=0.0.0.0
+PORT=7100
+DATABASE_URL=postgres://postgres:password@db-server:5432/nodebbs
+REDIS_URL=redis://default:password@redis-server:6379/0
+USER_CACHE_TTL=120
+JWT_SECRET=$(openssl rand -base64 32)
+JWT_ACCESS_TOKEN_EXPIRES_IN=1y
+CORS_ORIGIN=https://yourdomain.com
+APP_URL=https://yourdomain.com
+EOF
+
+# 2. 构建并运行 API
+docker build -t nodebbs-api:latest .
+docker run -d \
+  --name nodebbs-api \
+  --env-file .env \
+  -p 7100:7100 \
+  -v nodebbs-api-uploads:/app/uploads \
+  --restart unless-stopped \
+  nodebbs-api:latest
+
+# 3. 初始化数据库
+docker exec -it nodebbs-api npm run db:push:dev
+docker exec -it nodebbs-api npm run seed
+
+# 4. 验证
+curl http://localhost:7100/api
+```
+
+**服务器 B（Web 服务器）：**
+
+```bash
+# 1. 准备 Web 环境变量
+cd apps/web
+cat > .env << EOF
+APP_NAME=nodebbs
+PORT=3100
+NEXT_PUBLIC_API_URL=https://api.yourdomain.com
+NEXT_PUBLIC_APP_URL=https://yourdomain.com
+EOF
+
+# 2. 构建 Web（注意使用 --build-arg）
+source .env
+docker build \
+  --build-arg NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+  --build-arg NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL \
+  -t nodebbs-web:latest .
+
+# 3. 运行 Web
+docker run -d \
+  --name nodebbs-web \
+  --env-file .env \
+  -p 3100:3100 \
+  --restart unless-stopped \
+  nodebbs-web:latest
+
+# 4. 验证
+curl http://localhost:3100
+```
+
+### 独立部署常用命令
+
+```bash
+# 查看容器状态
+docker ps
+docker ps -a
+
+# 查看日志
+docker logs -f nodebbs-api
+docker logs -f nodebbs-web
+docker logs --tail=100 nodebbs-api
+
+# 重启容器
+docker restart nodebbs-api
+docker restart nodebbs-web
+
+# 停止容器
+docker stop nodebbs-api
+docker stop nodebbs-web
+
+# 删除容器
+docker rm -f nodebbs-api
+docker rm -f nodebbs-web
+
+# 进入容器
+docker exec -it nodebbs-api sh
+docker exec -it nodebbs-web sh
+
+# 更新容器
+docker pull nodebbs-api:latest
+docker stop nodebbs-api
+docker rm nodebbs-api
+docker run -d --name nodebbs-api --env-file .env -p 7100:7100 nodebbs-api:latest
+
+# 查看资源使用
+docker stats nodebbs-api
+docker stats nodebbs-web
+```
+
+### 独立部署注意事项
+
+#### 1. 环境变量优先级
+
+```
+命令行 -e 参数 > --env-file 文件 > Dockerfile ENV > 应用默认值
+```
+
+#### 2. Next.js 构建时变量
+
+**重要**：`NEXT_PUBLIC_*` 变量必须在构建时通过 `--build-arg` 传入，运行时修改无效！
+
+```bash
+# ❌ 错误：运行时传入无效
+docker run -e NEXT_PUBLIC_API_URL=xxx nodebbs-web
+
+# ✅ 正确：构建时传入
+docker build --build-arg NEXT_PUBLIC_API_URL=xxx -t nodebbs-web .
+```
+
+#### 3. 数据持久化
+
+```bash
+# 使用命名卷（推荐）
+docker run -v nodebbs-api-uploads:/app/uploads nodebbs-api
+
+# 使用绑定挂载
+docker run -v $(pwd)/uploads:/app/uploads nodebbs-api
+
+# 查看卷
+docker volume ls
+docker volume inspect nodebbs-api-uploads
+```
+
+#### 4. 网络配置
+
+```bash
+# 创建自定义网络
+docker network create nodebbs-network
+
+# 容器加入网络
+docker run --network nodebbs-network nodebbs-api
+
+# 容器间通信使用容器名
+# 例如：http://nodebbs-api:7100
+```
+
+#### 5. 健康检查
+
+```bash
+# 查看健康状态
+docker inspect --format='{{.State.Health.Status}}' nodebbs-api
+
+# 手动健康检查
+docker exec nodebbs-api node -e "require('http').get('http://localhost:7100/api', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+```
+
+### 独立部署故障排查
+
+#### API 服务问题
+
+```bash
+# 1. 检查容器状态
+docker ps -a | grep nodebbs-api
+
+# 2. 查看日志
+docker logs --tail=100 nodebbs-api
+
+# 3. 检查环境变量
+docker exec nodebbs-api env | grep -E "DATABASE|REDIS|JWT"
+
+# 4. 测试数据库连接
+docker exec nodebbs-api node -e "const pg = require('pg'); const client = new pg.Client(process.env.DATABASE_URL); client.connect().then(() => console.log('OK')).catch(e => console.error(e))"
+
+# 5. 测试 Redis 连接
+docker exec nodebbs-api node -e "const Redis = require('ioredis'); const redis = new Redis(process.env.REDIS_URL); redis.ping().then(() => console.log('OK')).catch(e => console.error(e))"
+```
+
+#### Web 服务问题
+
+```bash
+# 1. 检查容器状态
+docker ps -a | grep nodebbs-web
+
+# 2. 查看日志
+docker logs --tail=100 nodebbs-web
+
+# 3. 检查环境变量（构建时）
+docker inspect nodebbs-web | grep -A 10 "Env"
+
+# 4. 验证 API 连接
+docker exec nodebbs-web wget -O- http://api-host:7100/api
+```
+
+#### 常见错误
+
+**错误 1：API 无法连接数据库**
+```bash
+# 检查 DATABASE_URL 格式
+# 正确格式：postgres://user:password@host:port/database
+docker exec nodebbs-api env | grep DATABASE_URL
+```
+
+**错误 2：Web 无法访问 API**
+```bash
+# 检查 NEXT_PUBLIC_API_URL 是否正确
+# 必须是浏览器可访问的地址（公网地址）
+docker inspect nodebbs-web | grep NEXT_PUBLIC_API_URL
+```
+
+**错误 3：容器启动后立即退出**
+```bash
+# 查看退出原因
+docker logs nodebbs-api
+docker inspect nodebbs-api | grep -A 5 "State"
+```
+
+## 🚀 生产环境部署（Docker Compose）
 
 ### 1. 准备服务器环境
 
