@@ -1,0 +1,100 @@
+# ============================================
+# .dockerignore - Turborepo Monorepo
+# ============================================
+# 用于优化 Docker 构建，排除不必要的文件
+# 减少构建上下文大小，加速构建过程
+# ============================================
+
+# 依赖目录（会在 Docker 内重新安装）
+**/node_modules
+**/.pnpm-store
+
+# 构建输出
+**/.next
+**/dist
+**/build
+**/.turbo
+**/out
+
+# 日志文件
+**/*.log
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+**/lerna-debug.log*
+
+# 环境变量文件（应通过 docker-compose.yml 传入）
+**/.env
+**/.env.local
+**/.env*.local
+**/.env.production
+**/.env.development
+.env.docker.example
+
+# 测试和覆盖率
+**/coverage
+**/.nyc_output
+**/__tests__/**
+**/*.test.js
+**/*.test.ts
+**/*.spec.js
+**/*.spec.ts
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE 和编辑器
+**/.vscode
+**/.idea
+**/.DS_Store
+**/*.swp
+**/*.swo
+**/*.swn
+**/.history
+
+# Docker 相关文件（避免递归复制）
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+.circleci
+
+# 文档
+*.md
+!README.md
+docs/
+
+# 临时文件
+**/tmp
+**/temp
+**/.cache
+**/.temp
+
+# 数据库和上传文件（应使用 volumes）
+**/uploads
+**/data
+**/*.sql
+**/*.db
+**/*.sqlite
+
+# TypeScript 缓存
+**/*.tsbuildinfo
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# PM2
+**/ecosystem.config.cjs
+**/.pm2
+
+# 脚本和工具（非运行时需要）
+**/scripts/init-db.sql
