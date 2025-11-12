@@ -88,16 +88,14 @@ ENV PORT=3100
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# 复制 public 静态文件
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./public
-
-# 创建 .next 目录并设置权限
-RUN mkdir -p .next && chown nextjs:nodejs .next
-
 # 复制 Next.js standalone 输出
 # standalone 模式会自动包含所有必需的运行时依赖
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+
+# 复制 public 静态文件到 standalone 期望的位置
+# Next.js standalone 的 server.js 会在 apps/web/public 查找静态文件
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
 
 # 切换到非 root 用户
 USER nextjs
