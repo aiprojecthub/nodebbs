@@ -224,7 +224,7 @@ vi .env
 docker compose up -d
 
 # 4. 初始化数据库
-docker compose exec api npm run db:push:dev
+docker compose exec api npm run db:push
 docker compose exec api npm run seed
 
 # 5. 查看状态
@@ -468,7 +468,7 @@ make seed-reset
 
 ```bash
 # 推送 schema
-docker compose exec api npm run db:push:dev
+docker compose exec api npm run db:push
 
 # 生成迁移
 docker compose exec api npm run db:generate
@@ -755,7 +755,7 @@ docker run -d \
   nodebbs-api:latest
 
 # 3. 初始化数据库
-docker exec -it nodebbs-api npm run db:push:dev
+docker exec -it nodebbs-api npm run db:push
 docker exec -it nodebbs-api npm run seed
 
 # 4. 验证

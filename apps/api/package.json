@@ -9,14 +9,12 @@
   },
   "scripts": {
     "dev": "dotenvx run -- node --watch src/app.js",
-    "prod": "dotenvx run -f .env.production -- pm2 start ecosystem.config.cjs",
-    "db:push:dev": "drizzle-kit push",
-    "db:push:prod": "dotenvx run -f .env.production -- drizzle-kit push",
+    "prod": "dotenvx run -- pm2 start ecosystem.config.cjs",
+    "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "seed": "dotenvx run -- node src/scripts/init/index.js",
-    "seed:prod": "dotenvx run -f .env.production -- node src/scripts/init/index.js",
     "seed:reset": "dotenvx run -- node src/scripts/init/index.js --reset",
     "seed:list": "dotenvx run -- node src/scripts/init/index.js --list"
   },

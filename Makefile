@@ -80,12 +80,12 @@ logs-redis: ## 查看 Redis 日志
 
 db-push: ## 推送数据库 schema (开发环境)
 	@echo "$(BLUE)推送数据库 schema...$(NC)"
-	docker compose exec api npm run db:push:dev
+	docker compose exec api npm run db:push
 	@echo "$(GREEN)Schema 推送完成$(NC)"
 
 db-push-prod: ## 推送数据库 schema (生产环境)
 	@echo "$(BLUE)推送数据库 schema (生产环境)...$(NC)"
-	docker compose exec api npm run db:push:prod
+	docker compose exec api npm run db:push
 	@echo "$(GREEN)Schema 推送完成$(NC)"
 
 db-generate: ## 生成数据库迁移文件

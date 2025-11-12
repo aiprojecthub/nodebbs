@@ -1,4 +1,3 @@
-import('@dotenvx/dotenvx/config')
 import { defineConfig } from 'drizzle-kit';
 
 export default defineConfig({

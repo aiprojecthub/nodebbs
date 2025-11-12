@@ -163,7 +163,7 @@ init_database() {
     read -p "是否推送数据库 schema? (y/N): " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        docker compose exec api npm run db:push:dev
+        docker compose exec api npm run db:push
         print_success "数据库 schema 推送完成"
     fi
 

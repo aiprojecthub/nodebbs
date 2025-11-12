@@ -120,7 +120,7 @@ vi .env
 docker compose up -d
 
 # 4. Initialize database
-docker compose exec api npm run db:push:dev
+docker compose exec api npm run db:push
 docker compose exec api npm run seed
 ```
 

@@ -31,7 +31,7 @@ openssl rand -base64 32
 
 3. **初始化数据库**
 ```bash
-pnpm run db:push:dev
+pnpm run db:push
 ```
 
 4. **启动开发服务器**
@@ -53,7 +53,7 @@ pnpm run db:studio
 
 2. **推送数据库结构**
 ```bash
-pnpm run db:push:prod
+pnpm run db:push
 ```
 
 3. **启动生产环境**
