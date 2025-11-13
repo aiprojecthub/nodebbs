@@ -158,15 +158,62 @@ export default function CategoriesManagement() {
     setSelectedCategory(null);
   };
 
-  // 扁平化分类列表（包括子分类）
+  // 构建树形结构并按顺序展开分类列表
   const flattenCategories = (cats) => {
     const result = [];
+
+    // 创建分类映射，用于快速查找和计算层级
+    const categoryMap = new Map();
     cats.forEach((cat) => {
-      result.push(cat);
-      if (cat.subcategories && cat.subcategories.length > 0) {
-        result.push(...flattenCategories(cat.subcategories));
-      }
+      categoryMap.set(cat.id, cat);
     });
+
+    // 计算分类的层级深度
+    const calculateLevel = (catId, visited = new Set()) => {
+      if (visited.has(catId)) return 0; // 防止循环引用
+      visited.add(catId);
+
+      const cat = categoryMap.get(catId);
+      if (!cat || !cat.parentId) return 0;
+
+      const parent = categoryMap.get(cat.parentId);
+      if (!parent) return 0;
+
+      return 1 + calculateLevel(cat.parentId, visited);
+    };
+
+    // 按 position 和 name 排序的辅助函数
+    const sortByPositionAndName = (a, b) => {
+      if (a.position !== b.position) {
+        return (a.position || 0) - (b.position || 0);
+      }
+      return a.name.localeCompare(b.name);
+    };
+
+    // 递归添加分类及其子分类
+    const addCategoryAndChildren = (parentId) => {
+      // 找到所有属于当前父分类的子分类
+      const children = cats
+        .filter((cat) => {
+          if (parentId === null) {
+            return cat.parentId === null || cat.parentId === undefined;
+          }
+          return cat.parentId === parentId;
+        })
+        .sort(sortByPositionAndName);
+
+      // 添加每个分类及其子分类
+      children.forEach((cat) => {
+        const level = calculateLevel(cat.id);
+        result.push({ ...cat, level });
+        // 递归添加子分类
+        addCategoryAndChildren(cat.id);
+      });
+    };
+
+    // 从顶级分类开始
+    addCategoryAndChildren(null);
+
     return result;
   };
 
@@ -206,8 +253,14 @@ export default function CategoriesManagement() {
               return (
                 <div className='flex flex-col gap-1'>
                   <div className='flex items-center gap-2'>
-                    {category.parentId && (
-                      <span className='text-muted-foreground text-xs'>└─</span>
+                    {/* 层级缩进 */}
+                    {category.level > 0 && (
+                      <span
+                        className='text-muted-foreground text-xs'
+                        style={{ marginLeft: `${(category.level - 1) * 20}px` }}
+                      >
+                        └─
+                      </span>
                     )}
                     {category.icon && (
                       <span className='text-lg'>{category.icon}</span>
@@ -226,7 +279,10 @@ export default function CategoriesManagement() {
                     )}
                   </div>
                   {parentCategory && (
-                    <div className='text-xs text-muted-foreground ml-6'>
+                    <div
+                      className='text-xs text-muted-foreground'
+                      style={{ marginLeft: `${category.level * 20 + 20}px` }}
+                    >
                       父分类: {parentCategory.name}
                     </div>
                   )}
@@ -352,7 +408,7 @@ export default function CategoriesManagement() {
                 }
                 placeholder='无（顶级分类）'
                 excludeId={selectedCategory?.id}
-                onlyTopLevel={true}
+                // onlyTopLevel={true}
               />
               <p className='text-xs text-muted-foreground mt-1'>
                 选择一个父分类，使此分类成为子分类

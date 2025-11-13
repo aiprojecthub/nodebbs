@@ -53,59 +53,104 @@ export default function CategorySelector({
     }
   };
 
-  // 扁平化分类列表，添加层级标识
-  const flattenCategories = (cats, level = 0, parentName = '') => {
-    const result = [];
-
+  // 构建分类层级结构，计算层级和父分类名称
+  const buildCategoryHierarchy = (cats) => {
+    // 创建分类映射表
+    const categoryMap = new Map();
     cats.forEach((cat) => {
-      // 排除指定的分类
-      if (excludeId && cat.id === excludeId) {
-        return;
-      }
+      categoryMap.set(cat.id, { ...cat, level: 0, parentName: '' });
+    });
 
-      // 如果只显示顶级分类，跳过子分类
-      if (onlyTopLevel && level > 0) {
-        return;
-      }
+    // 计算每个分类的层级
+    const calculateLevel = (catId, visited = new Set()) => {
+      if (visited.has(catId)) return 0; // 防止循环引用
+      visited.add(catId);
 
-      result.push({
+      const cat = categoryMap.get(catId);
+      if (!cat || !cat.parentId) return 0;
+
+      const parent = categoryMap.get(cat.parentId);
+      if (!parent) return 0;
+
+      return 1 + calculateLevel(cat.parentId, visited);
+    };
+
+    // 为每个分类设置层级和父分类名称
+    cats.forEach((cat) => {
+      const level = calculateLevel(cat.id);
+      const parent = cat.parentId ? categoryMap.get(cat.parentId) : null;
+
+      categoryMap.set(cat.id, {
         ...cat,
         level,
         displayName: cat.name,
-        parentName,
+        parentName: parent ? parent.name : '',
       });
-
-      // 递归处理子分类
-      if (cat.subcategories && cat.subcategories.length > 0 && !onlyTopLevel) {
-        result.push(
-          ...flattenCategories(cat.subcategories, level + 1, cat.name)
-        );
-      }
     });
+
+    return Array.from(categoryMap.values());
+  };
+
+  // 将分类按树形结构展开（父分类后面紧跟子分类）
+  const flattenInTreeOrder = (cats) => {
+    const processedCategories = buildCategoryHierarchy(cats);
+    const result = [];
+
+    // 按 position 和 name 排序的辅助函数
+    const sortByPositionAndName = (a, b) => {
+      if (a.position !== b.position) {
+        return (a.position || 0) - (b.position || 0);
+      }
+      return a.name.localeCompare(b.name);
+    };
+
+    // 递归添加分类及其子分类
+    const addCategoryAndChildren = (parentId, currentLevel = 0) => {
+      // 找到所有属于当前父分类的子分类
+      const children = processedCategories
+        .filter((cat) => {
+          if (parentId === null) {
+            return cat.parentId === null;
+          }
+          return cat.parentId === parentId;
+        })
+        .sort(sortByPositionAndName);
+
+      // 添加每个分类及其子分类
+      children.forEach((cat) => {
+        // 排除指定的分类
+        if (excludeId && cat.id === excludeId) {
+          return;
+        }
+
+        // 如果只显示顶级分类，跳过子分类
+        if (onlyTopLevel && currentLevel > 0) {
+          return;
+        }
+
+        result.push(cat);
+
+        // 递归添加子分类（如果不是只显示顶级分类）
+        if (!onlyTopLevel) {
+          addCategoryAndChildren(cat.id, currentLevel + 1);
+        }
+      });
+    };
+
+    // 从顶级分类开始
+    addCategoryAndChildren(null, 0);
 
     return result;
   };
 
-  const flatCategories = flattenCategories(categories);
+  // 处理分类列表
+  const flatCategories = flattenInTreeOrder(categories);
 
   // 获取选中分类的显示名称
   const getSelectedCategoryName = () => {
     if (!value) return null;
-
-    const findCategory = (cats) => {
-      for (const cat of cats) {
-        if (cat.id === Number(value)) {
-          return cat.name;
-        }
-        if (cat.subcategories && cat.subcategories.length > 0) {
-          const found = findCategory(cat.subcategories);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
-
-    return findCategory(categories);
+    const category = categories.find((cat) => cat.id === Number(value));
+    return category ? category.name : null;
   };
 
   if (loading) {
@@ -147,14 +192,12 @@ export default function CategorySelector({
               className='cursor-pointer'
             >
               <div className='flex items-center gap-2'>
-                {/* 层级缩进 */}
+                {/* 层级缩进 - 使用空白占位 + 符号 */}
                 {category.level > 0 && (
-                  <span
-                    className='text-muted-foreground'
-                    style={{ marginLeft: `${category.level * 12}px` }}
-                  >
-                    └─
-                  </span>
+                  <>
+                    <span style={{ width: `${(category.level - 1) * 16}px` }} />
+                    <span className='text-muted-foreground text-xs'>└─</span>
+                  </>
                 )}
 
                 {/* 分类颜色标识 */}
@@ -177,7 +220,7 @@ export default function CategorySelector({
                   {category.displayName}
                 </span>
 
-                {/* 父分类提示（可选） */}
+                {/* 层级指示器（可选） */}
                 {category.level > 0 && category.parentName && (
                   <span className='text-xs text-muted-foreground'>
                     ({category.parentName})
