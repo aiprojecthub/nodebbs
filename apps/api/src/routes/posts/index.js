@@ -1,5 +1,5 @@
 import db from '../../db/index.js';
-import { posts, topics, users, likes, notifications, subscriptions } from '../../db/schema.js';
+import { posts, topics, users, likes, notifications, subscriptions, moderationLogs } from '../../db/schema.js';
 import { eq, sql, desc, and, inArray, ne, like } from 'drizzle-orm';
 import { getSetting } from '../../utils/settings.js';
 

@@ -521,6 +521,39 @@ export const reportsRelations = relations(reports, ({ one }) => ({
   }),
 }));
 
+// ============ Moderation Logs (审核日志) ============
+export const moderationLogs = pgTable(
+  'moderation_logs',
+  {
+    ...$defaults,
+    action: varchar('action', { length: 20 }).notNull(), // 'approve', 'reject', 'delete', 'restore', 'close', 'open', 'pin', 'unpin'
+    targetType: varchar('target_type', { length: 20 }).notNull(), // 'topic', 'post', 'user'
+    targetId: integer('target_id').notNull(), // 目标对象的ID
+    moderatorId: integer('moderator_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }), // 执行操作的版主/管理员
+    reason: text('reason'), // 操作原因/备注
+    previousStatus: varchar('previous_status', { length: 20 }), // 操作前的状态
+    newStatus: varchar('new_status', { length: 20 }), // 操作后的状态
+    metadata: text('metadata'), // 额外的元数据（JSON格式）
+  },
+  (table) => [
+    index('moderation_logs_action_idx').on(table.action),
+    index('moderation_logs_target_type_idx').on(table.targetType),
+    index('moderation_logs_target_id_idx').on(table.targetId),
+    index('moderation_logs_moderator_idx').on(table.moderatorId),
+    index('moderation_logs_created_at_idx').on(table.createdAt),
+  ]
+);
+
+export const moderationLogsRelations = relations(moderationLogs, ({ one }) => ({
+  moderator: one(users, {
+    fields: [moderationLogs.moderatorId],
+    references: [users.id],
+    relationName: 'moderator',
+  }),
+}));
+
 // ============ Blocked Users (拉黑用户) ============
 export const blockedUsers = pgTable(
   'blocked_users',

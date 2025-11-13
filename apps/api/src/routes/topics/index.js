@@ -9,6 +9,8 @@ import {
   tags,
   subscriptions,
   likes,
+  notifications,
+  moderationLogs,
 } from '../../db/schema.js';
 import { eq, sql, desc, and, or, like, inArray } from 'drizzle-orm';
 import slugify from 'slug';

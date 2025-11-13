@@ -1,5 +1,5 @@
 import db from '../../db/index.js';
-import { reports, posts, topics, users, notifications } from '../../db/schema.js';
+import { reports, posts, topics, users, notifications, moderationLogs } from '../../db/schema.js';
 import { eq, sql, desc, and, ne, like, or } from 'drizzle-orm';
 
 // 生成举报通知消息
@@ -692,6 +692,16 @@ export default async function moderationRoutes(fastify, options) {
         .set({ approvalStatus: 'approved', updatedAt: new Date() })
         .where(and(eq(posts.topicId, id), eq(posts.postNumber, 1)));
 
+      // 记录审核日志
+      await db.insert(moderationLogs).values({
+        action: 'approve',
+        targetType: 'topic',
+        targetId: id,
+        moderatorId: request.user.id,
+        previousStatus: 'pending',
+        newStatus: 'approved'
+      });
+
       return { message: '话题已批准（包含话题内容）', topic: updated };
     } else if (type === 'post') {
       const [post] = await db.select().from(posts).where(eq(posts.id, id)).limit(1);
@@ -709,6 +719,16 @@ export default async function moderationRoutes(fastify, options) {
         .set({ approvalStatus: 'approved', updatedAt: new Date() })
         .where(eq(posts.id, id))
         .returning();
+
+      // 记录审核日志
+      await db.insert(moderationLogs).values({
+        action: 'approve',
+        targetType: 'post',
+        targetId: id,
+        moderatorId: request.user.id,
+        previousStatus: 'pending',
+        newStatus: 'approved'
+      });
 
       return { message: '回复已批准', post: updated };
     }
@@ -757,6 +777,16 @@ export default async function moderationRoutes(fastify, options) {
         .set({ approvalStatus: 'rejected', updatedAt: new Date() })
         .where(and(eq(posts.topicId, id), eq(posts.postNumber, 1)));
 
+      // 记录审核日志
+      await db.insert(moderationLogs).values({
+        action: 'reject',
+        targetType: 'topic',
+        targetId: id,
+        moderatorId: request.user.id,
+        previousStatus: 'pending',
+        newStatus: 'rejected'
+      });
+
       return { message: '话题已拒绝（包含话题内容）', topic: updated };
     } else if (type === 'post') {
       const [post] = await db.select().from(posts).where(eq(posts.id, id)).limit(1);
@@ -775,7 +805,205 @@ export default async function moderationRoutes(fastify, options) {
         .where(eq(posts.id, id))
         .returning();
 
+      // 记录审核日志
+      await db.insert(moderationLogs).values({
+        action: 'reject',
+        targetType: 'post',
+        targetId: id,
+        moderatorId: request.user.id,
+        previousStatus: 'pending',
+        newStatus: 'rejected'
+      });
+
       return { message: '回复已拒绝', post: updated };
     }
+  });
+
+  // ============= 审核日志接口 =============
+
+  // 获取审核日志列表（管理员/版主）
+  fastify.get('/logs', {
+    preHandler: [fastify.requireModerator],
+    schema: {
+      tags: ['moderation'],
+      description: '获取审核日志列表（管理员/版主）',
+      security: [{ bearerAuth: [] }],
+      querystring: {
+        type: 'object',
+        properties: {
+          targetType: { type: 'string', enum: ['topic', 'post', 'user', 'all'] },
+          action: { type: 'string', enum: ['approve', 'reject', 'delete', 'restore', 'close', 'open', 'pin', 'unpin', 'all'] },
+          targetId: { type: 'number' },
+          moderatorId: { type: 'number' },
+          page: { type: 'number', default: 1 },
+          limit: { type: 'number', default: 20, maximum: 100 }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const {
+      targetType = 'all',
+      action = 'all',
+      targetId,
+      moderatorId,
+      page = 1,
+      limit = 20
+    } = request.query;
+    const offset = (page - 1) * limit;
+
+    // 构建查询条件
+    const conditions = [];
+    if (targetType !== 'all') {
+      conditions.push(eq(moderationLogs.targetType, targetType));
+    }
+    if (action !== 'all') {
+      conditions.push(eq(moderationLogs.action, action));
+    }
+    if (targetId) {
+      conditions.push(eq(moderationLogs.targetId, targetId));
+    }
+    if (moderatorId) {
+      conditions.push(eq(moderationLogs.moderatorId, moderatorId));
+    }
+
+    // 获取日志列表
+    let query = db
+      .select({
+        id: moderationLogs.id,
+        action: moderationLogs.action,
+        targetType: moderationLogs.targetType,
+        targetId: moderationLogs.targetId,
+        reason: moderationLogs.reason,
+        previousStatus: moderationLogs.previousStatus,
+        newStatus: moderationLogs.newStatus,
+        metadata: moderationLogs.metadata,
+        createdAt: moderationLogs.createdAt,
+        moderatorUsername: users.username,
+        moderatorName: users.name,
+        moderatorRole: users.role
+      })
+      .from(moderationLogs)
+      .innerJoin(users, eq(moderationLogs.moderatorId, users.id));
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const logsList = await query
+      .orderBy(desc(moderationLogs.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    // 获取目标详情（话题标题、用户名等）
+    const enrichedLogs = await Promise.all(logsList.map(async (log) => {
+      let targetInfo = null;
+
+      if (log.targetType === 'topic') {
+        const [topic] = await db
+          .select({
+            title: topics.title,
+            slug: topics.slug,
+            authorUsername: users.username
+          })
+          .from(topics)
+          .leftJoin(users, eq(topics.userId, users.id))
+          .where(eq(topics.id, log.targetId))
+          .limit(1);
+        targetInfo = topic;
+      } else if (log.targetType === 'post') {
+        const [post] = await db
+          .select({
+            content: sql`LEFT(${posts.content}, 100)`,
+            authorUsername: users.username,
+            topicId: posts.topicId,
+            topicTitle: topics.title
+          })
+          .from(posts)
+          .leftJoin(users, eq(posts.userId, users.id))
+          .leftJoin(topics, eq(posts.topicId, topics.id))
+          .where(eq(posts.id, log.targetId))
+          .limit(1);
+        targetInfo = post;
+      } else if (log.targetType === 'user') {
+        const [user] = await db
+          .select({
+            username: users.username,
+            name: users.name,
+            role: users.role
+          })
+          .from(users)
+          .where(eq(users.id, log.targetId))
+          .limit(1);
+        targetInfo = user;
+      }
+
+      return {
+        ...log,
+        targetInfo
+      };
+    }));
+
+    // 获取总数
+    let countQuery = db
+      .select({ count: sql`count(*)` })
+      .from(moderationLogs);
+
+    if (conditions.length > 0) {
+      countQuery = countQuery.where(and(...conditions));
+    }
+
+    const [{ count }] = await countQuery;
+
+    return {
+      items: enrichedLogs,
+      page,
+      limit,
+      total: Number(count)
+    };
+  });
+
+  // 根据目标ID获取审核日志（查看特定内容的审核历史）
+  fastify.get('/logs/:targetType/:targetId', {
+    preHandler: [fastify.requireModerator],
+    schema: {
+      tags: ['moderation'],
+      description: '获取特定内容的审核日志（管理员/版主）',
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        required: ['targetType', 'targetId'],
+        properties: {
+          targetType: { type: 'string', enum: ['topic', 'post', 'user'] },
+          targetId: { type: 'number' }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const { targetType, targetId } = request.params;
+
+    const logs = await db
+      .select({
+        id: moderationLogs.id,
+        action: moderationLogs.action,
+        reason: moderationLogs.reason,
+        previousStatus: moderationLogs.previousStatus,
+        newStatus: moderationLogs.newStatus,
+        metadata: moderationLogs.metadata,
+        createdAt: moderationLogs.createdAt,
+        moderatorUsername: users.username,
+        moderatorName: users.name,
+        moderatorRole: users.role
+      })
+      .from(moderationLogs)
+      .innerJoin(users, eq(moderationLogs.moderatorId, users.id))
+      .where(
+        and(
+          eq(moderationLogs.targetType, targetType),
+          eq(moderationLogs.targetId, targetId)
+        )
+      )
+      .orderBy(desc(moderationLogs.createdAt));
+
+    return { items: logs };
   });
 }

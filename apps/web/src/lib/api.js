@@ -576,6 +576,17 @@ export const moderationApi = {
   async reject(type, id) {
     return apiClient.post(`/moderation/reject/${type}/${id}`);
   },
+
+  // 获取审核日志列表
+  async getLogs(params = {}) {
+    // params: { targetType, action, targetId, moderatorId, page, limit }
+    return apiClient.get('/moderation/logs', params);
+  },
+
+  // 获取特定内容的审核日志
+  async getLogsByTarget(targetType, targetId) {
+    return apiClient.get(`/moderation/logs/${targetType}/${targetId}`);
+  },
 };
 
 // ============= 系统 API =============
