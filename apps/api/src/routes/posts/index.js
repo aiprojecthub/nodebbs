@@ -458,38 +458,79 @@ export default async function postRoutes(fastify, options) {
       return reply.code(403).send({ error: '你没有权限编辑该帖子' });
     }
 
+    // 检查是否开启内容审核
+    const contentModerationEnabled = await getSetting(
+      'content_moderation_enabled',
+      false
+    );
+
     // 准备更新数据
     const updates = {
       content,
       rawContent: content,
       editedAt: new Date(),
       editCount: sql`${posts.editCount} + 1`,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
-    // 如果回复被拒绝，且编辑者是回复作者（非管理员/版主），重置为待审核
+    // 审核状态变更跟踪
     let statusChanged = false;
-    if (post.approvalStatus === 'rejected' && isOwner && !isModerator) {
-      updates.approvalStatus = 'pending';
-      statusChanged = true;
+    let needsReapproval = false; // 区分是已批准内容的编辑还是被拒绝内容的重新提交
+    const previousStatus = post.approvalStatus;
+
+    // 如果内容审核开启，且编辑者是普通用户（非版主/管理员）
+    if (contentModerationEnabled && isOwner && !isModerator) {
+      // 已批准的回复编辑后需要重新审核
+      if (previousStatus === 'approved') {
+        updates.approvalStatus = 'pending';
+        statusChanged = true;
+        needsReapproval = true;
+      }
+      // 被拒绝的回复编辑后重新提交审核
+      else if (previousStatus === 'rejected') {
+        updates.approvalStatus = 'pending';
+        statusChanged = true;
+        needsReapproval = false;
+      }
     }
 
-    const [updatedPost] = await db.update(posts).set(updates).where(eq(posts.id, id)).returning();
+    const [updatedPost] = await db
+      .update(posts)
+      .set(updates)
+      .where(eq(posts.id, id))
+      .returning();
 
-    // 记录重新提交审核的日志
+    // 记录审核日志
     if (statusChanged) {
+      const action = needsReapproval ? 'edit_resubmit' : 'resubmit';
+      const note = needsReapproval
+        ? '已批准的回复编辑后重新提交审核'
+        : '被拒绝的回复编辑后重新提交审核';
+
       await db.insert(moderationLogs).values({
-        action: 'resubmit',
+        action,
         targetType: 'post',
         targetId: id,
         moderatorId: request.user.id,
-        previousStatus: 'rejected',
+        previousStatus,
         newStatus: 'pending',
-        metadata: JSON.stringify({ note: '作者编辑后重新提交审核' })
+        metadata: JSON.stringify({ note }),
       });
     }
 
-    return updatedPost;
+    // 生成返回消息
+    let message = '回复更新成功';
+    if (needsReapproval) {
+      message = '回复已更新，正在等待审核后公开显示';
+    } else if (statusChanged) {
+      message = '回复已重新提交审核';
+    }
+
+    return {
+      post: updatedPost,
+      message,
+      requiresApproval: needsReapproval || statusChanged,
+    };
   });
 
   // Delete post

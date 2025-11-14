@@ -736,6 +736,12 @@ export default async function topicRoutes(fastify, options) {
           .send({ error: '只有版主可以置顶或关闭话题' });
       }
 
+      // 检查是否开启内容审核
+      const contentModerationEnabled = await getSetting(
+        'content_moderation_enabled',
+        false
+      );
+
       // Prepare topic updates (exclude content and tags as they need special handling)
       const { content, tags: tagNames, ...topicUpdates } = request.body;
       const updates = { ...topicUpdates, updatedAt: new Date() };
@@ -745,11 +751,28 @@ export default async function topicRoutes(fastify, options) {
         updates.slug = slugify(request.body.title) + '-' + topic.id;
       }
 
-      // 如果话题被拒绝，且编辑者是话题作者（非管理员/版主），重置为待审核
+      // 审核状态变更跟踪
       let statusChanged = false;
-      if (topic.approvalStatus === 'rejected' && isOwner && !isModerator) {
-        updates.approvalStatus = 'pending';
-        statusChanged = true;
+      let needsReapproval = false; // 区分是已批准内容的编辑还是被拒绝内容的重新提交
+      const previousStatus = topic.approvalStatus;
+
+      // 如果内容审核开启，且编辑者是普通用户（非版主/管理员）
+      if (contentModerationEnabled && isOwner && !isModerator) {
+        // 编辑标题或内容时，需要重新审核
+        if (request.body.title || content !== undefined) {
+          // 已批准的内容编辑后需要重新审核
+          if (previousStatus === 'approved') {
+            updates.approvalStatus = 'pending';
+            statusChanged = true;
+            needsReapproval = true;
+          }
+          // 被拒绝的内容编辑后重新提交审核
+          else if (previousStatus === 'rejected') {
+            updates.approvalStatus = 'pending';
+            statusChanged = true;
+            needsReapproval = false;
+          }
+        }
       }
 
       // Update topic
@@ -788,16 +811,21 @@ export default async function topicRoutes(fastify, options) {
         }
       }
 
-      // 记录重新提交审核的日志
+      // 记录审核日志
       if (statusChanged) {
+        const action = needsReapproval ? 'edit_resubmit' : 'resubmit';
+        const note = needsReapproval
+          ? '已批准的话题编辑后重新提交审核'
+          : '被拒绝的话题编辑后重新提交审核';
+
         await db.insert(moderationLogs).values({
-          action: 'resubmit',
+          action,
           targetType: 'topic',
           targetId: id,
           moderatorId: request.user.id,
-          previousStatus: 'rejected',
+          previousStatus,
           newStatus: 'pending',
-          metadata: JSON.stringify({ note: '作者编辑后重新提交审核' })
+          metadata: JSON.stringify({ note }),
         });
       }
 
@@ -861,7 +889,19 @@ export default async function topicRoutes(fastify, options) {
         }
       }
 
-      return updatedTopic;
+      // 生成返回消息
+      let message = '话题更新成功';
+      if (needsReapproval) {
+        message = '话题已更新，正在等待审核后公开显示';
+      } else if (statusChanged) {
+        message = '话题已重新提交审核';
+      }
+
+      return {
+        topic: updatedTopic,
+        message,
+        requiresApproval: needsReapproval || statusChanged,
+      };
     }
   );
 
