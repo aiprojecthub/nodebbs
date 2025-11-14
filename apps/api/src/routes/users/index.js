@@ -760,6 +760,113 @@ export default async function userRoutes(fastify, options) {
     }
   });
 
+  // Update user by admin
+  fastify.patch('/:userId', {
+    preHandler: [fastify.requireAdmin],
+    schema: {
+      tags: ['users'],
+      description: '更新用户信息（仅管理员）',
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        required: ['userId'],
+        properties: {
+          userId: { type: 'number' }
+        }
+      },
+      body: {
+        type: 'object',
+        properties: {
+          username: { type: 'string', minLength: 3, maxLength: 50 },
+          email: { type: 'string', format: 'email' },
+          name: { type: 'string', maxLength: 255 },
+          role: { type: 'string', enum: ['user', 'moderator', 'admin'] },
+          isEmailVerified: { type: 'boolean' }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            id: { type: 'number' },
+            username: { type: 'string' },
+            email: { type: 'string' },
+            name: { type: 'string' },
+            role: { type: 'string' },
+            isEmailVerified: { type: 'boolean' }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const { userId } = request.params;
+    const { username, email, name, role, isEmailVerified } = request.body;
+
+    // Check if user exists
+    const [targetUser] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!targetUser) {
+      return reply.code(404).send({ error: '用户不存在' });
+    }
+
+    // Prevent modifying the first admin (founder)
+    const [firstAdmin] = await db.select().from(users).where(eq(users.role, 'admin')).orderBy(users.id).limit(1);
+    if (targetUser.id === firstAdmin.id) {
+      return reply.code(403).send({ error: '不能修改创始人账号' });
+    }
+
+    const updates = {};
+
+    // 如果修改用户名，需要验证格式和唯一性
+    if (username !== undefined && username !== targetUser.username) {
+      const { validateUsername, normalizeUsername } = await import('../../utils/validateUsername.js');
+      const normalizedUsername = normalizeUsername(username);
+      const usernameValidation = validateUsername(normalizedUsername);
+
+      if (!usernameValidation.valid) {
+        return reply.code(400).send({ error: usernameValidation.error });
+      }
+
+      const [existingUsername] = await db.select().from(users).where(eq(users.username, normalizedUsername)).limit(1);
+      if (existingUsername && existingUsername.id !== userId) {
+        return reply.code(400).send({ error: '用户名已被占用' });
+      }
+
+      updates.username = normalizedUsername;
+    }
+
+    // 如果修改邮箱，需要验证唯一性
+    if (email !== undefined && email !== targetUser.email) {
+      const [existingEmail] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      if (existingEmail && existingEmail.id !== userId) {
+        return reply.code(400).send({ error: '邮箱已被注册' });
+      }
+
+      updates.email = email;
+    }
+
+    // 其他字段直接更新
+    if (name !== undefined) updates.name = name;
+    if (role !== undefined) updates.role = role;
+    if (isEmailVerified !== undefined) updates.isEmailVerified = isEmailVerified;
+
+    updates.updatedAt = new Date();
+
+    // 如果没有要更新的字段，返回当前用户信息
+    if (Object.keys(updates).length === 1 && updates.updatedAt) {
+      delete targetUser.passwordHash;
+      return targetUser;
+    }
+
+    const [updatedUser] = await db.update(users).set(updates).where(eq(users.id, userId)).returning();
+
+    // 清除用户缓存
+    await fastify.clearUserCache(userId);
+
+    delete updatedUser.passwordHash;
+
+    return updatedUser;
+  });
+
   // Delete user (admin only)
   fastify.delete('/:userId', {
     preHandler: [fastify.requireAdmin],

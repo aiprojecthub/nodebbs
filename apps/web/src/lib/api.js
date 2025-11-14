@@ -237,6 +237,11 @@ export const userApi = {
     return apiClient.patch('/users/me', data);
   },
 
+  // 更新用户信息（管理员）
+  async updateUser(userId, data) {
+    return apiClient.patch(`/users/${userId}`, data);
+  },
+
   // 上传头像
   async uploadAvatar(file) {
     const formData = new FormData();

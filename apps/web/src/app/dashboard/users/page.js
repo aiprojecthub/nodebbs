@@ -40,7 +40,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Ban, ShieldCheck, UserCog, Trash2, MoreHorizontal, UserPlus } from 'lucide-react';
+import { Loader2, Ban, ShieldCheck, UserCog, Trash2, MoreHorizontal, UserPlus, Pencil } from 'lucide-react';
 import { userApi, moderationApi } from '@/lib/api';
 import { toast } from 'sonner';
 import Time from '@/components/forum/Time';
@@ -62,8 +62,9 @@ export default function UsersManagement() {
   const [newRole, setNewRole] = useState('user');
   const [submitting, setSubmitting] = useState(false);
   const [firstAdminId, setFirstAdminId] = useState(null);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [createForm, setCreateForm] = useState({
+  const [showUserDialog, setShowUserDialog] = useState(false);
+  const [dialogMode, setDialogMode] = useState('create'); // 'create' or 'edit'
+  const [userForm, setUserForm] = useState({
     username: '',
     email: '',
     password: '',
@@ -185,6 +186,33 @@ export default function UsersManagement() {
     setShowDeleteDialog(true);
   };
 
+  const openCreateDialog = () => {
+    setDialogMode('create');
+    setUserForm({
+      username: '',
+      email: '',
+      password: '',
+      name: '',
+      role: 'user',
+      isEmailVerified: false
+    });
+    setShowUserDialog(true);
+  };
+
+  const openEditDialog = (user) => {
+    setDialogMode('edit');
+    setSelectedUser(user);
+    setUserForm({
+      username: user.username,
+      email: user.email,
+      password: '', // 编辑时不需要密码
+      name: user.name || '',
+      role: user.role,
+      isEmailVerified: user.isEmailVerified || false
+    });
+    setShowUserDialog(true);
+  };
+
   const handleDelete = async () => {
     setSubmitting(true);
     try {
@@ -201,25 +229,40 @@ export default function UsersManagement() {
     }
   };
 
-  const handleCreateUser = async () => {
+  const handleSubmitUser = async () => {
     // 验证表单
-    if (!createForm.username || !createForm.email || !createForm.password) {
+    if (!userForm.username || !userForm.email) {
       toast.error('请填写所有必填字段');
       return;
     }
 
-    if (createForm.password.length < 6) {
+    // 创建模式下，密码是必填的
+    if (dialogMode === 'create' && !userForm.password) {
+      toast.error('请填写密码');
+      return;
+    }
+
+    if (dialogMode === 'create' && userForm.password.length < 6) {
       toast.error('密码至少需要 6 个字符');
       return;
     }
 
     setSubmitting(true);
     try {
-      await userApi.createUser(createForm);
-      toast.success(`用户 ${createForm.username} 创建成功`);
-      setShowCreateDialog(false);
+      if (dialogMode === 'create') {
+        // 创建用户
+        await userApi.createUser(userForm);
+        toast.success(`用户 ${userForm.username} 创建成功`);
+      } else {
+        // 编辑用户 - 不传递密码字段
+        const { password, ...updateData } = userForm;
+        await userApi.updateUser(selectedUser.id, updateData);
+        toast.success(`用户 ${userForm.username} 更新成功`);
+      }
+
+      setShowUserDialog(false);
       // 重置表单
-      setCreateForm({
+      setUserForm({
         username: '',
         email: '',
         password: '',
@@ -229,8 +272,8 @@ export default function UsersManagement() {
       });
       fetchUsers();
     } catch (err) {
-      console.error('创建用户失败:', err);
-      toast.error('创建用户失败：' + err.message);
+      console.error(`${dialogMode === 'create' ? '创建' : '更新'}用户失败:`, err);
+      toast.error(`${dialogMode === 'create' ? '创建' : '更新'}用户失败：` + err.message);
     } finally {
       setSubmitting(false);
     }
@@ -278,7 +321,7 @@ export default function UsersManagement() {
             管理用户账号、角色和权限
           </p>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)}>
+        <Button onClick={openCreateDialog}>
           <UserPlus className="h-4 w-4 mr-2" />
           创建用户
         </Button>
@@ -377,6 +420,13 @@ export default function UsersManagement() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => openEditDialog(user)}
+                    disabled={!canModifyUser(user)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                    编辑用户
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => openRoleDialog(user)}
                     disabled={!canModifyUser(user)}
@@ -605,13 +655,17 @@ export default function UsersManagement() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* 创建用户对话框 */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+      {/* 创建/编辑用户对话框 */}
+      <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>创建新用户</DialogTitle>
+            <DialogTitle>
+              {dialogMode === 'create' ? '创建新用户' : '编辑用户'}
+            </DialogTitle>
             <DialogDescription>
-              填写用户信息以创建新账号
+              {dialogMode === 'create'
+                ? '填写用户信息以创建新账号'
+                : '修改用户信息'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -622,8 +676,8 @@ export default function UsersManagement() {
               <Input
                 id="username"
                 placeholder="输入用户名"
-                value={createForm.username}
-                onChange={(e) => setCreateForm({ ...createForm, username: e.target.value })}
+                value={userForm.username}
+                onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
                 disabled={submitting}
               />
             </div>
@@ -635,39 +689,41 @@ export default function UsersManagement() {
                 id="email"
                 type="email"
                 placeholder="输入邮箱地址"
-                value={createForm.email}
-                onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                value={userForm.email}
+                onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
                 disabled={submitting}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">
-                密码 <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="至少 6 个字符"
-                value={createForm.password}
-                onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                disabled={submitting}
-              />
-            </div>
+            {dialogMode === 'create' && (
+              <div className="space-y-2">
+                <Label htmlFor="password">
+                  密码 <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="至少 6 个字符"
+                  value={userForm.password}
+                  onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                  disabled={submitting}
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="name">显示名称</Label>
               <Input
                 id="name"
                 placeholder="输入显示名称（可选）"
-                value={createForm.name}
-                onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                value={userForm.name}
+                onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
                 disabled={submitting}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">角色</Label>
               <Select
-                value={createForm.role}
-                onValueChange={(value) => setCreateForm({ ...createForm, role: value })}
+                value={userForm.role}
+                onValueChange={(value) => setUserForm({ ...userForm, role: value })}
                 disabled={submitting}
               >
                 <SelectTrigger id="role">
@@ -683,9 +739,9 @@ export default function UsersManagement() {
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="isEmailVerified"
-                checked={createForm.isEmailVerified}
-                onCheckedChange={(checked) => 
-                  setCreateForm({ ...createForm, isEmailVerified: checked })
+                checked={userForm.isEmailVerified}
+                onCheckedChange={(checked) =>
+                  setUserForm({ ...userForm, isEmailVerified: checked })
                 }
                 disabled={submitting}
               />
@@ -700,19 +756,19 @@ export default function UsersManagement() {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setShowCreateDialog(false)}
+              onClick={() => setShowUserDialog(false)}
               disabled={submitting}
             >
               取消
             </Button>
-            <Button onClick={handleCreateUser} disabled={submitting}>
+            <Button onClick={handleSubmitUser} disabled={submitting}>
               {submitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  创建中...
+                  {dialogMode === 'create' ? '创建中...' : '保存中...'}
                 </>
               ) : (
-                '创建用户'
+                dialogMode === 'create' ? '创建用户' : '保存修改'
               )}
             </Button>
           </DialogFooter>
