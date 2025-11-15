@@ -191,6 +191,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded }) {
   return (
     <>
       <div
+        id={`post-${localReply.id}`}
         className={`bg-card border rounded-lg hover:border-border/80 transition-colors group ${
           isPending
             ? 'border-chart-5/30 bg-chart-5/5'

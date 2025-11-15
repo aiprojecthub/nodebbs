@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import StickySidebar from '@/components/forum/StickySidebar';
 import TopicContent from '@/components/topic/TopicContent';
 import ReplySection from '@/components/topic/ReplySection';
 import TopicSidebarWrapper from '@/components/topic/TopicSidebarWrapper';
+import { postApi } from '@/lib/api';
 
 export default function TopicPageClient({
   topic: initialTopic,
@@ -14,6 +16,8 @@ export default function TopicPageClient({
   currentPage,
   limit,
 }) {
+  const router = useRouter();
+
   // 统一管理话题状态
   const [topic, setTopic] = useState(initialTopic);
 
@@ -21,6 +25,66 @@ export default function TopicPageClient({
   const handleTopicUpdate = (updates) => {
     setTopic((prev) => ({ ...prev, ...updates }));
   };
+
+  // 滚动到指定帖子
+  const scrollToPost = (postId) => {
+    setTimeout(() => {
+      const element = document.getElementById(`post-${postId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // 添加高亮效果
+        element.classList.add('highlight-post');
+        setTimeout(() => element.classList.remove('highlight-post'), 4000);
+      }
+    }, 300); // 等待 DOM 渲染
+  };
+
+  // 处理 hash 导航到指定楼层
+  useEffect(() => {
+    const hash = window.location.hash;
+
+    // 检测 #post-123 格式
+    const match = hash.match(/^#post-(\d+)$/);
+    if (!match) return; // 没有 hash 时直接返回，不处理
+
+    const postId = parseInt(match[1]);
+
+    const handleHashNavigation = async () => {
+      try {
+        // 调用位置 API
+        const { page } = await postApi.getPosition(postId, topic.id, limit);
+
+        // 如果不在当前页，跳转到目标页
+        if (page !== currentPage) {
+          router.push(`/topic/${topic.id}?page=${page}#post-${postId}`, { scroll: false });
+          return;
+        }
+
+        // 已在正确页面，滚动到目标元素
+        scrollToPost(postId);
+      } catch (error) {
+        console.error('Failed to navigate to post:', error);
+      }
+    };
+
+    // 页面加载后执行
+    handleHashNavigation();
+
+    // 监听 hash 变化
+    const handleHashChange = () => {
+      const newHash = window.location.hash;
+      const newMatch = newHash.match(/^#post-(\d+)$/);
+      if (newMatch) {
+        handleHashNavigation();
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, [topic.id, currentPage, limit, router]);
 
   return (
     <div className='container mx-auto px-4 py-6 flex-1'>

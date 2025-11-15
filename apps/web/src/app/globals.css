@@ -341,4 +341,32 @@
 html body[data-scroll-locked] {
   overflow: visible !important;
   margin-right: 0 !important;
-} 
+}
+
+/* 帖子跳转高亮动画 */
+.highlight-post {
+  animation: highlight-fade 4s ease-out;
+}
+
+@keyframes highlight-fade {
+  0% {
+    background-color: oklch(0.769 0.188 70.08 / 0.2);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* 暗色模式下的高亮效果 */
+.dark .highlight-post {
+  animation: highlight-fade-dark 4s ease-out;
+}
+
+@keyframes highlight-fade-dark {
+  0% {
+    background-color: oklch(0.645 0.246 16.439 / 0.2);
+  }
+  100% {
+    background-color: transparent;
+  }
+}

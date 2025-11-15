@@ -368,6 +368,126 @@ export default async function postRoutes(fastify, options) {
     };
   });
 
+  // Get post position in topic (for jumping to specific post)
+  fastify.get('/:id/position', {
+    preHandler: [fastify.optionalAuth],
+    schema: {
+      tags: ['posts'],
+      description: '获取帖子在话题中的位置(用于跳转到指定楼层)',
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'number' }
+        }
+      },
+      querystring: {
+        type: 'object',
+        required: ['topicId'],
+        properties: {
+          topicId: { type: 'number' },
+          limit: { type: 'number', default: 20 }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const { topicId, limit = 20 } = request.query;
+
+    // 1. 验证帖子存在
+    const [post] = await db
+      .select()
+      .from(posts)
+      .where(eq(posts.id, id))
+      .limit(1);
+
+    if (!post || post.isDeleted) {
+      return reply.code(404).send({ error: '帖子不存在' });
+    }
+
+    if (post.topicId !== topicId) {
+      return reply.code(400).send({ error: '帖子不属于该话题' });
+    }
+
+    // 2. 构建与列表查询相同的过滤条件
+    let whereConditions = [
+      eq(posts.topicId, topicId),
+      ne(posts.postNumber, 1), // 排除话题内容
+      eq(posts.isDeleted, false)
+    ];
+
+    // 3. 应用审核状态过滤 (与列表逻辑一致)
+    const isModerator = request.user && ['moderator', 'admin'].includes(request.user.role);
+    if (!isModerator) {
+      if (request.user) {
+        whereConditions.push(
+          or(
+            eq(posts.approvalStatus, 'approved'),
+            eq(posts.userId, request.user.id)
+          )
+        );
+      } else {
+        whereConditions.push(eq(posts.approvalStatus, 'approved'));
+      }
+    }
+
+    // 4. 应用拉黑用户过滤 (与列表逻辑一致)
+    if (request.user) {
+      const blockedUsersList = await db
+        .select({
+          blockedUserId: blockedUsers.blockedUserId,
+          userId: blockedUsers.userId
+        })
+        .from(blockedUsers)
+        .where(
+          or(
+            eq(blockedUsers.userId, request.user.id),
+            eq(blockedUsers.blockedUserId, request.user.id)
+          )
+        );
+
+      if (blockedUsersList.length > 0) {
+        const blockedUserIds = new Set();
+        blockedUsersList.forEach(block => {
+          if (block.userId === request.user.id) {
+            blockedUserIds.add(block.blockedUserId);
+          } else {
+            blockedUserIds.add(block.userId);
+          }
+        });
+
+        // 在非话题详情场景中过滤拉黑用户 (这里我们保留以保持一致性)
+        if (blockedUserIds.size > 0) {
+          whereConditions.push(
+            sql`${posts.userId} NOT IN (${Array.from(blockedUserIds).join(',')})`
+          );
+        }
+      }
+    }
+
+    // 5. 统计该帖子之前有多少条可见回复 (按 postNumber 排序)
+    const [{ count }] = await db
+      .select({ count: sql`count(*)` })
+      .from(posts)
+      .where(
+        and(
+          ...whereConditions,
+          sql`${posts.postNumber} < ${post.postNumber}`
+        )
+      );
+
+    const position = Number(count) + 1; // 位置从1开始
+    const page = Math.ceil(position / limit);
+
+    return {
+      postId: post.id,
+      postNumber: post.postNumber,
+      position,
+      page,
+      limit
+    };
+  });
+
   // Get single post
   fastify.get('/:id', {
     preHandler: [fastify.optionalAuth],

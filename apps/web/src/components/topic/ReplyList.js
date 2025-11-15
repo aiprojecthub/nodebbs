@@ -38,15 +38,16 @@ const ReplyList = forwardRef(function ReplyList(
 
   const handlePageChange = (page) => {
     // 使用 URL 参数进行分页，触发服务端重新渲染
-    router.push(`/topic/${topicId}?page=${page}`);
+    // scroll: false 禁用 Next.js 默认滚动行为
+    router.push(`/topic/${topicId}?page=${page}`, { scroll: false });
 
     // 滚动到回复列表顶部
-    if (repliesContainerRef.current) {
-      repliesContainerRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    }
+    setTimeout(() => {
+        repliesContainerRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }, 100);
   };
 
   // 更新本地回复列表（用于删除等操作）
@@ -62,7 +63,8 @@ const ReplyList = forwardRef(function ReplyList(
   };
 
   return (
-    <div className='space-y-4' ref={repliesContainerRef}>
+    <div className='space-y-4' >
+      <div ref={repliesContainerRef} className='relative -top-16'/>
       {totalPosts > 0 && (
         <div className='flex items-center space-x-2 text-sm text-muted-foreground/70 mb-4'>
           <MessageSquare className='h-4 w-4' />

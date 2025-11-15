@@ -477,6 +477,11 @@ export const postApi = {
   async getAdminList(params = {}) {
     return apiClient.get('/posts', params);
   },
+
+  // 获取帖子在话题中的位置（用于跳转到指定楼层）
+  async getPosition(postId, topicId, limit = 20) {
+    return apiClient.get(`/posts/${postId}/position`, { topicId, limit });
+  },
 };
 
 // ============= 标签 API =============
