@@ -12,9 +12,6 @@ export function GeneralSettings({
 }) {
   return (
     <div className='space-y-4'>
-      <Alert>
-        <AlertDescription>暂不支持动态设置站点信息</AlertDescription>
-      </Alert>
       {/* 站点名称 */}
       {settings.site_name && (
         <div className='border border-border rounded-lg bg-card'>

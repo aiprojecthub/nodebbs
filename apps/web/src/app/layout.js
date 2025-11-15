@@ -1,5 +1,4 @@
 import './globals.css';
-import { Geist, Geist_Mono } from 'next/font/google';
 import { Toaster } from 'sonner';
 
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -10,25 +9,23 @@ import ThemeScript from '@/components/theme/ThemeScript';
 import Header from '@/components/forum/Header';
 import Footer from '@/components/forum/Footer';
 import EmailVerificationBanner from '@/components/auth/EmailVerificationBanner';
+import { request } from '@/lib/server/api';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
+const $title = 'NodeBBS - GitHub Issue 风格的讨论社区';
+const $description = '一个现代化的技术讨论论坛，采用 GitHub Issue 风格设计';
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
-
-export const metadata = {
-  // title: '%s | NodeBBS - GitHub Issue 风格的讨论社区',
-  title: {
-    template: '%s | NodeBBS - GitHub Issue 风格的讨论社区',
-    default: 'NodeBBS - GitHub Issue 风格的讨论社区', // a default is required when creating a template
-  },
-  description: '一个现代化的技术讨论论坛，采用 GitHub Issue 风格设计',
-};
+export async function generateMetadata({ params }) {
+  const settings = await request('/api/settings');
+  const name = settings.site_name?.value || $title;
+  const description = settings.site_description?.value || $description;
+  return {
+    title: {
+      template: `\%s | ${name}`,
+      default: $title, // a default is required when creating a template
+    },
+    description,
+  };
+}
 
 function AppLayout({ children }) {
   return (
@@ -44,9 +41,7 @@ function AppLayout({ children }) {
 export default function RootLayout({ children }) {
   return (
     <html lang='en' suppressHydrationWarning className='overflow-y-scroll'>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`antialiased`}>
         <ThemeScript />
         <ThemeProvider>
           <AuthProvider>
