@@ -161,7 +161,7 @@ export default function AdminPostsPage() {
           <div className='flex items-center gap-2 text-xs text-muted-foreground'>
             <span>话题:</span>
             <Link
-              href={`/topic/${row.topicId}`}
+              href={`/topic/${row.topicId}#post-${row.id}`}
               className='hover:text-primary hover:underline'
               target='_blank'
             >

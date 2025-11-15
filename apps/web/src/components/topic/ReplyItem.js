@@ -148,7 +148,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded }) {
         );
       } else {
         toast.success(response.message || '回复成功！');
-        
+
         // 如果返回了新帖子数据且有回调，立即添加到列表
         if (response.post && onReplyAdded) {
           const newPost = {
@@ -398,9 +398,11 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded }) {
               <div className='mb-3 text-xs text-muted-foreground/60 items-center gap-1.5 bg-muted/30 px-2.5 py-1.5 rounded inline-flex'>
                 <Reply className='h-3 w-3' />
                 <span>回复</span>
-                <span className='font-mono'>
+                <Link
+                  href={`/topic/${topicId}#post-${localReply.replyToPost.id}`}
+                >
                   #{localReply.replyToPost.postNumber}
-                </span>
+                </Link>
                 <span>
                   @
                   {localReply.replyToPost.userName ||
