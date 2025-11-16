@@ -102,6 +102,17 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // 设置认证数据（用于扫码登录等外部认证成功后）
+  const setAuthData = (token, userData) => {
+    // 设置 token 到 apiClient 和 localStorage
+    const { default: apiClient } = require('@/lib/api');
+    apiClient.setToken(token);
+    // 设置用户数据
+    setUser(userData);
+    // 关闭登录对话框
+    setLoginDialogOpen(false);
+  };
+
   // 登录对话框控制
   const openLoginDialog = () => setLoginDialogOpen(true);
   const closeLoginDialog = () => setLoginDialogOpen(false);
@@ -118,6 +129,7 @@ export function AuthProvider({ children }) {
     updateUser,
     checkAuth,
     refreshUser,
+    setAuthData,
     // 登录对话框相关
     openLoginDialog,
     closeLoginDialog,

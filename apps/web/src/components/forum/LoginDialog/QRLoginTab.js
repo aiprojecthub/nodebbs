@@ -10,7 +10,7 @@ import { authApi } from '@/lib/api';
 import { toast } from 'sonner';
 
 export function QRLoginTab({ onSuccess }) {
-  const { setToken, setUser } = useAuth();
+  const { setAuthData } = useAuth();
   const [qrData, setQrData] = useState(null);
   const [status, setStatus] = useState('loading'); // loading, pending, confirmed, expired, error
   const [countdown, setCountdown] = useState(0);
@@ -55,8 +55,7 @@ export function QRLoginTab({ onSuccess }) {
           clearInterval(pollingRef.current);
 
           // 保存 token 和用户信息
-          setToken(data.token);
-          setUser(data.user);
+          setAuthData(data.token, data.user);
 
           toast.success('扫码登录成功！');
 
