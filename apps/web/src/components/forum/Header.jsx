@@ -78,7 +78,7 @@ export default function Header({ settings }) {
                 className='w-7 h-7 transition-transform group-hover:scale-105'
               />
               <span className='text-base font-semibold text-foreground hidden sm:inline'>
-                {settings.site_name?.value || 'NodeBBS'}
+                {settings?.site_name?.value || 'NodeBBS'}
               </span>
             </Link>
 

@@ -16,7 +16,7 @@ const $description = '一个基于 Node.js 和 React 的现代化论坛系统';
 
 export async function generateMetadata({ params }) {
   const settings = await request('/api/settings');
-  const name = settings.site_name?.value || $title;
+  const name = settings?.site_name?.value || $title;
   const description = settings.site_description?.value || $description;
   return {
     title: {

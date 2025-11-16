@@ -24,7 +24,7 @@ export default function Footer({ settings }) {
           {/* 左侧：版权和链接 */}
           <div className="flex flex-col md:flex-row items-center gap-4 text-xs text-muted-foreground">
             <div className="flex items-center space-x-1">
-              <span>© {currentYear} {settings.site_name?.value || 'NodeBBS'}</span>
+              <span>© {currentYear} {settings?.site_name?.value || 'NodeBBS'}</span>
             </div>
             <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
               {footerLinks.map((link, index) => (
