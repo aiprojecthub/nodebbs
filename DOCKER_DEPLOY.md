@@ -308,22 +308,6 @@ NEXT_PUBLIC_API_URL=http://localhost:7100   # API 地址
 NEXT_PUBLIC_APP_URL=http://localhost:3100   # 应用地址
 ```
 
-#### OAuth 配置（可选）
-
-```env
-GITHUB_CLIENT_ID=your_client_id
-GITHUB_CLIENT_SECRET=your_client_secret
-```
-
-#### 邮件配置（可选）
-
-```env
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USER=your-email
-SMTP_PASS=your-password
-```
-
 ## 📝 常用命令
 
 ### 使用 Makefile（推荐）

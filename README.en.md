@@ -26,33 +26,12 @@ A modern, high-performance forum platform built with Turborepo monorepo architec
 
 ### Development & Deployment
 - **Monorepo**: Turborepo
-- **Package Manager**: pnpm 9+
+- **Package Manager**: pnpm 10+
 - **Environment Variables**: dotenvx
 - **Containerization**: Docker + Docker Compose
 - **Reverse Proxy**: Nginx (production)
 
 ## 🏗️ Architecture
-
-```
-┌─────────────────────────────┐
-│    Nginx (Production)       │
-│  SSL/HTTPS + Reverse Proxy  │
-└─────────────┬───────────────┘
-              │
-      ┌───────┴────────┐
-      │                │
-┌─────▼─────┐    ┌────▼────┐
-│    Web    │────▶│   API   │
-│   :3100   │    │  :7100  │
-└───────────┘    └──┬───┬──┘
-                    │   │
-          ┌─────────┘   └─────────┐
-          │                       │
-    ┌─────▼──────┐         ┌─────▼─────┐
-    │ PostgreSQL │         │   Redis   │
-    │   :5432    │         │   :6379   │
-    └────────────┘         └───────────┘
-```
 
 | Service | Technology | Port | Description |
 |---------|-----------|------|-------------|
@@ -60,6 +39,8 @@ A modern, high-performance forum platform built with Turborepo monorepo architec
 | **api** | Fastify | 7100 | Backend API service |
 | **postgres** | PostgreSQL 16 | 5432 | Main database |
 | **redis** | Redis 7 | 6379 | Cache service |
+
+For detailed architecture diagrams and service dependencies, see [Docker Deployment Guide](./DOCKER_DEPLOY.md#系统架构).
 
 ## 🚀 Quick Start
 
@@ -69,72 +50,31 @@ A modern, high-performance forum platform built with Turborepo monorepo architec
 - **Docker Compose**: 2.0+
 - **Make**: (optional, for simplified commands)
 
-### Method 1: Auto Deploy Script (Recommended)
+### One-Click Deployment (Recommended)
 
 ```bash
 # Run the automated deployment script
 ./deploy.sh
-
-# Interactive environment selection:
-# 1) Standard Production (Production - 2C4G+) [Recommended]
-# 2) Low Memory Environment (Low Memory - 1C1G/1C2G)
-# 3) Basic Environment (Basic - for testing)
 ```
 
-The script will:
-- Select deployment environment (3 configuration options available)
-- Check Docker environment
-- Initialize `.env` file
-- Validate configuration (mandatory security checks for production)
-- Build images
-- Start services
-- Initialize database
+The script supports three environment configurations:
+- **Standard Production** (2C4G+) - Memory: API 768M, Web 768M
+- **Low Memory** (1C1G/1C2G) - Memory: API 512M, Web 512M
+- **Basic** (for testing) - No resource limits
 
-**Environment Overview**:
-- **Standard Production**: Memory config API 768M, Web 768M, suitable for 2C4G+ servers
-- **Low Memory**: Memory config API 512M, Web 512M, suitable for 1C1G/1C2G servers
-- **Basic**: No resource limits, for local testing only
+For detailed deployment steps and configuration, see [Docker Deployment Guide](./DOCKER_DEPLOY.md#快速开始).
 
-### Method 2: Using Makefile
-
-```bash
-# Initialize environment
-make init
-
-# Edit .env file (IMPORTANT!)
-vi .env
-
-# Start all services (default: development)
-make up
-
-# Or start production environment
-ENV=prod make up
-
-# Initialize database
-make db-push
-make seed
-
-# View logs
-make logs
-
-# Check service health
-make health
-```
-
-### Method 3: Using Docker Compose
+### Manual Deployment
 
 ```bash
 # 1. Copy environment file
 cp .env.docker.example .env
 
-# 2. Edit configuration
+# 2. Edit configuration (IMPORTANT!)
 vi .env
 
-# 3. Start services (development)
+# 3. Start services
 docker compose up -d
-
-# Or start production environment
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 # 4. Initialize database
 docker compose exec api npm run db:push
@@ -156,6 +96,8 @@ JWT_SECRET=generated_secure_jwt_secret
 CORS_ORIGIN=https://yourdomain.com  # Production only
 ```
 
+For complete environment variable documentation, see [Docker Deployment Guide](./DOCKER_DEPLOY.md#环境配置).
+
 ## 🌐 Access Points
 
 After deployment, access:
@@ -170,69 +112,33 @@ After deployment, access:
 
 ```bash
 make help              # Show all available commands
-
-# Container Management (default: development)
 make up                # Start all services
 make down              # Stop all services
-make restart           # Restart all services
-make build             # Rebuild images
-make ps                # Show container status
-
-# Production Environment (add ENV=prod)
-ENV=prod make up       # Start production services
-ENV=prod make logs     # View production logs
-ENV=prod make db-push  # Push production database schema
-
-# Logs
 make logs              # View all logs
-make logs-api          # View API logs
-make logs-web          # View Web logs
-
-# Database Operations
 make db-push           # Push database schema
-make db-generate       # Generate migrations
-make db-migrate        # Run migrations
-make db-studio         # Open Drizzle Studio
 make seed              # Initialize seed data
-make seed-reset        # Reset and reseed data
-
-# Container Access
-make exec-api          # Enter API container
-make exec-web          # Enter Web container
-make exec-db           # Enter PostgreSQL
-make exec-redis        # Enter Redis
-
-# Health & Cleanup
 make health            # Check service health
-make clean             # Remove containers and networks
-make clean-all         # Remove everything including volumes (DANGER!)
+
+# Production environment
+ENV=prod make up       # Start production services
 ```
 
 ### Using Docker Compose
 
 ```bash
-# Start/Stop
-docker compose up -d
-docker compose down
-docker compose restart
-
-# Logs
-docker compose logs -f
-docker compose logs -f api
-
-# Rebuild
-docker compose build --no-cache
-docker compose up -d --build
-
-# Status
-docker compose ps
+docker compose up -d           # Start services
+docker compose down            # Stop services
+docker compose logs -f         # View logs
+docker compose ps              # Show status
 ```
+
+For complete command reference, see [Docker Deployment Guide](./DOCKER_DEPLOY.md#常用命令).
 
 ## 🛠️ Development Setup (Without Docker)
 
 ### Prerequisites
 - Node.js >= 22
-- pnpm >= 9.0.0
+- pnpm >= 10.0.0
 - PostgreSQL
 - Redis
 
@@ -243,13 +149,8 @@ docker compose ps
 pnpm install
 
 # 2. Configure environment
-cd apps/api
-cp .env.example .env
-# Edit .env with your database and Redis credentials
-
-cd ../web
-cp .env.example .env
-# Edit .env with API URL
+cd apps/api && cp .env.example .env
+cd ../web && cp .env.example .env
 
 # 3. Setup database
 cd ../api
@@ -260,8 +161,7 @@ pnpm seed
 cd ../..
 pnpm dev
 
-# API will run on port 7100
-# Web will run on port 3100
+# API: port 7100 | Web: port 3100
 ```
 
 ## 📦 Project Structure
@@ -276,13 +176,11 @@ nodebbs/
 │   │   │   ├── db/          # Database schemas
 │   │   │   └── utils/       # Utilities
 │   │   ├── Dockerfile
-│   │   ├── .dockerignore
 │   │   └── package.json
 │   └── web/                 # Next.js frontend
 │       ├── app/             # Next.js App Router
 │       ├── components/      # React components
 │       ├── Dockerfile
-│       ├── .dockerignore
 │       └── package.json
 ├── packages/                # Shared packages (future)
 ├── scripts/                 # Deployment scripts
@@ -298,116 +196,47 @@ nodebbs/
 
 ## 🚀 Production Deployment
 
-### 1. Prepare Environment
+### Quick Deploy
 
 ```bash
-# Clone repository
-git clone <repository-url>
-cd nodebbs
-
-# Initialize environment
-cp .env.docker.example .env
-vi .env  # Configure production settings
-```
-
-### 2. Configure Nginx (Recommended)
-
-Copy and modify `nginx.conf.example`:
-
-```bash
-cp nginx.conf.example /etc/nginx/sites-available/nodebbs
-# Edit the file with your domain and SSL certificates
-sudo ln -s /etc/nginx/sites-available/nodebbs /etc/nginx/sites-enabled/
-sudo nginx -t && sudo nginx -s reload
-```
-
-### 3. Deploy with Docker
-
-**Method 1: Using deploy.sh (Recommended)**
-```bash
-# Run deployment script
 ./deploy.sh
-
-# Select: 1) Standard Production (Production - 2C4G+)
-# Or: 2) Low Memory Environment (Low Memory - 1C1G/1C2G)
+# Select: 1) Standard Production or 2) Low Memory
 ```
 
-**Method 2: Using Makefile**
-```bash
-# Start production environment
-ENV=prod make up
+### Deployment Recommendations
 
-# Initialize database
-ENV=prod make db-push
-ENV=prod make seed
-```
+1. **Configure Nginx reverse proxy** - Provide SSL/HTTPS support
+2. **Setup database backups** - Regular data backups
+3. **Configure firewall** - Only open necessary ports
+4. **Monitor service health** - Use `make health` to check
 
-**Method 3: Manual Deployment**
-```bash
-# Use production configuration
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-make db-push
-make seed
-```
+For detailed production configuration (Nginx, SSL, firewall, monitoring, etc.), see [Docker Deployment Guide](./DOCKER_DEPLOY.md#生产环境部署docker-compose).
 
-**Production Environment Features**:
-- ✅ Database and Redis ports not exposed (secure)
-- ✅ Resource limits enabled (CPU/memory)
-- ✅ Log management configured (size and count limits)
-- ✅ Automatic restart policy
-- ✅ Production-grade Redis optimizations
-
-### 4. Setup Database Backups
+### Database Backup
 
 ```bash
-# Backup database
+# Backup
 docker compose exec postgres pg_dump -U postgres nodebbs > backup_$(date +%Y%m%d).sql
 
-# Restore database
-docker compose exec -T postgres psql -U postgres nodebbs < backup_20241110.sql
+# Restore
+docker compose exec -T postgres psql -U postgres nodebbs < backup.sql
 ```
 
 ## 🔍 Troubleshooting
 
-### View Service Logs
+For issues, see [Docker Deployment Guide - Troubleshooting](./DOCKER_DEPLOY.md#故障排查) for detailed solutions.
+
+Common diagnostic commands:
+
 ```bash
-make logs
-docker compose logs -f [service_name]
-```
-
-### Check Service Health
-```bash
-make health
-docker compose ps
-```
-
-### Restart Specific Service
-```bash
-docker compose restart api
-docker compose restart web
-```
-
-### Database Connection Issues
-```bash
-# Check database status
-docker compose exec postgres pg_isready
-
-# Access database
-make exec-db
-```
-
-### Redis Connection Issues
-```bash
-# Check Redis status
-docker compose exec redis redis-cli ping
-
-# Access Redis
-make exec-redis
+make health                    # Check service health
+docker compose logs -f api     # View API logs
+docker compose ps              # Show container status
 ```
 
 ## 📚 Documentation
 
-- [Docker Deployment Guide](./DOCKER_DEPLOY.md) - Detailed deployment instructions
+- **[Docker Deployment Guide](./DOCKER_DEPLOY.md)** - Complete deployment instructions, configuration details, troubleshooting
 
 ## 🤝 Contributing
 
@@ -427,5 +256,4 @@ MIT
 
 For issues and questions:
 - Open an issue on GitHub
-- Check existing documentation in `/docs`
-- Review `DOCKER_DEPLOY.md` for deployment issues
+- Check [Docker Deployment Guide](./DOCKER_DEPLOY.md) for deployment issues
