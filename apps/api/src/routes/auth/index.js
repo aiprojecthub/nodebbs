@@ -247,12 +247,9 @@ export default async function authRoutes(fastify, options) {
         await markInvitationCodeAsUsed(invitationCode.trim(), newUser.id);
       }
 
-      // Generate JWT token
+      // Generate JWT token (只包含用户ID，其他信息从数据库实时获取)
       const token = fastify.jwt.sign({
         id: newUser.id,
-        username: newUser.username,
-        email: newUser.email,
-        role: newUser.role,
       });
 
       // Remove sensitive data
@@ -340,12 +337,9 @@ export default async function authRoutes(fastify, options) {
         .set({ lastSeenAt: new Date() })
         .where(eq(users.id, user.id));
 
-      // Generate JWT token
+      // Generate JWT token (只包含用户ID，其他信息从数据库实时获取)
       const token = fastify.jwt.sign({
         id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
       });
 
       // Remove sensitive data

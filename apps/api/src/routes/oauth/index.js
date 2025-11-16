@@ -984,12 +984,9 @@ async function handleOAuthLogin(
     throw new Error('账号已被封禁');
   }
 
-  // 生成 JWT token
+  // 生成 JWT token (只包含用户ID，其他信息从数据库实时获取)
   const token = fastify.jwt.sign({
     id: user.id,
-    username: user.username,
-    email: user.email,
-    role: user.role,
   });
 
   return {

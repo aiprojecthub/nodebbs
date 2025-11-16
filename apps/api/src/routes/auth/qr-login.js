@@ -217,12 +217,9 @@ export default async function qrLoginRoutes(fastify, options) {
         return reply.code(404).send({ error: '用户不存在' });
       }
 
-      // 生成Web端JWT token
+      // 生成Web端JWT token (只包含用户ID，其他信息从数据库实时获取)
       const token = fastify.jwt.sign({
         id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
       });
 
       // 更新登录请求状态
