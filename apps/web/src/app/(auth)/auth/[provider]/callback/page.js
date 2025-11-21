@@ -5,6 +5,7 @@ import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { authApi } from '@/lib/api';
 import { toast } from 'sonner';
+import { Loading } from '@/components/common/Loading';
 
 /**
  * OAuth 回调页面（动态路由）
@@ -59,7 +60,7 @@ export default function OAuthCallback() {
 
       try {
         setStatus('processing');
-        
+
         // 根据不同的提供商调用对应的回调 API
         let result;
         switch (provider) {
@@ -80,8 +81,10 @@ export default function OAuthCallback() {
           setStatus('success');
           // OAuth 回调已经在 authApi 中设置了 token，这里只需要设置用户状态
           updateUser(result.user);
-          toast.success(`欢迎回来，${result.user.name || result.user.username}！`);
-          
+          toast.success(
+            `欢迎回来，${result.user.name || result.user.username}！`
+          );
+
           // 延迟跳转，让用户看到成功提示
           setTimeout(() => router.push('/'), 500);
         } else {
@@ -90,17 +93,18 @@ export default function OAuthCallback() {
       } catch (err) {
         console.error(`${provider} callback error:`, err);
         setStatus('error');
-        
+
         // 提取友好的错误消息
         let errorMsg = err.message || `${getProviderName(provider)} 登录失败`;
-        
+
         // 处理特定的错误消息
         if (errorMsg.includes('已关闭用户注册')) {
-          errorMsg = '系统当前已关闭新用户注册，如果您已有账号，请使用邮箱密码登录';
+          errorMsg =
+            '系统当前已关闭新用户注册，如果您已有账号，请使用邮箱密码登录';
         } else if (errorMsg.includes('账号已被封禁')) {
           errorMsg = '您的账号已被封禁，如有疑问请联系管理员';
         }
-        
+
         setErrorMessage(errorMsg);
         toast.error(errorMsg);
         setTimeout(() => router.push('/'), 3000); // 延长到3秒，让用户看清错误消息
@@ -113,40 +117,55 @@ export default function OAuthCallback() {
   }, []); // 只在组件挂载时执行一次
 
   return (
-    <div className="flex items-center justify-center mt-40">
-      <div className="text-center space-y-4 max-w-md px-4">
+    <div className='flex items-center justify-center mt-40'>
+      <div className='text-center space-y-4 max-w-md px-4'>
         {status === 'processing' && (
-          <>
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p className="text-muted-foreground">
-              正在通过 {getProviderName(provider)} 登录...
-            </p>
-          </>
+          <Loading text={`正在通过 ${getProviderName(provider)} 登录...`} />
         )}
-        
+
         {status === 'success' && (
           <>
-            <div className="rounded-full h-12 w-12 bg-green-100 dark:bg-green-900 flex items-center justify-center mx-auto">
-              <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            <div className='rounded-full h-12 w-12 bg-green-100 dark:bg-green-900 flex items-center justify-center mx-auto'>
+              <svg
+                className='h-6 w-6 text-green-600 dark:text-green-400'
+                fill='none'
+                viewBox='0 0 24 24'
+                stroke='currentColor'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M5 13l4 4L19 7'
+                />
               </svg>
             </div>
-            <p className="text-muted-foreground">登录成功！</p>
+            <p className='text-muted-foreground'>登录成功！</p>
           </>
         )}
-        
+
         {status === 'error' && (
           <>
-            <div className="rounded-full h-12 w-12 bg-red-100 dark:bg-red-900 flex items-center justify-center mx-auto">
-              <svg className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <div className='rounded-full h-12 w-12 bg-red-100 dark:bg-red-900 flex items-center justify-center mx-auto'>
+              <svg
+                className='h-6 w-6 text-red-600 dark:text-red-400'
+                fill='none'
+                viewBox='0 0 24 24'
+                stroke='currentColor'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M6 18L18 6M6 6l12 12'
+                />
               </svg>
             </div>
-            <p className="text-muted-foreground font-medium">登录失败</p>
+            <p className='text-muted-foreground font-medium'>登录失败</p>
             {errorMessage && (
-              <p className="text-sm text-muted-foreground">{errorMessage}</p>
+              <p className='text-sm text-muted-foreground'>{errorMessage}</p>
             )}
-            <p className="text-xs text-muted-foreground">正在返回首页...</p>
+            <p className='text-xs text-muted-foreground'>正在返回首页...</p>
           </>
         )}
       </div>
@@ -171,7 +190,7 @@ function getProviderName(provider) {
  */
 function getErrorMessage(error, provider) {
   const providerName = getProviderName(provider);
-  
+
   const errorMessages = {
     access_denied: `您拒绝了 ${providerName} 授权`,
     invalid_request: '授权请求无效',
@@ -181,6 +200,6 @@ function getErrorMessage(error, provider) {
     server_error: `${providerName} 服务器错误`,
     temporarily_unavailable: `${providerName} 服务暂时不可用`,
   };
-  
+
   return errorMessages[error] || `${providerName} 登录失败: ${error}`;
 }
