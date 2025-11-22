@@ -150,6 +150,11 @@ export default async function topicRoutes(fastify, options) {
         conditions.push(eq(topics.approvalStatus, 'approved'));
       }
 
+      // 过滤已封禁用户的话题（非管理员）
+      if (!isAdmin) {
+        conditions.push(eq(users.isBanned, false));
+      }
+
       // 添加筛选条件 - 包含子孙分类
       if (categoryId) {
         const categoryIds = await getCategoryWithDescendants(categoryId);
@@ -314,6 +319,7 @@ export default async function topicRoutes(fastify, options) {
         .select({ count: sql`count(*)` })
         .from(topics)
         .innerJoin(categories, eq(topics.categoryId, categories.id))
+        .innerJoin(users, eq(topics.userId, users.id))
         .where(and(...conditions));
 
       if (tag) {

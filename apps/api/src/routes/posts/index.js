@@ -65,6 +65,7 @@ export default async function postRoutes(fastify, options) {
     
     // 判断是否为管理员模式：管理员且没有提供 topicId 或 userId
     const isAdminMode = isAdmin && !topicId && !userId;
+    const isModerator = request.user && ['moderator', 'admin'].includes(request.user.role);
 
     // 非管理员必须提供 topicId 或 userId
     if (!isAdmin && !topicId && !userId) {
@@ -78,7 +79,6 @@ export default async function postRoutes(fastify, options) {
 
     // If topicId provided, verify topic exists
     if (topicId) {
-      const isModerator = request.user && ['moderator', 'admin'].includes(request.user.role);
       const [topic] = await db.select().from(topics).where(eq(topics.id, topicId)).limit(1);
 
       if (!topic) {
@@ -188,8 +188,6 @@ export default async function postRoutes(fastify, options) {
       // 1. 管理员/版主可以看到所有状态
       // 2. 用户可以看到：已批准的回复 或 自己的回复（无论状态）
       // 3. 未登录用户只能看到已批准的回复
-      const isModerator = request.user && ['moderator', 'admin'].includes(request.user.role);
-
       if (!isModerator) {
         if (request.user) {
           // 登录用户：显示已批准的回复 或 自己的回复
@@ -205,6 +203,12 @@ export default async function postRoutes(fastify, options) {
         }
       }
       // 管理员/版主：不添加过滤条件，显示所有回复
+
+      // 过滤已封禁用户的回复（非管理员）
+      const isAdmin = request.user && request.user.role === 'admin';
+      if (!isAdmin) {
+        whereConditions.push(eq(users.isBanned, false));
+      }
     }
 
     // 添加搜索条件（所有模式通用）
@@ -358,6 +362,7 @@ export default async function postRoutes(fastify, options) {
     const [{ count }] = await db
       .select({ count: sql`count(*)` })
       .from(posts)
+      .innerJoin(users, eq(posts.userId, users.id))
       .where(and(...whereConditions));
 
     return {
