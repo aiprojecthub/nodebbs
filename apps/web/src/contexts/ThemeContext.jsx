@@ -2,30 +2,25 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
+import {
+  THEMES,
+  FONT_SIZES,
+  DEFAULT_THEME,
+  DEFAULT_FONT_SIZE,
+  STORAGE_KEYS,
+} from '@/config/theme.config';
 
 const ThemeContext = createContext(null);
 
-const THEMES = [
-  { value: 'default', label: '默认', class: '' },
-  { value: 'sunrise', label: '晨曦', class: 'sunrise' },
-  { value: 'iceblue', label: '冰蓝', class: 'iceblue' },
-];
-
-const FONT_SIZES = [
-  { value: 'compact', label: '紧凑', class: 'font-scale-compact' },
-  { value: 'normal', label: '正常', class: 'font-scale-normal' },
-  { value: 'comfortable', label: '宽松', class: 'font-scale-comfortable' },
-];
-
 export function ThemeProvider({ children }) {
-  const [themeStyle, setThemeStyle] = useState('github');
-  const [fontSize, setFontSize] = useState('normal');
+  const [themeStyle, setThemeStyle] = useState(DEFAULT_THEME);
+  const [fontSize, setFontSize] = useState(DEFAULT_FONT_SIZE);
   const [mounted, setMounted] = useState(false);
 
   // 从 localStorage 加载主题风格和字号
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme-style') || 'github';
-    const savedFontSize = localStorage.getItem('font-size') || 'normal';
+    const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME_STYLE) || DEFAULT_THEME;
+    const savedFontSize = localStorage.getItem(STORAGE_KEYS.FONT_SIZE) || DEFAULT_FONT_SIZE;
     setThemeStyle(savedTheme);
     setFontSize(savedFontSize);
     setMounted(true);
@@ -60,8 +55,8 @@ export function ThemeProvider({ children }) {
     }
 
     // 保存到 localStorage
-    localStorage.setItem('theme-style', themeStyle);
-    localStorage.setItem('font-size', fontSize);
+    localStorage.setItem(STORAGE_KEYS.THEME_STYLE, themeStyle);
+    localStorage.setItem(STORAGE_KEYS.FONT_SIZE, fontSize);
   }, [themeStyle, fontSize, mounted]);
 
   const value = {

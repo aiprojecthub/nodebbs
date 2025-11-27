@@ -4,7 +4,13 @@ import { Toaster } from 'sonner';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import ThemeScript from '@/components/theme/ThemeScript';
+import {
+  THEMES,
+  FONT_SIZES,
+  DEFAULT_THEME,
+  DEFAULT_FONT_SIZE,
+  STORAGE_KEYS,
+} from '@/config/theme.config';
 
 import Header from '@/components/forum/Header';
 import Footer from '@/components/forum/Footer';
@@ -58,10 +64,49 @@ async function AppLayout({ children }) {
 }
 
 export default function RootLayout({ children }) {
+  // 从配置中提取需要的数据
+  const themeClasses = THEMES.filter(t => t.class).map(t => t.class);
+  const fontSizeClasses = FONT_SIZES.map(f => f.class);
+
+  // 生成初始化脚本
+  const initScript = `
+    (function() {
+      try {
+        const themeStyle = localStorage.getItem('${STORAGE_KEYS.THEME_STYLE}') || '${DEFAULT_THEME}';
+        const fontSize = localStorage.getItem('${STORAGE_KEYS.FONT_SIZE}') || '${DEFAULT_FONT_SIZE}';
+        const root = document.documentElement;
+
+        // 主题风格类列表（从配置自动生成）
+        const themes = ${JSON.stringify(themeClasses)};
+        // 字号设置类列表（从配置自动生成）
+        const fontSizes = ${JSON.stringify(fontSizeClasses)};
+
+        // 移除所有可能的主题类
+        themes.forEach(theme => root.classList.remove(theme));
+
+        // 应用主题风格
+        if (themeStyle && themeStyle !== 'default') {
+          root.classList.add(themeStyle);
+        }
+
+        // 移除所有可能的字号类
+        fontSizes.forEach(fs => root.classList.remove(fs));
+
+        // 应用字号设置
+        const fontSizeClass = 'font-scale-' + fontSize;
+        if (fontSizes.includes(fontSizeClass)) {
+          root.classList.add(fontSizeClass);
+        }
+      } catch (e) {}
+    })();
+  `;
+
   return (
     <html lang='en' suppressHydrationWarning className='overflow-y-scroll'>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: initScript }} />
+      </head>
       <body className={`antialiased`}>
-        <ThemeScript />
         <ThemeProvider>
           <AuthProvider>
             <SettingsProvider>
