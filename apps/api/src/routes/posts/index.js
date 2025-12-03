@@ -881,7 +881,7 @@ export default async function postRoutes(fastify, options) {
       // Hard delete - permanently remove from database
       // First delete related data
       await db.delete(likes).where(eq(likes.postId, id));
-      
+
       // Delete replies to this post (set replyToPostId to null)
       await db.update(posts).set({
         replyToPostId: null,
@@ -891,11 +891,14 @@ export default async function postRoutes(fastify, options) {
       // Then delete the post
       await db.delete(posts).where(eq(posts.id, id));
 
-      // Update topic post count
-      await db.update(topics).set({
-        postCount: sql`${topics.postCount} - 1`,
-        updatedAt: new Date()
-      }).where(eq(topics.id, post.topicId));
+      // Update topic post count (only if not already soft deleted)
+      // If the post was already soft deleted, postCount was already decremented
+      if (!post.isDeleted) {
+        await db.update(topics).set({
+          postCount: sql`${topics.postCount} - 1`,
+          updatedAt: new Date()
+        }).where(eq(topics.id, post.topicId));
+      }
 
       return { message: '回复已永久删除' };
     } else {

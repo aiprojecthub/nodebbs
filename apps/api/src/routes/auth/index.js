@@ -3,13 +3,6 @@ import { users } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { getSetting } from '../../utils/settings.js';
 import {
-  createEmailVerification,
-  createPasswordReset,
-  verifyToken,
-  deleteVerification,
-  VerificationType,
-} from '../../utils/verification.js';
-import {
   createVerificationCode,
   verifyCode,
   deleteVerificationCode,

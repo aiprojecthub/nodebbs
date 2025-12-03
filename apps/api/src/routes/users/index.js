@@ -81,26 +81,6 @@ export default async function userRoutes(fastify, options) {
       isEmailVerified
     }).returning();
 
-    // 如果需要发送欢迎邮件
-    // if (!isEmailVerified) {
-    //   try {
-    //     const { createEmailVerification } = await import('../../utils/verification.js');
-    //     const verificationToken = await createEmailVerification(email, newUser.id);
-
-    //     await fastify.sendEmail({
-    //       to: email,
-    //       template: 'welcome',
-    //       data: {
-    //         username: newUser.username,
-    //         verificationLink: `${process.env.APP_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`,
-    //       },
-    //     });
-    //     fastify.log.info(`[管理员创建用户] 欢迎邮件已发送至 ${email}`);
-    //   } catch (error) {
-    //     fastify.log.error(`[管理员创建用户] 发送欢迎邮件失败: ${error.message}`);
-    //   }
-    // }
-
     // Remove sensitive data
     delete newUser.passwordHash;
 
