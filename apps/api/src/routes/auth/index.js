@@ -10,6 +10,17 @@ import {
   VerificationType,
 } from '../../utils/verification.js';
 import {
+  createVerificationCode,
+  verifyCode,
+  deleteVerificationCode,
+} from '../../utils/verificationCode.js';
+import {
+  VerificationCodeType,
+  VerificationChannel,
+  UserValidation,
+  getVerificationCodeConfig,
+} from '../../config/verificationCode.js';
+import {
   validateUsername,
   normalizeUsername,
 } from '../../utils/validateUsername.js';
@@ -699,6 +710,327 @@ export default async function authRoutes(fastify, options) {
       }
 
       return { message: '验证邮件已发送，请查收' };
+    }
+  );
+
+  // ============ 验证码相关接口 ============
+
+  // Send verification code
+  fastify.post(
+    '/send-code',
+    {
+      preHandler: [fastify.optionalAuth],
+      schema: {
+        tags: ['auth'],
+        description: '发送验证码（根据类型自动选择邮件或短信渠道）',
+        body: {
+          type: 'object',
+          required: ['identifier', 'type'],
+          properties: {
+            identifier: {
+              type: 'string',
+              description: '标识符（邮箱或手机号，根据 type 决定）',
+            },
+            type: {
+              type: 'string',
+              enum: Object.values(VerificationCodeType),
+              description: '验证码类型（类型决定发送渠道）',
+            },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              message: { type: 'string' },
+              expiresIn: { type: 'number', description: '过期时间（分钟）' },
+              channel: { type: 'string', description: '发送渠道' },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { identifier, type } = request.body;
+
+      try {
+        // 获取验证码配置
+        const config = getVerificationCodeConfig(type);
+        if (!config) {
+          return reply.code(400).send({ error: '无效的验证码类型' });
+        }
+
+        // 检查是否需要认证
+        if (config.requireAuth && !request.user) {
+          return reply.code(401).send({ error: '需要登录后才能执行此操作' });
+        }
+
+        // 根据渠道验证标识符格式
+        const isEmailChannel = config.channel === VerificationChannel.EMAIL;
+        const isSmsChannel = config.channel === VerificationChannel.SMS;
+
+        if (isEmailChannel) {
+          // 邮件渠道：验证邮箱格式
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(identifier)) {
+            return reply.code(400).send({ error: '请输入有效的邮箱地址' });
+          }
+        } else if (isSmsChannel) {
+          // 短信渠道：验证手机号格式（中国大陆）
+          const phoneRegex = /^1[3-9]\d{9}$/;
+          if (!phoneRegex.test(identifier)) {
+            return reply
+              .code(400)
+              .send({ error: '请输入有效的手机号（仅支持中国大陆手机号）' });
+          }
+        }
+
+        // 根据配置的用户验证规则进行验证
+        let user = null;
+
+        if (config.userValidation === UserValidation.MUST_EXIST) {
+          // 用户必须存在（登录、密码重置、更换账号）
+          const [existingUser] = await db
+            .select()
+            .from(users)
+            .where(
+              isEmailChannel
+                ? eq(users.email, identifier)
+                : eq(users.phone, identifier)
+            )
+            .limit(1);
+
+          // 为了防止账号枚举，即使用户不存在也返回成功
+          if (!existingUser) {
+            fastify.log.warn(
+              `[发送验证码] 标识符不存在但返回成功消息以防止枚举: ${identifier}`
+            );
+            return {
+              message: '验证码已发送',
+              expiresIn: config.expiryMinutes,
+              channel: config.channel,
+            };
+          }
+
+          user = existingUser;
+
+          // 如果需要认证且用户存在，额外检查所有权（更换账号场景）
+          if (config.requireAuth && user.id !== request.user.id) {
+            return reply.code(403).send({
+              error: `该${isEmailChannel ? '邮箱' : '手机号'}不属于您`,
+            });
+          }
+        } else if (config.userValidation === UserValidation.MUST_NOT_EXIST) {
+          // 用户必须不存在（注册）
+          const [existingUser] = await db
+            .select()
+            .from(users)
+            .where(
+              isEmailChannel
+                ? eq(users.email, identifier)
+                : eq(users.phone, identifier)
+            )
+            .limit(1);
+
+          if (existingUser) {
+            return reply.code(400).send({
+              error: `该${isEmailChannel ? '邮箱' : '手机号'}已被注册`,
+            });
+          }
+        } else {
+          // 未设置 userValidation（绑定账号、敏感操作）
+          // 对于绑定账号场景，检查标识符是否被其他用户占用
+          if (config.requireAuth) {
+            const [existingUser] = await db
+              .select()
+              .from(users)
+              .where(
+                isEmailChannel
+                  ? eq(users.email, identifier)
+                  : eq(users.phone, identifier)
+              )
+              .limit(1);
+
+            if (existingUser && existingUser.id !== request.user.id) {
+              return reply.code(400).send({
+                error: `该${isEmailChannel ? '邮箱' : '手机号'}已被其他用户使用`,
+              });
+            }
+          }
+        }
+
+        // 创建验证码（会自动检查频率限制）
+        const { code, expiresAt } = await createVerificationCode(
+          identifier,
+          type,
+          user?.id || request.user?.id
+        );
+
+        // 根据配置的渠道发送验证码
+        try {
+          if (config.channel === VerificationChannel.EMAIL) {
+            // ========== 邮件渠道 ==========
+            // 检查邮件服务是否配置
+            const emailProvider = await fastify.getDefaultEmailProvider();
+            if (!emailProvider || !emailProvider.isEnabled) {
+              fastify.log.error(`[发送验证码] 邮件服务未配置或未启用`);
+              return reply
+                .code(503)
+                .send({ error: '邮件服务暂不可用，请稍后重试' });
+            }
+
+            // 发送邮件验证码
+            await fastify.sendEmail({
+              to: identifier,
+              template: config.template,
+              data: {
+                code,
+                type: config.description,
+                expiryMinutes: config.expiryMinutes,
+                identifier,
+              },
+            });
+
+            fastify.log.info(
+              `[发送验证码] 邮件已发送至 ${identifier}, 类型: ${config.description}`
+            );
+          } else if (config.channel === VerificationChannel.SMS) {
+            // ========== 短信渠道 ==========
+            // TODO: 集成短信服务
+            // 推荐服务商：
+            // - 阿里云短信：https://help.aliyun.com/product/44282.html
+            // - 腾讯云短信：https://cloud.tencent.com/product/sms
+            //
+            // 示例代码：
+            // await sendSMS({
+            //   phone: identifier,
+            //   code: code,
+            //   template: config.template
+            // });
+
+            fastify.log.warn(
+              `[发送验证码] 短信服务暂未实现，验证码: ${code}, 手机号: ${identifier}, 模板: ${config.template}`
+            );
+
+            // 开发环境下返回验证码（生产环境删除此段）
+            if (process.env.NODE_ENV === 'development') {
+              return {
+                message: `验证码已生成（开发模式）: ${code}`,
+                expiresIn: config.expiryMinutes,
+                channel: config.channel,
+                _devCode: code, // 仅开发环境
+                _template: config.template,
+              };
+            }
+
+            return reply.code(501).send({ error: '短信服务暂未开通' });
+          }
+        } catch (error) {
+          fastify.log.error(`[发送验证码] 发送失败: ${error.message}`);
+          // 开发环境下，在日志中显示验证码
+          if (process.env.NODE_ENV === 'development') {
+            fastify.log.info(
+              `[发送验证码] 验证码: ${code}, 过期时间: ${expiresAt}`
+            );
+          }
+          return reply.code(500).send({ error: '发送验证码失败，请稍后重试' });
+        }
+
+        return {
+          message: `验证码已发送，请查收${
+            config.channel === VerificationChannel.EMAIL ? '邮件' : '短信'
+          }`,
+          expiresIn: config.expiryMinutes,
+          channel: config.channel,
+        };
+      } catch (error) {
+        // 处理频率限制错误
+        if (error.message.includes('发送过于频繁')) {
+          return reply.code(429).send({ error: error.message });
+        }
+
+        fastify.log.error(`[发送验证码] 错误: ${error.message}`);
+        return reply.code(500).send({ error: '发送验证码失败，请稍后重试' });
+      }
+    }
+  );
+
+  // Verify code 仅校验，不参与业务逻辑
+  // 业务逻辑: 校验验证码 -> 处理业务逻辑 -> 删除验证码
+  fastify.post(
+    '/verify-code',
+    {
+      preHandler: [fastify.optionalAuth],
+      schema: {
+        tags: ['auth'],
+        description: '校验验证码',
+        body: {
+          type: 'object',
+          required: ['identifier', 'code', 'type'],
+          properties: {
+            identifier: {
+              type: 'string',
+              description: '标识符（邮箱或手机号）',
+            },
+            code: { type: 'string', minLength: 4, maxLength: 8 },
+            type: {
+              type: 'string',
+              enum: Object.values(VerificationCodeType),
+              description: '验证码类型',
+            },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              valid: { type: 'boolean' },
+              message: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { identifier, code, type } = request.body;
+
+      try {
+        // 获取验证码配置
+        const config = getVerificationCodeConfig(type);
+        if (!config) {
+          return reply.code(400).send({ error: '无效的验证码类型' });
+        }
+
+        // 检查是否需要认证
+        if (config.requireAuth && !request.user) {
+          return reply.code(401).send({ error: '需要登录后才能执行此操作' });
+        }
+
+        // 验证验证码
+        const result = await verifyCode(identifier, code, type);
+
+        if (!result.valid) {
+          return reply.code(400).send({
+            valid: false,
+            message: result.error || '验证码错误',
+          });
+        }
+
+        // 根据不同类型执行不同的后续操作
+        let response = {
+          valid: true,
+          message: '验证成功',
+        };
+
+        fastify.log.info(
+          `[验证码校验] 成功 - 标识符: ${identifier}, 类型: ${config.description}`
+        );
+
+        return response;
+      } catch (error) {
+        fastify.log.error(`[验证码校验] 错误: ${error.message}`);
+        return reply.code(500).send({ error: '验证失败，请稍后重试' });
+      }
     }
   );
 }
