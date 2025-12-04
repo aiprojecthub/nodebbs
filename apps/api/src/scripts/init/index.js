@@ -24,6 +24,7 @@ import {
 import { initOAuthProviders, listOAuthProviders } from './oauth.js';
 import { initInvitationRules, listInvitationRules } from './invitation.js';
 import { initEmailProviders, listEmailProviders } from './email.js';
+import { initCreditConfigs, listCreditConfigs } from './credits.js';
 
 const { Pool } = pg;
 
@@ -57,6 +58,7 @@ function showHelp() {
   - 初始化 OAuth 提供商配置（GitHub、Google、Apple）
   - 初始化邮件服务提供商配置（SMTP、SendGrid、Resend、阿里云）
   - 初始化邀请规则配置（user、vip、moderator、admin）
+  - 初始化积分系统配置（系统开关、获取规则、消费规则）
 
 示例:
   # 添加缺失的配置（不覆盖现有配置）
@@ -78,6 +80,7 @@ function listAllSettings() {
   listOAuthProviders();
   listEmailProviders();
   listInvitationRules();
+  listCreditConfigs();
 }
 
 /**
@@ -104,6 +107,9 @@ async function initAllSettings(reset = false) {
 
     // 4. 初始化邀请规则配置
     const invitationResult = await initInvitationRules(db, reset);
+
+    // 5. 初始化积分系统配置
+    const creditsResult = await initCreditConfigs(db, reset);
 
     // 显示统计信息
     console.log('\n' + '='.repeat(80));
@@ -148,6 +154,16 @@ async function initAllSettings(reset = false) {
       console.log(`  - 跳过: ${invitationResult.skippedCount} 个规则（已存在）`);
     }
     console.log(`  - 总计: ${invitationResult.total} 个规则\n`);
+
+    // 积分系统配置统计
+    console.log(`积分系统配置统计:`);
+    if (reset) {
+      console.log(`  - 重置: ${creditsResult.updatedCount} 个配置`);
+    } else {
+      console.log(`  - 新增: ${creditsResult.addedCount} 个配置`);
+      console.log(`  - 跳过: ${creditsResult.skippedCount} 个配置（已存在）`);
+    }
+    console.log(`  - 总计: ${creditsResult.total} 个配置\n`);
 
     // 显示按分类的统计
     console.log('系统设置按分类统计:');

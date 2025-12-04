@@ -12,6 +12,9 @@ import {
   Mail,
   ShieldOff,
   Gift,
+  Coins,
+  ShoppingCart,
+  Package,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
@@ -47,6 +50,21 @@ export default function ProfileSidebar() {
       href: '/profile/favorites',
       icon: Star,
       label: '我的收藏',
+    },
+    {
+      href: '/profile/credits',
+      icon: Coins,
+      label: '积分中心',
+    },
+    {
+      href: '/profile/shop',
+      icon: ShoppingCart,
+      label: '积分商城',
+    },
+    {
+      href: '/profile/items',
+      icon: Package,
+      label: '我的道具',
     },
     {
       href: '/profile/replies',

@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select';
 import { useSettings } from '@/contexts/SettingsContext';
 import { toast } from 'sonner';
-import { Settings, ToggleLeft, Gauge, Layers, Mail } from 'lucide-react';
+import { Settings, ToggleLeft, Gauge, Layers, Mail, Coins } from 'lucide-react';
 import { Loading } from '@/components/common/Loading';
 
 // 导入组件
@@ -20,6 +20,7 @@ import { FeatureSettings } from './components/FeatureSettings';
 import { OAuthSettings } from './components/OAuthProviderCard';
 import { EmailSettings } from './components/EmailProviderCard';
 import { RateLimitSettings } from './components/RateLimitSettings';
+import { CreditSystemSettings } from './components/CreditSystemSettings';
 
 // Tab 配置
 const tabItems = [
@@ -52,6 +53,12 @@ const tabItems = [
     label: '访问限速',
     shortLabel: '限速',
     icon: Gauge,
+  },
+  {
+    value: 'credits',
+    label: '积分系统',
+    shortLabel: '积分',
+    icon: Coins,
   },
 ];
 
@@ -196,6 +203,11 @@ export default function SystemSettingsPage() {
             handleNumberChange={handleNumberChange}
             saving={saving}
           />
+        </TabsContent>
+
+        {/* 积分系统 Tab */}
+        <TabsContent value='credits'>
+          <CreditSystemSettings />
         </TabsContent>
       </Tabs>
     </div>

@@ -668,6 +668,28 @@ export default async function topicRoutes(fastify, options) {
         }
       }
 
+      // 积分奖励：发布话题后发放积分（仅当不需要审核或已批准时）
+      if (approvalStatus === 'approved') {
+        try {
+          const { grantCredits, getCreditConfig, isCreditSystemEnabled } = await import('../../services/creditService.js');
+
+          const systemEnabled = await isCreditSystemEnabled();
+          if (systemEnabled) {
+            const amount = await getCreditConfig('post_topic_amount', 5);
+            await grantCredits({
+              userId: request.user.id,
+              amount,
+              type: 'post_topic',
+              relatedTopicId: newTopic.id,
+              description: `发布话题：${title}`,
+            });
+          }
+        } catch (error) {
+          // 积分发放失败不影响话题创建
+          fastify.log.error('[积分奖励] 发布话题奖励失败:', error);
+        }
+      }
+
       const message = contentModerationEnabled
         ? '您的话题已提交，等待审核后将公开显示'
         : '话题创建成功';

@@ -1,3 +1,5 @@
+'use client';
+
 import { Calendar } from 'lucide-react';
 import UserAvatar from '@/components/forum/UserAvatar';
 import StickySidebar from '@/components/forum/StickySidebar';
@@ -6,8 +8,13 @@ import SendMessageButton from '@/components/user/SendMessageButton';
 import BlockUserButton from '@/components/user/BlockUserButton';
 import ReportUserButton from '@/components/user/ReportUserButton';
 import UserProfileClient from '@/components/user/UserProfileClient';
+import { useEquippedItems } from '@/hooks/useEquippedItems';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function UserProfileSidebar({ user }) {
+  const { avatarFrame, badges } = useEquippedItems(user.id);
+
   return (
     <div className='w-full lg:w-72 shrink-0'>
       <StickySidebar className='sticky top-[81px]' enabled={false}>
@@ -18,12 +25,40 @@ export default function UserProfileSidebar({ user }) {
               url={user.avatar}
               name={user.username}
               className='w-24 h-24'
+              frameMetadata={avatarFrame?.itemMetadata}
             />
 
             <div className='mb-4 mt-1 text-center'>
               <h1 className='text-2xl font-semibold leading-tight'>
                 {user.name || user.username}
               </h1>
+              
+              {/* 勋章展示 */}
+              {badges.length > 0 && (
+                <div className="flex flex-wrap justify-center gap-2 mt-2">
+                  <TooltipProvider>
+                    {badges.map((badge) => (
+                      <Tooltip key={badge.id}>
+                        <TooltipTrigger>
+                          <div className="relative w-6 h-6">
+                            <img 
+                              src={badge.itemImageUrl} 
+                              alt={badge.itemName} 
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="font-semibold">{badge.itemName}</p>
+                          {badge.itemDescription && (
+                            <p className="text-xs text-muted-foreground">{badge.itemDescription}</p>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
+                    ))}
+                  </TooltipProvider>
+                </div>
+              )}
             </div>
 
             {/* 关注按钮和粉丝数（客户端组件） */}

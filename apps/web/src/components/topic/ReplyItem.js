@@ -14,6 +14,7 @@ import {
   Reply,
   AlertCircle,
   Clock,
+  Coins,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -25,6 +26,7 @@ import {
 import UserAvatar from '@/components/forum/UserAvatar';
 import TimeAgo from '@/components/forum/TimeAgo';
 import ReportDialog from '@/components/moderation/ReportDialog';
+import { RewardDialog } from '@/components/credits/RewardDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { postApi } from '@/lib/api';
 import { toast } from 'sonner';
@@ -38,6 +40,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded }) {
   const [replyToContent, setReplyToContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [rewardDialogOpen, setRewardDialogOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState({
     type: '',
     id: 0,
@@ -332,6 +335,25 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded }) {
                 )}
               </Button>
 
+              {/* 打赏按钮 */}
+              {!isOwnReply && canInteract && (
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      openLoginDialog();
+                      return;
+                    }
+                    setRewardDialogOpen(true);
+                  }}
+                  className='h-7 px-2 text-muted-foreground/60 hover:text-yellow-600 hover:bg-muted/50'
+                  title='打赏'
+                >
+                  <Coins className='h-3.5 w-3.5' />
+                </Button>
+              )}
+
               {/* 更多操作 */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -476,6 +498,20 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded }) {
         reportType={reportTarget.type}
         targetId={reportTarget.id}
         targetTitle={reportTarget.title}
+      />
+
+      {/* 打赏对话框 */}
+      <RewardDialog
+        open={rewardDialogOpen}
+        onOpenChange={setRewardDialogOpen}
+        postId={localReply.id}
+        postAuthor={localReply.userName || localReply.userUsername}
+        onSuccess={() => {
+          // 打赏成功后可以刷新打赏列表（如果有的话）
+          if (typeof window !== 'undefined' && window.__refreshRewards) {
+            window.__refreshRewards();
+          }
+        }}
       />
     </>
   );

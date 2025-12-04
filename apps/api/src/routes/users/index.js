@@ -1,5 +1,5 @@
 import db from '../../db/index.js';
-import { users, topics, posts, follows, bookmarks, categories } from '../../db/schema.js';
+import { users, topics, posts, follows, bookmarks, categories, userItems, shopItems } from '../../db/schema.js';
 import { eq, sql, desc, and, ne } from 'drizzle-orm';
 import { pipeline } from 'stream/promises';
 import fs from 'fs';
@@ -242,6 +242,27 @@ export default async function userRoutes(fastify, options) {
       isFollowing = !!follow;
     }
 
+    // Get equipped items (avatar frame and badges)
+    const equippedItems = await db
+      .select({
+        id: userItems.id,
+        itemType: shopItems.type,
+        itemName: shopItems.name,
+        itemMetadata: shopItems.metadata,
+      })
+      .from(userItems)
+      .innerJoin(shopItems, eq(userItems.itemId, shopItems.id))
+      .where(
+        and(
+          eq(userItems.userId, user.id),
+          eq(userItems.isEquipped, true)
+        )
+      );
+
+    // Extract avatar frame and badges
+    const avatarFrame = equippedItems.find(item => item.itemType === 'avatar_frame');
+    const badges = equippedItems.filter(item => item.itemType === 'badge');
+
     delete user.passwordHash;
     delete user.email;
 
@@ -251,7 +272,9 @@ export default async function userRoutes(fastify, options) {
       postCount: Number(postCountResult.count),
       followerCount: Number(followerCountResult.count),
       followingCount: Number(followingCountResult.count),
-      isFollowing
+      isFollowing,
+      avatarFrame: avatarFrame || null,
+      badges: badges || [],
     };
   });
 

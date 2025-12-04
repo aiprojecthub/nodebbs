@@ -13,6 +13,8 @@ import {
   Shield,
   MessageSquare,
   MessagesSquare,
+  ShoppingCart,
+  Coins,
 } from 'lucide-react';
 
 export default function DashboardSidebar() {
@@ -28,6 +30,8 @@ export default function DashboardSidebar() {
     { href: '/dashboard/moderation', icon: Shield, label: '内容审核' },
     { href: '/dashboard/invitations', icon: Shield, label: '邀请码' },
     { href: '/dashboard/invitation-rules', icon: Shield, label: '邀请码规则' },
+    { href: '/dashboard/shop', icon: ShoppingCart, label: '商城管理' },
+    { href: '/dashboard/credits', icon: Coins, label: '积分管理' },
     { href: '/dashboard/settings', icon: Settings, label: '系统配置' },
   ];
 
