@@ -1,5 +1,5 @@
 {
-  "name": "nodebbs",
+  "name": "nodebbs-forum",
   "private": true,
   "scripts": {
     "build": "turbo run build",
