@@ -24,7 +24,7 @@ import { RewardListDialog } from '@/features/credits/components/RewardListDialog
 import { creditsApi } from '@/lib/api';
 import { Coins } from 'lucide-react';
 
-export default function TopicContent({ topic }) {
+export default function TopicContent({ topic, isCreditEnabled }) {
   const { user, isAuthenticated, openLoginDialog } = useAuth();
   const [likingPostIds, setLikingPostIds] = useState(new Set());
   const [likeState, setLikeState] = useState({
@@ -239,7 +239,7 @@ export default function TopicContent({ topic }) {
           {topic.firstPostId && (
             <div className='flex items-center justify-end gap-2 mt-5 pt-4 border-t border-border/50'>
               {/* 打赏按钮 */}
-              {user?.id !== topic.userId && (
+              {(isCreditEnabled && user?.id !== topic.userId) && (
                 <Button
                   variant='ghost'
                   size='sm'
@@ -264,7 +264,7 @@ export default function TopicContent({ topic }) {
               
               {/* 如果是作者，或者有打赏记录，且不是当前用户（因为当前用户点击打赏按钮也能看到记录入口），显示查看记录按钮 */}
               {/* 修改：统一在打赏弹窗中查看记录，或者点击总金额查看 */}
-              {(user?.id === topic.userId && rewardStats.totalCount > 0) && (
+              {(isCreditEnabled && user?.id === topic.userId && rewardStats.totalCount > 0) && (
                  <Button
                   variant='ghost'
                   size='sm'

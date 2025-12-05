@@ -6,7 +6,7 @@ import StickySidebar from '@/components/forum/StickySidebar';
 import TopicContent from '@/components/topic/TopicContent';
 import ReplySection from '@/components/topic/ReplySection';
 import TopicSidebarWrapper from '@/components/topic/TopicSidebarWrapper';
-import { postApi } from '@/lib/api';
+import { postApi, creditsApi } from '@/lib/api';
 import { toast } from 'sonner';
 
 export default function TopicPageClient({
@@ -18,9 +18,23 @@ export default function TopicPageClient({
   limit,
 }) {
   const router = useRouter();
+  const [isCreditEnabled, setIsCreditEnabled] = useState(false);
 
   // 统一管理话题状态
   const [topic, setTopic] = useState(initialTopic);
+
+  // 获取积分系统状态
+  useEffect(() => {
+    const fetchCreditStatus = async () => {
+      try {
+        const { enabled } = await creditsApi.getStatus();
+        setIsCreditEnabled(enabled);
+      } catch (error) {
+        console.error('Failed to fetch credit status:', error);
+      }
+    };
+    fetchCreditStatus();
+  }, []);
 
   // 更新话题状态的回调
   const handleTopicUpdate = (updates) => {
@@ -94,7 +108,7 @@ export default function TopicPageClient({
         {/* 主要内容区域 */}
         <div className='flex-1'>
           {/* 话题内容 */}
-          <TopicContent topic={topic} />
+          <TopicContent topic={topic} isCreditEnabled={isCreditEnabled} />
 
           {/* 回复区域（列表+表单） */}
           <ReplySection
@@ -107,6 +121,7 @@ export default function TopicPageClient({
             isClosed={topic.isClosed}
             isDeleted={topic.isDeleted}
             onTopicUpdate={handleTopicUpdate}
+            isCreditEnabled={isCreditEnabled}
           />
         </div>
 

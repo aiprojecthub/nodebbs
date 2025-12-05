@@ -14,6 +14,7 @@ const ReplyList = forwardRef(function ReplyList(
     totalPages,
     currentPage,
     limit,
+    isCreditEnabled,
   },
   ref
 ) {
@@ -79,6 +80,7 @@ const ReplyList = forwardRef(function ReplyList(
           topicId={topicId}
           onDeleted={handlePostDeleted}
           onReplyAdded={handleReplyAdded}
+          isCreditEnabled={isCreditEnabled}
         />
       ))}
 

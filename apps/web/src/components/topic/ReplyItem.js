@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,7 +34,7 @@ import MarkdownRender from '../common/MarkdownRender';
 
 import { RewardListDialog } from '@/features/credits/components/RewardListDialog';
 
-export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded }) {
+export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isCreditEnabled }) {
   const { user, isAuthenticated, openLoginDialog } = useAuth();
   const [likingPostIds, setLikingPostIds] = useState(new Set());
   const [deletingPostId, setDeletingPostId] = useState(null);
@@ -71,7 +71,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded }) {
   };
 
   // 初始化获取打赏统计
-  useState(() => {
+  useEffect(() => {
     fetchRewardStats();
   }, [localReply.id]);
 
@@ -361,7 +361,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded }) {
               </Button>
 
               {/* 打赏按钮 */}
-              {!isOwnReply && canInteract && (
+              {(isCreditEnabled && !isOwnReply && canInteract) && (
                 <Button
                   variant='ghost'
                   size='sm'
@@ -385,7 +385,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded }) {
               )}
               
               {/* 如果是作者且有打赏记录，显示查看记录按钮（仅图标） */}
-              {(isOwnReply && rewardStats.totalCount > 0) && (
+              {(isCreditEnabled && isOwnReply && rewardStats.totalCount > 0) && (
                  <Button
                   variant='ghost'
                   size='sm'

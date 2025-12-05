@@ -14,6 +14,7 @@ export default function ReplySection({
   isClosed,
   isDeleted,
   onTopicUpdate,
+  isCreditEnabled,
 }) {
   const replyListRef = useRef(null);
 
@@ -35,6 +36,7 @@ export default function ReplySection({
         totalPages={totalPages}
         currentPage={currentPage}
         limit={limit}
+        isCreditEnabled={isCreditEnabled}
       />
 
       {/* 回复表单 */}
