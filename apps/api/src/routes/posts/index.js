@@ -703,26 +703,8 @@ export default async function postRoutes(fastify, options) {
     }
 
     // 积分奖励：发布回复后发放积分（仅当不需要审核或已批准时，且不是话题的第一个帖子）
-    if (approvalStatus === 'approved' && postNumber > 1) {
-      try {
-        const { grantCredits, getCreditConfig, isCreditSystemEnabled } = await import('../../services/creditService.js');
-
-        const systemEnabled = await isCreditSystemEnabled();
-        if (systemEnabled) {
-          const amount = await getCreditConfig('post_reply_amount', 2);
-          await grantCredits({
-            userId: request.user.id,
-            amount,
-            type: 'post_reply',
-            relatedTopicId: topicId,
-            relatedPostId: newPost.id,
-            description: `回复话题：${topic.title}`,
-          });
-        }
-      } catch (error) {
-        // 积分发放失败不影响回复创建
-        fastify.log.error('[积分奖励] 发布回复奖励失败:', error);
-      }
+    if (approvalStatus === 'approved' && postNumber > 1 && fastify.eventBus) {
+      fastify.eventBus.emit('post.created', newPost);
     }
 
     const message = contentModerationEnabled
@@ -1007,24 +989,12 @@ export default async function postRoutes(fastify, options) {
       }
 
       // 积分奖励：给被点赞者发放积分
-      try {
-        const { grantCredits, getCreditConfig, isCreditSystemEnabled } = await import('../../services/creditService.js');
-
-        const systemEnabled = await isCreditSystemEnabled();
-        if (systemEnabled) {
-          const amount = await getCreditConfig('receive_like_amount', 1);
-          await grantCredits({
-            userId: post.userId, // 给被点赞的用户发放积分
-            amount,
-            type: 'receive_like',
-            relatedUserId: request.user.id, // 点赞者
-            relatedPostId: id,
-            description: `帖子获得点赞`,
-          });
-        }
-      } catch (error) {
-        // 积分发放失败不影响点赞操作
-        fastify.log.error('[积分奖励] 点赞奖励失败:', error);
+      if (fastify.eventBus) {
+        fastify.eventBus.emit('post.liked', {
+          postId: id,
+          postAuthorId: post.userId,
+          userId: request.user.id
+        });
       }
     }
 

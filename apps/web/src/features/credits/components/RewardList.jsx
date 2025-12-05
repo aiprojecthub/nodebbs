@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Coins, Heart } from 'lucide-react';
 import { creditsApi } from '@/lib/api';
 import Link from 'next/link';
-import TimeAgo from '../forum/TimeAgo';
+import TimeAgo from '@/components/forum/TimeAgo';
 
 export function RewardList({ postId, className = '' }) {
   const [rewards, setRewards] = useState([]);

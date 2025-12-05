@@ -378,3 +378,94 @@ apps/web/src/components/topic/
 - ✅ Phase 4: 管理与优化（配置、统计、手动操作）
 
 系统已完全可用，可以投入生产环境！
+
+## 附录：积分系统模块化可行性分析
+
+为了提升系统的可维护性和扩展性，我们对将积分系统重构为独立可插拔插件（Plugin）的可行性进行了分析。
+
+### 1. 总体架构目标
+
+目标是将积分系统从核心代码中解耦，使其成为一个独立的模块，具备以下特性：
+- **独立目录**：所有后端代码（Schema, Routes, Services）集中在 `apps/api/src/plugins/credits`。
+- **独立前端**：前端组件和页面集中在 `apps/web/src/features/credits`（或类似目录）。
+- **松耦合**：核心系统通过"事件"或"钩子"与积分系统交互，而不是直接调用。
+- **可插拔**：可以通过配置开启/关闭，甚至通过 npm 包的形式安装/卸载。
+
+### 2. 后端模块化方案
+
+#### 2.1 数据库 Schema 解耦
+**现状**：
+- `schema.js` 中混合了核心表和积分表。
+- `usersRelations` 显式包含了积分相关的关联。
+
+**方案**：
+- 将积分相关表定义移动到 `plugins/credits/schema.js`。
+- 使用 Drizzle 的多文件 Schema 功能。
+- **难点**：`users` 表的 Relations 定义。Drizzle 目前倾向于集中定义 Relations。
+- **解决**：保持 `users` 表在核心 Schema 中，但可以通过一种注册机制（如果 Drizzle 支持动态扩展 Relations）或者接受在 `schema.js` 中保留少量"胶水代码"（即引入插件 Schema 并合并）。
+
+#### 2.2 业务逻辑解耦（Event Bus）
+**现状**：
+- `topics/index.js` 和 `posts/index.js` 直接导入并调用 `creditService`。
+
+**方案**：
+- 引入事件总线（Event Bus），例如 `fastify.events` 或 Node.js 原生 `EventEmitter`。
+- **核心层**：只负责触发事件，例如 `emit('topic.created', topic)`，不关心是否有积分系统监听。
+- **插件层**：在插件初始化时监听相关事件，例如 `on('topic.created', handleTopicReward)`。
+- **优势**：核心代码完全不需要知道积分系统的存在，实现了真正的解耦。
+
+#### 2.3 路由与插件注册
+**现状**：
+- 路由位于 `routes/credits`，通过 Autoload 加载。
+
+**方案**：
+- 将路由移动到 `plugins/credits/routes`。
+- 创建 `plugins/credits/index.js` 作为插件入口，封装路由注册、事件监听初始化等逻辑。
+- 在 `app.js` 或 `server.js` 中显式注册插件，或配置 Autoload 扫描插件目录。
+
+### 3. 前端模块化方案
+
+#### 3.1 API 客户端
+**现状**：
+- `lib/api.js` 硬编码了 `creditsApi`。
+
+**方案**：
+- 保持 `api.js` 作为核心入口，但允许"注入"扩展。
+- 或者，在 `features/credits/api.js` 中定义 `creditsApi`，在需要的地方单独导入，而不是挂载在全局 `api` 对象上。
+
+#### 3.2 组件与页面
+**现状**：
+- 页面分散在 `app/profile/credits` 等。
+- 组件分散在 `components/credits`。
+
+**方案**：
+- 采用 "Feature-based" 目录结构，将页面、组件、API、Hooks 全部移入 `apps/web/src/features/credits`。
+- Next.js 的 App Router 路由（`app/` 目录）本质上是文件系统路由，难以完全物理移动到 `features/` 目录。
+- **折衷**：保持 `app/` 目录结构用于路由定义，但页面内容（Page Content）作为组件从 `features/credits` 导入。
+
+#### 3.3 UI 集成点（插槽）
+**现状**：
+- `ReplyItem.js` 硬编码了 `<RewardDialog>` 和打赏按钮。
+
+**方案**：
+- 引入 "Slot" 或 "Extension Point" 概念。
+- 例如 `TopicFooter` 组件可以接受一个 `actions` 数组或渲染 `PluginSlots.TopicFooter`。
+- 积分插件在初始化时（或通过 Context）注入 "RewardButton" 到 `TopicFooter` 插槽中。
+- 这样核心组件就不需要硬编码具体的打赏按钮。
+
+### 4. 实施步骤建议
+
+1.  **后端事件化**：首先引入 Event Bus，将 `topic.created`, `post.created`, `post.liked` 等关键动作改为事件触发。
+2.  **移动后端代码**：建立 `plugins/credits` 目录，迁移 Service 和 Routes。
+3.  **前端目录重构**：尝试 Feature-based 结构，将积分相关组件归拢。
+4.  **Schema 分离**：尝试将 Schema 定义分离（需验证 Drizzle 的支持程度）。
+
+### 5. 结论
+
+**可行性**：高。
+**收益**：
+- 核心系统更加轻量、纯净。
+- 积分系统可以独立迭代，甚至替换为第三方服务。
+- 为未来开发其他插件（如：签到、任务、商城）建立标准模式。
+
+**推荐**：建议在下一阶段（系统重构或 V5.0）优先实施后端"事件化"改造，这是解耦的关键一步。

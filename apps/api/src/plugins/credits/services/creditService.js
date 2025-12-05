@@ -1,11 +1,11 @@
-import db from '../db/index.js';
+import db from '../../../db/index.js';
 import {
   userCredits,
   creditTransactions,
   creditSystemConfig,
   postRewards,
   users,
-} from '../db/schema.js';
+} from '../../../db/schema.js';
 import { eq, sql, desc, ilike } from 'drizzle-orm';
 
 /**

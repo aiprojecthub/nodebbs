@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,8 +19,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { postApi } from '@/lib/api';
 import { toast } from 'sonner';
 
-import { RewardDialog } from '@/components/credits/RewardDialog';
-import { RewardListDialog } from '@/components/credits/RewardListDialog';
+import { RewardDialog } from '@/features/credits/components/RewardDialog';
+import { RewardListDialog } from '@/features/credits/components/RewardListDialog';
 import { creditsApi } from '@/lib/api';
 import { Coins } from 'lucide-react';
 
@@ -56,7 +56,7 @@ export default function TopicContent({ topic }) {
   };
 
   // 初始化获取打赏统计
-  useState(() => {
+  useEffect(() => {
     fetchRewardStats();
   }, [topic.firstPostId]);
 

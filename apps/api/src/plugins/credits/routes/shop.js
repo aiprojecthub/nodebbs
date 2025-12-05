@@ -1,7 +1,7 @@
-import db from '../../db/index.js';
-import { shopItems, userItems, users } from '../../db/schema.js';
+import db from '../../../db/index.js';
+import { shopItems, userItems, users } from '../../../db/schema.js';
 import { eq, sql, and, desc } from 'drizzle-orm';
-import { deductCredits } from '../../services/creditService.js';
+import { deductCredits } from '../services/creditService.js';
 
 export default async function shopRoutes(fastify, options) {
   // ============ 用户端接口 ============

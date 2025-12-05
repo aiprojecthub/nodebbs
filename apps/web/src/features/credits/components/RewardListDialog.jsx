@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import UserAvatar from '../forum/UserAvatar';
+import UserAvatar from '@/components/forum/UserAvatar';
 import { creditsApi } from '@/lib/api';
 import { Coins, Loader2 } from 'lucide-react';
 import TimeAgo from '@/components/forum/TimeAgo';

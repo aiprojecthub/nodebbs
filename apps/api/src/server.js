@@ -19,7 +19,8 @@ export default async function (fastify, opts) {
   // through your application
   fastify.register(AutoLoad, {
     dir: path.join(__dirname, 'plugins'),
-    options: Object.assign({}, opts)
+    options: Object.assign({}, opts),
+    maxDepth: 1,
   })
 
   // This loads all plugins defined in routes

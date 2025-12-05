@@ -11,9 +11,9 @@ import {
   getCreditConfig,
   getAllTransactions,
   isCreditSystemEnabled,
-} from '../../services/creditService.js';
-import db from '../../db/index.js';
-import { posts, users, creditSystemConfig, userCredits, creditTransactions, postRewards } from '../../db/schema.js';
+} from '../services/creditService.js';
+import db from '../../../db/index.js';
+import { posts, users, creditSystemConfig, userCredits, creditTransactions, postRewards } from '../../../db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 
 export default async function creditsRoutes(fastify, options) {
