@@ -30,7 +30,10 @@ export default function ProfileSidebar() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [creditEnabled, setCreditEnabled] = useState(false);
   const [openMenus, setOpenMenus] = useState({
-    'credits-shop': true, // 默认展开
+    'content': true,
+    'messages': true,
+    'credits-shop': true,
+    'account': true,
   });
 
   useEffect(() => {
@@ -67,35 +70,44 @@ export default function ProfileSidebar() {
 
   const menuItems = [
     {
-      href: '/profile/topics',
+      key: 'content',
+      label: '内容管理',
       icon: MessageSquare,
-      label: '我的话题',
+      children: [
+        {
+          href: '/profile/topics',
+          icon: MessageSquare,
+          label: '我的话题',
+        },
+        {
+          href: '/profile/replies',
+          icon: MessageCircle,
+          label: '我的回复',
+        },
+        {
+          href: '/profile/favorites',
+          icon: Star,
+          label: '我的收藏',
+        },
+      ],
     },
     {
-      href: '/profile/favorites',
-      icon: Star,
-      label: '我的收藏',
-    },
-    {
-      href: '/profile/replies',
-      icon: MessageCircle,
-      label: '我的回复',
-    },
-    {
-      href: '/profile/messages',
+      key: 'messages',
+      label: '消息中心',
       icon: Mail,
-      label: '站内信',
-      badge: unreadCount > 0 ? unreadCount : null,
-    },
-    {
-      href: '/profile/notifications',
-      icon: Bell,
-      label: '消息通知',
-    },
-    {
-      href: '/profile/blocked',
-      icon: ShieldOff,
-      label: '拉黑用户',
+      children: [
+        {
+          href: '/profile/messages',
+          icon: Mail,
+          label: '站内信',
+          badge: unreadCount > 0 ? unreadCount : null,
+        },
+        {
+          href: '/profile/notifications',
+          icon: Bell,
+          label: '消息通知',
+        },
+      ],
     },
     ...(creditEnabled ? [{
       key: 'credits-shop',
@@ -120,14 +132,26 @@ export default function ProfileSidebar() {
       ],
     }] : []),
     {
-      href: '/profile/invitations',
-      icon: Gift,
-      label: '我的邀请码',
-    },
-    {
-      href: '/profile/settings',
+      key: 'account',
+      label: '账户管理',
       icon: Settings,
-      label: '个人设置',
+      children: [
+        {
+          href: '/profile/settings',
+          icon: Settings,
+          label: '个人设置',
+        },
+        {
+          href: '/profile/blocked',
+          icon: ShieldOff,
+          label: '拉黑用户',
+        },
+        {
+          href: '/profile/invitations',
+          icon: Gift,
+          label: '我的邀请码',
+        },
+      ],
     },
   ];
 

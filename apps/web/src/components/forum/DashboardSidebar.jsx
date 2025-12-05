@@ -19,13 +19,20 @@ import {
   Store,
   ChevronDown,
   ChevronRight,
+  FileText,
+  UserCog,
+  ShieldAlert,
+  Gift,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function DashboardSidebar() {
   const pathname = usePathname();
   const [openMenus, setOpenMenus] = useState({
-    'credits-shop': true, // 默认展开
+    'content': true,
+    'users': true,
+    'security': true,
+    'credits-shop': true,
   });
 
   const toggleMenu = (key) => {
@@ -36,16 +43,46 @@ export default function DashboardSidebar() {
   };
 
   const navItems = [
+    // 概览 - 独立项
     { href: '/dashboard', icon: LayoutDashboard, label: '概览', exact: true },
-    { href: '/dashboard/topics', icon: MessageSquare, label: '话题管理' },
-    { href: '/dashboard/posts', icon: MessagesSquare, label: '回复管理' },
-    { href: '/dashboard/categories', icon: FolderTree, label: '分类管理' },
-    { href: '/dashboard/users', icon: Users, label: '用户管理' },
-    { href: '/dashboard/tags', icon: Tag, label: '标签管理' },
-    { href: '/dashboard/reports', icon: Flag, label: '举报管理' },
-    { href: '/dashboard/moderation', icon: Shield, label: '内容审核' },
-    { href: '/dashboard/invitations', icon: Shield, label: '邀请码' },
-    { href: '/dashboard/invitation-rules', icon: Shield, label: '邀请码规则' },
+    
+    // 内容管理
+    {
+      key: 'content',
+      label: '内容管理',
+      icon: FileText,
+      children: [
+        { href: '/dashboard/topics', icon: MessageSquare, label: '话题管理' },
+        { href: '/dashboard/posts', icon: MessagesSquare, label: '回复管理' },
+        { href: '/dashboard/categories', icon: FolderTree, label: '分类管理' },
+        { href: '/dashboard/tags', icon: Tag, label: '标签管理' },
+      ],
+    },
+    
+    // 用户管理
+    {
+      key: 'users',
+      label: '用户管理',
+      icon: UserCog,
+      children: [
+        { href: '/dashboard/users', icon: Users, label: '用户管理' },
+        { href: '/dashboard/invitations', icon: Gift, label: '邀请码' },
+        { href: '/dashboard/invitation-rules', icon: Settings, label: '邀请码规则' },
+      ],
+    },
+    
+    // 安全审核
+    {
+      key: 'security',
+      label: '安全审核',
+      icon: ShieldAlert,
+      children: [
+        { href: '/dashboard/reports', icon: Flag, label: '举报管理' },
+        { href: '/dashboard/moderation', icon: Shield, label: '内容审核' },
+      ],
+    },
+    
+    // 积分系统
     {
       key: 'credits-shop',
       label: '积分系统',
@@ -55,6 +92,8 @@ export default function DashboardSidebar() {
         { href: '/dashboard/credits', icon: Coins, label: '积分管理' },
       ],
     },
+    
+    // 系统配置 - 独立项
     { href: '/dashboard/settings', icon: Settings, label: '系统配置' },
   ];
 
