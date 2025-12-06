@@ -8,7 +8,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Check, X, Trash2, Settings, MessageCircle, Heart, UserPlus } from 'lucide-react';
+import { Bell, Check, X, Trash2, Settings, MessageCircle, Heart, UserPlus, Medal } from 'lucide-react';
 import { notificationApi } from '@/lib/api';
 import Link from 'next/link';
 import { Loading } from '../common/Loading';
@@ -114,6 +114,8 @@ export default function NotificationPopover() {
         return <UserPlus className='h-4 w-4 text-green-500' />;
       case 'message':
         return <MessageCircle className='h-4 w-4 text-blue-500' />;
+      case 'badge_earned':
+        return <Medal className='h-4 w-4 text-yellow-500' />;
       default:
         return <Bell className='h-4 w-4' />;
     }
@@ -153,6 +155,8 @@ export default function NotificationPopover() {
         return '你的举报已处理';
       case 'report_dismissed':
         return '你的举报已驳回';
+      case 'badge_earned':
+        return '恭喜！你获得了一枚新勋章';
       default:
         return notification.message || '发送了一条通知';
     }
@@ -214,6 +218,9 @@ export default function NotificationPopover() {
                   linkUrl = `/topic/${notification.topicId}${
                     notification.postId ? `#post-${notification.postId}` : ''
                   }`;
+                } else if (notification.type === 'badge_earned') {
+                  // 勋章类型：跳转到我的勋章页面
+                  linkUrl = '/profile/badges';
                 }
 
                 return (

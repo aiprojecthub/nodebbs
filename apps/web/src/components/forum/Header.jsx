@@ -21,6 +21,7 @@ import {
   User,
   Mail,
   Shield,
+  Medal,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -50,6 +51,7 @@ export default function Header({ settings }) {
     { href: '/', label: '首页', icon: MessageSquare },
     { href: '/trending', label: '热门', icon: TrendingUp },
     { href: '/featured', label: '精华', icon: Sparkles },
+    { href: '/badges', label: '勋章', icon: Medal },
   ];
 
   const handleSearch = (e) => {
@@ -148,6 +150,7 @@ export default function Header({ settings }) {
                           name={user?.username || user?.name}
                           size='xs'
                           className='border border-border/50'
+                          frameMetadata={user?.avatarFrame?.itemMetadata}
                         />
                         <ChevronDown className='h-3.5 w-3.5 text-muted-foreground hidden md:block' />
                       </Button>
@@ -159,6 +162,7 @@ export default function Header({ settings }) {
                             url={user?.avatar}
                             name={user?.username}
                             size='sm'
+                            frameMetadata={user?.avatarFrame?.itemMetadata}
                           />
                           <div className='flex flex-col'>
                             <div className='font-medium'>

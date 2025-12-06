@@ -25,6 +25,8 @@ import { initOAuthProviders, listOAuthProviders } from './oauth.js';
 import { initInvitationRules, listInvitationRules } from './invitation.js';
 import { initEmailProviders, listEmailProviders } from './email.js';
 import { initCreditConfigs, listCreditConfigs } from './credits.js';
+import { initBadges, listBadges, cleanBadges } from './badges.js';
+import { initShopItems, cleanShopItems } from './shop.js';
 
 const { Pool } = pg;
 
@@ -34,6 +36,7 @@ const options = {
   reset: args.includes('--reset'),
   missing: args.includes('--missing') || args.length === 0,
   list: args.includes('--list'),
+  clean: args.includes('--clean'),
   help: args.includes('--help') || args.includes('-h'),
 };
 
@@ -81,6 +84,7 @@ function listAllSettings() {
   listEmailProviders();
   listInvitationRules();
   listCreditConfigs();
+  listBadges();
 }
 
 /**
@@ -110,6 +114,12 @@ async function initAllSettings(reset = false) {
 
     // 5. 初始化积分系统配置
     const creditsResult = await initCreditConfigs(db, reset);
+
+    // 6. 初始化勋章数据
+    const badgesResult = await initBadges(db, reset);
+
+    // 7. 初始化商城数据
+    const shopResult = await initShopItems(db, reset);
 
     // 显示统计信息
     console.log('\n' + '='.repeat(80));
@@ -165,6 +175,26 @@ async function initAllSettings(reset = false) {
     }
     console.log(`  - 总计: ${creditsResult.total} 个配置\n`);
 
+    // 勋章数据统计
+    console.log(`勋章数据统计:`);
+    if (reset) {
+      console.log(`  - 重置: ${badgesResult.updatedCount} 个勋章`);
+    } else {
+      console.log(`  - 新增: ${badgesResult.addedCount} 个勋章`);
+      console.log(`  - 跳过: ${badgesResult.skippedCount} 个勋章（已存在）`);
+    }
+    console.log(`  - 总计: ${badgesResult.total} 个勋章\n`);
+
+    // 商城数据统计
+    console.log(`商城数据统计:`);
+    if (reset) {
+      console.log(`  - 重置: ${shopResult.updatedCount} 个商品`);
+    } else {
+      console.log(`  - 新增: ${shopResult.addedCount} 个商品`);
+      console.log(`  - 跳过: ${shopResult.skippedCount} 个商品（已存在）`);
+    }
+    console.log(`  - 总计: ${shopResult.total} 个商品\n`);
+
     // 显示按分类的统计
     console.log('系统设置按分类统计:');
     Object.entries(SETTINGS_BY_CATEGORY).forEach(([category, settings]) => {
@@ -190,6 +220,27 @@ async function main() {
 
   if (options.list) {
     listAllSettings();
+    return;
+  }
+
+  if (options.clean) {
+    console.log('\n⚠️  警告: 此操作将清空所有商城商品、用户道具、勋章及用户勋章数据！');
+    console.log('这是破坏性操作，请谨慎使用。');
+    console.log('按 Ctrl+C 取消，或等待 3 秒后继续...\n');
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const db = drizzle(pool);
+    try {
+      // 1. Clean Shop Items (and User Items)
+      await cleanShopItems(db);
+      // 2. Clean Badges (and User Badges)
+      await cleanBadges(db);
+    } catch (error) {
+      console.error('清空失败:', error);
+    } finally {
+      await pool.end();
+    }
     return;
   }
 

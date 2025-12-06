@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Package } from 'lucide-react';
 import { Loading } from '@/components/common/Loading';
 import { ItemInventoryCard } from './ItemInventoryCard';
-import { getItemTypeLabel } from '../../utils/itemTypes';
+import { getItemTypeLabel } from '@/features/shop/utils/itemTypes';
 
 /**
  * Grid of user's items

@@ -94,6 +94,7 @@ export function RewardListDialog({ open, onOpenChange, postId }) {
                       url={reward.fromUserAvatar} 
                       name={reward.fromUsername} 
                       size="sm"
+                      frameMetadata={reward.userAvatarFrame?.itemMetadata}
                     />
                   </Link>
                   <div className="flex-1 min-w-0">

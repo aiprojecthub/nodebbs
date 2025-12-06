@@ -12,10 +12,13 @@ import {
   notifications,
   moderationLogs,
   blockedUsers,
+  userItems,
+  shopItems,
 } from '../../db/schema.js';
 import { eq, sql, desc, and, or, like, inArray } from 'drizzle-orm';
 import slugify from 'slug';
 import { getSetting } from '../../utils/settings.js';
+import { userEnricher } from '../../services/userEnricher.js';
 
 // 辅助函数：获取分类及其所有子孙分类的 ID
 async function getCategoryWithDescendants(categoryId) {
@@ -312,6 +315,35 @@ export default async function topicRoutes(fastify, options) {
         return topicWithoutSensitive;
       });
 
+      // 批量获取用户增强数据（头像框、徽章等）
+      if (finalResults.length > 0) {
+        // 构建临时用户对象列表用于enrich
+        // 注意：finalResults 中的对象会被直接修改
+        // map topic.userId to user structure expected by enricher
+        const usersToEnrich = finalResults.map(topic => ({
+            id: topic.userId,
+            // 如果需要其他字段辅助enrichment，可以在这里添加
+            // 目前 credits plugin 只需要 id
+        }));
+
+        await userEnricher.enrichMany(usersToEnrich, { request });
+
+        // 将 enrich 后的数据同步回 results (引用传递，其实 usersToEnrich 中的对象和 finalResults 中的对象不是同一个引用，需要回填)
+        // Wait, UserEnricher mutates the object passed to it.
+        // We constructed NEW objects `{id: topic.userId}`.
+        // So we need to map the results back to `finalResults`.
+
+        const enrichedUserMap = new Map(usersToEnrich.map(u => [u.id, u]));
+        
+        finalResults.forEach(topic => {
+            const enrichedUser = enrichedUserMap.get(topic.userId);
+            if (enrichedUser) {
+                topic.userAvatarFrame = enrichedUser.avatarFrame;
+                // topic.userBadges = enrichedUser.badges; // 如果需要显示徽章
+            }
+        });
+      }
+
       // Get total count with same filters
       // IMPORTANT: 必须使用与主查询完全相同的条件，包括 join 和所有过滤器
       // 直接复用 conditions，因为它已经包含了所有必要的过滤条件
@@ -535,6 +567,22 @@ export default async function topicRoutes(fastify, options) {
         isSubscribed = !!subscription;
       }
 
+      // Fetch author's avatar frame
+      const [frame] = await db
+        .select({
+           itemMetadata: shopItems.metadata
+        })
+        .from(userItems)
+        .innerJoin(shopItems, eq(userItems.itemId, shopItems.id))
+        .where(
+          and(
+            eq(userItems.userId, topic.userId),
+            eq(userItems.isEquipped, true),
+            eq(shopItems.type, 'avatar_frame')
+          )
+        )
+        .limit(1);
+
       return {
         ...topic,
         content: firstPost?.content || '',
@@ -548,6 +596,7 @@ export default async function topicRoutes(fastify, options) {
         isBookmarked,
         isSubscribed,
         viewCount: topic.viewCount + 1, // Return incremented count
+        userAvatarFrame: frame ? { itemMetadata: frame.itemMetadata } : null
       };
     }
   );

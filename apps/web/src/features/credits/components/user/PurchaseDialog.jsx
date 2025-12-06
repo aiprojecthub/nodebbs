@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Loader2, Check } from 'lucide-react';
 import { CreditsBadge } from '../shared/CreditsBadge';
-import { getItemTypeLabel } from '../../utils/itemTypes';
+import { getItemTypeLabel } from '@/features/shop/utils/itemTypes';
 
 /**
  * Purchase confirmation dialog

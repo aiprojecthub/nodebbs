@@ -395,27 +395,24 @@ apps/web/src/components/topic/
 **最后更新：** 2024-12-04
 **状态：** ✅ Phase 1 完成，✅ Phase 2 完成，✅ Phase 3 完成，✅ Phase 4 完成
 
-## Phase 3 完成内容 (2024-12-04)
-
-详见 `PHASE3_SUMMARY.md`
+## Phase 3 完成内容 (2025-12-06)
 
 ### 核心功能
 1. ✅ **商城商品管理** - 完整的 CRUD 操作
-2. ✅ **商品购买系统** - 支持库存管理和防重复购买
+2. ✅ **商品购买系统** - 支持库存管理和防重复购买 (Backend Service Implemented)
 3. ✅ **我的道具管理** - 装备/卸下功能
 4. ✅ **管理后台** - 商品管理页面
 
-### 创建的文件
-- `apps/api/src/features/credits/routes/shop.js` - 商城 API
-- `apps/web/src/features/credits/pages/user/UserShopPage.jsx` - 商城页面
-- `apps/web/src/features/credits/pages/user/UserItemsPage.jsx` - 我的道具页面
-- `apps/web/src/features/credits/pages/admin/AdminShopPage.jsx` - 商城管理页面
+### 创建/确认的文件
+- `apps/api/src/features/shop/services/shopService.js` - 商城业务逻辑 ✅
+- `apps/api/src/features/shop/routes/index.js` - 商城 API ✅
+- `apps/web/src/features/shop/pages/user/UserShopPage.jsx` - 商城页面 ✅
+- `apps/web/src/features/shop/pages/user/UserItemsPage.jsx` - 我的道具页面 ✅
+- `apps/web/src/features/shop/pages/admin/AdminShopPage.jsx` - 商城管理页面 ✅
 
 ---
 
-## Phase 4 完成内容 (2024-12-04)
-
-详见 `PHASE4_SUMMARY.md`
+## Phase 4 完成内容 (2025-12-06)
 
 ### 核心功能
 1. ✅ **系统设置集成** - 积分系统配置 Tab
@@ -535,3 +532,56 @@ apps/web/src/components/topic/
 - 为未来开发其他插件（如：签到、任务、商城）建立标准模式。
 
 **推荐**：建议在下一阶段（系统重构或 V5.0）优先实施后端"事件化"改造，这是解耦的关键一步。
+
+---
+
+## 勋章系统 (Phase 3 扩展)
+
+勋章系统是积分与成就体系的重要组成部分，用于表彰用户的特定成就或贡献。
+
+### 1. 核心概念
+- **勋章 (Badge)**: 一种可视化的奖励，拥有唯一的图标、名称和描述。
+- **获取条件 (Unlock Condition)**: 系统自动判断是否给予勋章的规则（如：发帖数达到100）。
+- **获取途径 (Source)**:
+    - `system_rule`: 达成条件自动获取
+    - `admin_grant`: 管理员手动颁发
+    - `shop_buy`: 积分商城购买 (作为商品的一种类型)
+    - `event`: 活动获取
+
+### 2. 自动获取规则支持
+系统内置了以下自动判断规则：
+- `post_count`: 累计发帖数
+- `topic_count`: 累计话题数
+- `like_received_count`: 累计获得点赞数
+- `checkin_streak`: 连续签到天数
+- `registration_days`: 注册天数
+
+### 3. 数据结构
+- `badges`: 定义勋章元数据 (名称, 图标, 规则)
+- `user_badges`: 记录用户拥有的勋章及获取时间
+
+### 4. API 端点
+```
+GET    /api/badges              - 获取所有可用勋章
+GET    /api/badges/users/:uid   - 获取指定用户拥有的勋章
+POST   /api/badges/admin        - [Admin] 创建勋章
+PATCH  /api/badges/admin/:id    - [Admin] 更新勋章
+DELETE /api/badges/admin/:id    - [Admin] 删除勋章
+```
+
+### 5. 文件结构
+```
+apps/api/src/features/badges/
+├── index.js                    ✅ 插件入口
+├── schema.js                   ✅ 数据库表定义
+├── services/
+│   └── badgeService.js         ✅ 核心业务逻辑 (含自动规则判断)
+└── routes/
+    └── index.js                ✅ API 路由
+```
+```
+apps/web/src/features/badges/
+├── components/                 ✅ 前端组件 (BadgeList, BadgeIcon等)
+├── hooks/                      ✅ React Hooks
+└── pages/                      ✅ 相关页面
+```

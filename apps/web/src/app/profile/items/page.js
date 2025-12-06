@@ -1,1 +1,1 @@
-export { default } from '@/features/credits/pages/user/UserItemsPage';
+export { default } from '@/features/shop/pages/user/UserItemsPage';

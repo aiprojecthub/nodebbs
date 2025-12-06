@@ -16,7 +16,8 @@
     "db:studio": "drizzle-kit studio",
     "seed": "dotenvx run -- node src/scripts/init/index.js",
     "seed:reset": "dotenvx run -- node src/scripts/init/index.js --reset",
-    "seed:list": "dotenvx run -- node src/scripts/init/index.js --list"
+    "seed:list": "dotenvx run -- node src/scripts/init/index.js --list",
+    "seed:clean": "dotenvx run -- node src/scripts/init/index.js --clean"
   },
   "keywords": [],
   "dependencies": {

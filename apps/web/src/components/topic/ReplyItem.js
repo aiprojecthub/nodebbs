@@ -52,9 +52,12 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isC
 
   // 本地状态
   const [localReply, setLocalReply] = useState(reply);
+  const [localRewardStats, setLocalRewardStats] = useState(rewardStats || { totalCount: 0, totalAmount: 0 });
 
-  // 移除 fetchRewardStats 和相关 useEffect
-  // 直接使用从 props 传入的 rewardStats
+  // 同步 props 到本地状态
+  useEffect(() => {
+    setLocalRewardStats(rewardStats || { totalCount: 0, totalAmount: 0 });
+  }, [rewardStats]);
 
   // 检查审核状态
   const isPending = localReply.approvalStatus === 'pending';
@@ -223,6 +226,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isC
                   name={localReply.userName}
                   size='sm'
                   className='ring-1 ring-transparent group-hover:ring-primary/15 transition-all'
+                  frameMetadata={localReply.userAvatarFrame?.itemMetadata}
                 />
               </Link>
               <div className='flex items-center gap-1.5 flex-wrap text-sm text-muted-foreground'>
@@ -357,16 +361,16 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isC
                   title='打赏'
                 >
                   <Coins className='h-3.5 w-3.5' />
-                  {rewardStats.totalAmount > 0 && (
+                  {localRewardStats.totalAmount > 0 && (
                     <span className='text-xs ml-1'>
-                      {rewardStats.totalAmount}
+                      {localRewardStats.totalAmount}
                     </span>
                   )}
                 </Button>
               )}
               
               {/* 如果是作者且有打赏记录，显示查看记录按钮（仅图标） */}
-              {(isCreditEnabled && isOwnReply && rewardStats.totalCount > 0) && (
+              {(isCreditEnabled && isOwnReply && localRewardStats.totalCount > 0) && (
                  <Button
                   variant='ghost'
                   size='sm'
@@ -375,9 +379,9 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isC
                   title='查看打赏记录'
                  >
                    <Coins className='h-3.5 w-3.5' />
-                   {rewardStats.totalAmount > 0 && (
+                   {localRewardStats.totalAmount > 0 && (
                      <span className='text-xs'>
-                       {rewardStats.totalAmount}
+                       {localRewardStats.totalAmount}
                      </span>
                    )}
                  </Button>
@@ -537,6 +541,10 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isC
         postAuthor={localReply.userName || localReply.userUsername}
         onSuccess={(amount) => {
           // 局部更新打赏统计，无需重新调用批量接口
+          setLocalRewardStats(prev => ({
+            totalCount: (prev.totalCount || 0) + 1,
+            totalAmount: (prev.totalAmount || 0) + amount
+          }));
           onRewardSuccess?.(localReply.id, amount);
         }}
         onViewHistory={() => {

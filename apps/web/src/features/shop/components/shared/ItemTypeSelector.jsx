@@ -10,8 +10,10 @@ import { getItemTypeOptions } from '../../utils/itemTypes';
  * @param {boolean} props.showAll - Whether to show "all" tab
  * @param {React.ReactNode} props.children - Content to render in TabsContent
  */
-export function ItemTypeSelector({ value, onChange, showAll = true, children }) {
-  const options = getItemTypeOptions(showAll);
+export function ItemTypeSelector({ value, onChange, showAll = true, excludedTypes = [], children }) {
+  const options = getItemTypeOptions(showAll).filter(
+    option => !excludedTypes.includes(option.value)
+  );
 
   return (
     <Tabs value={value} onValueChange={onChange}>

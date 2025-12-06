@@ -5,8 +5,10 @@ import {
   creditSystemConfig,
   postRewards,
   users,
+  userItems,
+  shopItems,
 } from '../../../db/schema.js';
-import { eq, sql, desc, ilike } from 'drizzle-orm';
+import { eq, sql, desc, ilike, and, inArray } from 'drizzle-orm';
 
 /**
  * 获取积分系统配置
@@ -691,6 +693,35 @@ export async function getPostRewards(postId, options = {}) {
       .orderBy(desc(postRewards.createdAt))
       .limit(limit)
       .offset(offset);
+
+    // Fetch avatar frames
+    const userIds = [...new Set(rewards.map(r => r.fromUserId))];
+    if (userIds.length > 0) {
+      const frames = await db
+        .select({
+          userId: userItems.userId,
+          itemMetadata: shopItems.metadata,
+        })
+        .from(userItems)
+        .innerJoin(shopItems, eq(userItems.itemId, shopItems.id))
+        .where(
+          and(
+            inArray(userItems.userId, userIds),
+            eq(userItems.isEquipped, true),
+            eq(shopItems.type, 'avatar_frame')
+          )
+        );
+
+      const frameMap = new Map(frames.map(f => [f.userId, f]));
+      
+      rewards.forEach(reward => {
+        if (frameMap.has(reward.fromUserId)) {
+          reward.userAvatarFrame = {
+             itemMetadata: frameMap.get(reward.fromUserId).itemMetadata
+          };
+        }
+      });
+    }
 
     // 获取总统计
     const [stats] = await db

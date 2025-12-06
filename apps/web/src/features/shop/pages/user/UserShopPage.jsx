@@ -5,12 +5,13 @@ import { ShoppingCart } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { shopApi } from '@/lib/api';
 import { toast } from 'sonner';
-import { useCreditsBalance } from '../../hooks/useCreditsBalance';
-import { useShopItems } from '../../hooks/useShopItems';
-import { BalanceCard } from '../../components/user/BalanceCard';
-import { ItemTypeSelector } from '../../components/shared/ItemTypeSelector';
-import { ShopItemGrid } from '../../components/user/ShopItemGrid';
-import { PurchaseDialog } from '../../components/user/PurchaseDialog';
+import { useCreditsBalance } from '@/features/credits/hooks/useCreditsBalance';
+import { useShopItems } from '@/features/shop/hooks/useShopItems';
+import { BalanceCard } from '@/features/credits/components/user/BalanceCard';
+import { ItemTypeSelector } from '@/features/shop/components/shared/ItemTypeSelector';
+import { ShopItemGrid } from '@/features/credits/components/user/ShopItemGrid';
+import { PurchaseDialog } from '@/features/credits/components/user/PurchaseDialog';
+import { BadgeUnlockDialog } from '@/features/credits/components/user/BadgeUnlockDialog';
 
 export default function UserShopPage() {
   const { isAuthenticated } = useAuth();
@@ -18,6 +19,10 @@ export default function UserShopPage() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [buyDialogOpen, setBuyDialogOpen] = useState(false);
   const [isBuying, setIsBuying] = useState(false);
+  
+  // Badge unlock state
+  const [unlockedBadge, setUnlockedBadge] = useState(null);
+  const [showUnlockDialog, setShowUnlockDialog] = useState(false);
 
   const { balance, refetch: refetchBalance } = useCreditsBalance();
   const { items, loading, refetch: refetchItems } = useShopItems({ type: itemType });
@@ -37,12 +42,22 @@ export default function UserShopPage() {
     setIsBuying(true);
     try {
       await shopApi.buyItem(selectedItem.id);
-      toast.success('购买成功！');
-
+      
+      // Close buy dialog
+      setBuyDialogOpen(false);
+      
+      // Update data
       await refetchBalance();
       await refetchItems();
 
-      setBuyDialogOpen(false);
+      // Show success feedback
+      if (selectedItem.type === 'badge') {
+        setUnlockedBadge(selectedItem);
+        setShowUnlockDialog(true);
+      } else {
+        toast.success('购买成功！');
+      }
+
       setSelectedItem(null);
     } catch (error) {
       toast.error(error.message || '购买失败');
@@ -70,7 +85,7 @@ export default function UserShopPage() {
       </div>
 
       {/* Item Type Selector & Grid */}
-      <ItemTypeSelector value={itemType} onChange={setItemType}>
+      <ItemTypeSelector value={itemType} onChange={setItemType} excludedTypes={[]}>
         <ShopItemGrid
           items={items}
           userBalance={balance?.balance ?? null}
@@ -88,6 +103,13 @@ export default function UserShopPage() {
         onConfirm={handleBuy}
         onCancel={() => setBuyDialogOpen(false)}
         purchasing={isBuying}
+      />
+
+      {/* Badge Unlock Dialog */}
+      <BadgeUnlockDialog
+        open={showUnlockDialog}
+        onOpenChange={setShowUnlockDialog}
+        badgeItem={unlockedBadge}
       />
     </div>
   );

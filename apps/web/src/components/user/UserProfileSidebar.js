@@ -8,12 +8,10 @@ import SendMessageButton from '@/components/user/SendMessageButton';
 import BlockUserButton from '@/components/user/BlockUserButton';
 import ReportUserButton from '@/components/user/ReportUserButton';
 import UserProfileClient from '@/components/user/UserProfileClient';
-import { useEquippedItems } from '@/hooks/useEquippedItems';
-import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
 export default function UserProfileSidebar({ user }) {
-  const { avatarFrame, badges } = useEquippedItems(user.id);
+  const avatarFrame = user.avatarFrame;
+  const badges = user.badges || [];
 
   return (
     <div className='w-full lg:w-72 shrink-0'>
@@ -37,25 +35,33 @@ export default function UserProfileSidebar({ user }) {
               {badges.length > 0 && (
                 <div className="flex flex-wrap justify-center gap-2 mt-2">
                   <TooltipProvider>
-                    {badges.map((badge) => (
-                      <Tooltip key={badge.id}>
-                        <TooltipTrigger>
-                          <div className="relative w-6 h-6">
-                            <img 
-                              src={badge.itemImageUrl} 
-                              alt={badge.itemName} 
-                              className="w-full h-full object-contain"
-                            />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="font-semibold">{badge.itemName}</p>
-                          {badge.itemDescription && (
-                            <p className="text-xs text-muted-foreground">{badge.itemDescription}</p>
-                          )}
-                        </TooltipContent>
-                      </Tooltip>
-                    ))}
+                    {badges.map((userBadge) => {
+                      const badge = userBadge.badge || userBadge; // Handle potential nested structure
+                      return (
+                        <Tooltip key={badge.id}>
+                          <TooltipTrigger>
+                            <div className="relative w-6 h-6">
+                              <img 
+                                src={badge.iconUrl} 
+                                alt={badge.name} 
+                                className="w-full h-full object-contain"
+                              />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="font-semibold">{badge.name}</p>
+                            {badge.description && (
+                              <p className="text-xs text-muted-foreground max-w-[200px]">{badge.description}</p>
+                            )}
+                             {userBadge.earnedAt && (
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  获得于: <Time date={userBadge.earnedAt} format="YYYY-MM-DD" />
+                                </p>
+                             )}
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    })}
                   </TooltipProvider>
                 </div>
               )}

@@ -38,7 +38,7 @@ export const shopItems = pgTable(
   'shop_items',
   {
     ...$defaults,
-    type: varchar('type', { length: 20 }).notNull(), // 'avatar_frame', 'badge', 'custom'
+    type: varchar('type', { length: 20 }).notNull(), // 'avatar_frame', 'custom'
     name: varchar('name', { length: 100 }).notNull(), // 商品名称
     description: text('description'), // 商品描述
     price: integer('price').notNull(), // 价格（积分）

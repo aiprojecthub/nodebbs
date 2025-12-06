@@ -23,6 +23,7 @@ import {
   UserCog,
   ShieldAlert,
   Gift,
+  Medal,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -85,11 +86,12 @@ export default function DashboardSidebar() {
     // 积分系统
     {
       key: 'credits-shop',
-      label: '积分系统',
+      label: '社区互动',
       icon: Store,
       children: [
-        { href: '/dashboard/shop', icon: ShoppingCart, label: '商城管理' },
         { href: '/dashboard/credits', icon: Coins, label: '积分管理' },
+        { href: '/dashboard/shop', icon: ShoppingCart, label: '商城管理' },
+        { href: '/dashboard/badges', icon: Medal, label: '勋章管理' },
       ],
     },
     

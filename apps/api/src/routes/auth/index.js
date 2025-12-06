@@ -1,3 +1,4 @@
+import { userEnricher } from '../../services/userEnricher.js';
 import db from '../../db/index.js';
 import { users } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
@@ -349,6 +350,32 @@ export default async function authRoutes(fastify, options) {
               contentVisibility: { type: 'string' },
               usernameChangeCount: { type: 'number' },
               usernameChangedAt: { type: ['string', 'null'] },
+              avatarFrame: {
+                type: ['object', 'null'],
+                properties: {
+                  id: { type: 'number' },
+                  itemType: { type: 'string' },
+                  itemName: { type: 'string' },
+                  itemMetadata: { type: ['string', 'null'] },
+                  imageUrl: { type: ['string', 'null'] }
+                }
+              },
+              badges: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'number' },
+                    badgeId: { type: 'number' },
+                    name: { type: 'string' },
+                    slug: { type: 'string' },
+                    iconUrl: { type: 'string' },
+                    description: { type: ['string', 'null'] },
+                    isDisplayed: { type: 'boolean' },
+                    earnedAt: { type: ['string', 'null'] }
+                  }
+                }
+              }
             },
           },
         },
@@ -365,9 +392,14 @@ export default async function authRoutes(fastify, options) {
         return reply.code(404).send({ error: '用户不存在' });
       }
 
+      // Enrich user object (badges, frames, etc.)
+      await userEnricher.enrich(user);
+
       delete user.passwordHash;
 
-      return user;
+      return {
+        ...user,
+      };
     }
   );
 

@@ -1,9 +1,9 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ItemTypeIcon } from '../shared/ItemTypeIcon';
+import { ItemTypeIcon } from '@/features/shop/components/shared/ItemTypeIcon';
 import { CreditsBadge } from '../shared/CreditsBadge';
-import { getItemTypeLabel } from '../../utils/itemTypes';
+import { getItemTypeLabel } from '@/features/shop/utils/itemTypes';
 
 /**
  * Single shop item card with purchase button

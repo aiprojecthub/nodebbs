@@ -18,6 +18,7 @@ import {
   ChevronDown,
   ChevronRight,
   Store,
+  Medal,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
@@ -111,7 +112,7 @@ export default function ProfileSidebar() {
     },
     ...(creditEnabled ? [{
       key: 'credits-shop',
-      label: '积分系统',
+      label: '社区互动',
       icon: Store,
       children: [
         {
@@ -128,6 +129,11 @@ export default function ProfileSidebar() {
           href: '/profile/items',
           icon: Package,
           label: '我的道具',
+        },
+        {
+          href: '/profile/badges',
+          icon: Medal,
+          label: '我的勋章',
         },
       ],
     }] : []),

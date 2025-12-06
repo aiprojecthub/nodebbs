@@ -1,9 +1,9 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Check, X } from 'lucide-react';
-import { ItemTypeIcon } from '../shared/ItemTypeIcon';
-import { getItemTypeLabel, isItemExpired } from '../../utils/itemTypes';
+import { Loader2, Check, X, Medal } from 'lucide-react';
+import { ItemTypeIcon } from '@/features/shop/components/shared/ItemTypeIcon';
+import { getItemTypeLabel, isItemExpired } from '@/features/shop/utils/itemTypes';
 import TimeAgo from '@/components/forum/TimeAgo';
 
 /**
@@ -76,31 +76,42 @@ export function ItemInventoryCard({ item, onEquip, onUnequip, actioning }) {
         )}
 
         {!expired && (
-          <Button
-            className="w-full"
-            variant={item.isEquipped ? 'outline' : 'default'}
-            onClick={() =>
-              item.isEquipped ? onUnequip(item.id) : onEquip(item.id)
-            }
-            disabled={actioning}
-          >
-            {actioning ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {item.isEquipped ? '卸下中...' : '装备中...'}
-              </>
-            ) : item.isEquipped ? (
-              <>
-                <X className="mr-2 h-4 w-4" />
-                卸下
-              </>
-            ) : (
-              <>
-                <Check className="mr-2 h-4 w-4" />
-                装备
-              </>
-            )}
-          </Button>
+          item.itemType === 'badge' ? (
+            <Button
+              className="w-full"
+              variant="secondary"
+              onClick={() => (window.location.href = '/profile/badges')}
+            >
+              <Medal className="mr-2 h-4 w-4" />
+              查看勋章
+            </Button>
+          ) : (
+            <Button
+              className="w-full"
+              variant={item.isEquipped ? 'outline' : 'default'}
+              onClick={() =>
+                item.isEquipped ? onUnequip(item.id) : onEquip(item.id)
+              }
+              disabled={actioning}
+            >
+              {actioning ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {item.isEquipped ? '卸下中...' : '装备中...'}
+                </>
+              ) : item.isEquipped ? (
+                <>
+                  <X className="mr-2 h-4 w-4" />
+                  卸下
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  装备
+                </>
+              )}
+            </Button>
+          )
         )}
       </CardFooter>
     </Card>

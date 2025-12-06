@@ -2,15 +2,19 @@
 
 import { useState } from 'react';
 import { Package } from 'lucide-react';
-import { useUserItems } from '../../hooks/useUserItems';
-import { useItemActions } from '../../hooks/useItemActions';
-import { ItemTypeSelector } from '../../components/shared/ItemTypeSelector';
-import { ItemInventoryGrid } from '../../components/user/ItemInventoryGrid';
+import { useUserItems } from '@/features/credits/hooks/useUserItems';
+import { useItemActions } from '@/features/credits/hooks/useItemActions';
+import { ItemTypeSelector } from '@/features/shop/components/shared/ItemTypeSelector';
+import { ItemInventoryGrid } from '@/features/credits/components/user/ItemInventoryGrid';
 
 export default function UserItemsPage() {
   const [itemType, setItemType] = useState('all');
   
   const { items, loading, refetch } = useUserItems({ type: itemType });
+  
+  // Show all items including badges
+  const displayedItems = items;
+
   const { equip, unequip, actioningItemId } = useItemActions();
 
   const handleEquip = async (userItemId) => {
@@ -33,9 +37,9 @@ export default function UserItemsPage() {
       </div>
 
       {/* Item Type Selector & Grid */}
-      <ItemTypeSelector value={itemType} onChange={setItemType}>
+      <ItemTypeSelector value={itemType} onChange={setItemType} excludedTypes={[]}>
         <ItemInventoryGrid
-          items={items}
+          items={displayedItems}
           onEquip={handleEquip}
           onUnequip={handleUnequip}
           actioningItemId={actioningItemId}

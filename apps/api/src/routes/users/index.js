@@ -1,14 +1,7 @@
 import db from '../../db/index.js';
-import { users, topics, posts, follows, bookmarks, categories, userItems, shopItems } from '../../db/schema.js';
+import { users, topics, posts, follows, bookmarks, categories } from '../../db/schema.js';
 import { eq, sql, desc, and, ne } from 'drizzle-orm';
-import { pipeline } from 'stream/promises';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import crypto from 'crypto';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { userEnricher } from '../../services/userEnricher.js';
 
 export default async function userRoutes(fastify, options) {
   // Create user (admin only)
@@ -197,7 +190,33 @@ export default async function userRoutes(fastify, options) {
             postCount: { type: 'number' },
             followerCount: { type: 'number' },
             followingCount: { type: 'number' },
-            isFollowing: { type: 'boolean' }
+            isFollowing: { type: 'boolean' },
+            avatarFrame: {
+              type: ['object', 'null'],
+              properties: {
+                id: { type: 'number' },
+                itemType: { type: 'string' },
+                itemName: { type: 'string' },
+                itemMetadata: { type: ['string', 'null'] },
+                imageUrl: { type: ['string', 'null'] }
+              }
+            },
+            badges: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number' },
+                  badgeId: { type: 'number' },
+                  name: { type: 'string' },
+                  slug: { type: 'string' },
+                  iconUrl: { type: 'string' },
+                  description: { type: ['string', 'null'] },
+                  isDisplayed: { type: 'boolean' },
+                  earnedAt: { type: ['string', 'null'] }
+                }
+              }
+            }
           }
         }
       }
@@ -242,40 +261,19 @@ export default async function userRoutes(fastify, options) {
       isFollowing = !!follow;
     }
 
-    // Get equipped items (avatar frame and badges)
-    const equippedItems = await db
-      .select({
-        id: userItems.id,
-        itemType: shopItems.type,
-        itemName: shopItems.name,
-        itemMetadata: shopItems.metadata,
-      })
-      .from(userItems)
-      .innerJoin(shopItems, eq(userItems.itemId, shopItems.id))
-      .where(
-        and(
-          eq(userItems.userId, user.id),
-          eq(userItems.isEquipped, true)
-        )
-      );
-
-    // Extract avatar frame and badges
-    const avatarFrame = equippedItems.find(item => item.itemType === 'avatar_frame');
-    const badges = equippedItems.filter(item => item.itemType === 'badge');
-
-    delete user.passwordHash;
-    delete user.email;
-
-    return {
+    const userView = {
       ...user,
       topicCount: Number(topicCountResult.count),
       postCount: Number(postCountResult.count),
       followerCount: Number(followerCountResult.count),
       followingCount: Number(followingCountResult.count),
       isFollowing,
-      avatarFrame: avatarFrame || null,
-      badges: badges || [],
     };
+
+    // Enrich user object (badges, frames, etc.)
+    await userEnricher.enrich(userView);
+
+    return userView;
   });
 
   // Update current user profile

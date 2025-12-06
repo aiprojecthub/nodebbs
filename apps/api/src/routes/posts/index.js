@@ -1,7 +1,8 @@
 import db from '../../db/index.js';
-import { posts, topics, users, likes, notifications, subscriptions, moderationLogs, blockedUsers } from '../../db/schema.js';
+import { posts, topics, users, likes, notifications, subscriptions, moderationLogs, blockedUsers, userItems, shopItems } from '../../db/schema.js';
 import { eq, sql, desc, and, inArray, ne, like, or } from 'drizzle-orm';
 import { getSetting } from '../../utils/settings.js';
+import { userEnricher } from '../../services/userEnricher.js';
 
 // 辅助函数：检查两个用户之间是否存在拉黑关系（双向检查）
 async function isBlocked(userId1, userId2) {
@@ -358,6 +359,49 @@ export default async function postRoutes(fastify, options) {
       });
     }
 
+    // Fetch avatar frames for all related users (authors and reply-to users)
+    const usersToEnrichMap = new Map();
+    
+    // Helper to add user to enrichment list
+    const addUserToEnrich = (userId) => {
+        if (!userId) return;
+        if (!usersToEnrichMap.has(userId)) {
+            usersToEnrichMap.set(userId, { id: userId });
+        }
+    };
+
+    postsList.forEach(p => {
+        addUserToEnrich(p.userId);
+        if (p.replyToPost) {
+            addUserToEnrich(p.replyToPost.userId);
+        }
+    });
+
+    const usersToEnrich = Array.from(usersToEnrichMap.values());
+
+    if (usersToEnrich.length > 0) {
+        await userEnricher.enrichMany(usersToEnrich, { request });
+
+        // Map back to posts
+        const enrichedUserMap = new Map(usersToEnrich.map(u => [u.id, u]));
+
+        postsList.forEach(post => {
+            // Author
+            const author = enrichedUserMap.get(post.userId);
+            if (author) {
+                post.userAvatarFrame = author.avatarFrame;
+                // post.userBadges = author.badges;
+            }
+
+            // ReplyTo User
+            if (post.replyToPost) {
+                const replyUser = enrichedUserMap.get(post.replyToPost.userId);
+                if (replyUser) {
+                    post.replyToPost.userAvatarFrame = replyUser.avatarFrame;
+                }
+            }
+        });
+    }
     // Build count query with same conditions
     const [{ count }] = await db
       .select({ count: sql`count(*)` })

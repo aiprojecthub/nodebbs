@@ -2,16 +2,15 @@ import fp from 'fastify-plugin';
 import shopRoutes from './routes/index.js';
 
 /**
- * Shop Feature (Badges & Items)
- * Handles shop item management, purchasing, and user inventory.
+ * Shop Plugin
+ * Handles shop system logic and routes.
  */
-async function shopFeature(fastify, options) {
+async function shopPlugin(fastify, options) {
   // Register routes
-  // Note: Prefix is set here to keep APIs consistent
   fastify.register(shopRoutes, { prefix: '/api/shop' });
 }
 
-export default fp(shopFeature, {
-  name: 'shop-feature',
-  dependencies: ['credits-plugin'] // Shop depends on credits for payment
+export default fp(shopPlugin, {
+  name: 'shop-plugin',
+  // dependencies: ['credits-plugin'] // Optional: if it depends closely on credits
 });

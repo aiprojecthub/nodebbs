@@ -50,6 +50,7 @@ export default function TopicSidebar({
     avatar: topic.userAvatar,
     username: topic.username,
     name: topic.userName,
+    avatarFrame: topic.userAvatarFrame,
   };
   // const category = getCategoryById(topic.categoryId);
   const category = {
@@ -172,6 +173,7 @@ export default function TopicSidebar({
               url={author?.avatar}
               name={author?.username}
               size='sm'
+              frameMetadata={author?.avatarFrame?.itemMetadata}
             />
             <Link
               href={`/users/${author?.username}`}
