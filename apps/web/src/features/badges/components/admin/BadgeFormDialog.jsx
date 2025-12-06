@@ -21,7 +21,7 @@ import {
 import { toast } from 'sonner';
 
 export function BadgeFormDialog({ open, onOpenChange, mode, initialData, onSubmit }) {
-  const { register, handleSubmit, control, reset, formState: { errors } } = useForm({
+  const { register, handleSubmit, control, reset, watch, formState: { errors } } = useForm({
     defaultValues: {
       name: '',
       slug: '',
@@ -34,8 +34,22 @@ export function BadgeFormDialog({ open, onOpenChange, mode, initialData, onSubmi
     },
   });
 
+  // 解析条件的辅助函数
+  const parseCondition = (jsonStr) => {
+    try {
+      const parsed = JSON.parse(jsonStr || '{}');
+      return {
+        type: parsed.type || 'manual',
+        threshold: parsed.threshold || 0
+      };
+    } catch {
+      return { type: 'manual', threshold: 0 };
+    }
+  };
+
   useEffect(() => {
     if (open && mode === 'edit' && initialData) {
+      const parsed = parseCondition(initialData.unlockCondition);
       reset({
         name: initialData.name,
         slug: initialData.slug,
@@ -43,6 +57,9 @@ export function BadgeFormDialog({ open, onOpenChange, mode, initialData, onSubmi
         iconUrl: initialData.iconUrl,
         category: initialData.category || 'general',
         unlockCondition: initialData.unlockCondition || '{}',
+        // UI 辅助字段
+        _conditionType: parsed.type,
+        _threshold: parsed.threshold,
         displayOrder: initialData.displayOrder || 0,
         isActive: initialData.isActive !== false,
       });
@@ -54,6 +71,8 @@ export function BadgeFormDialog({ open, onOpenChange, mode, initialData, onSubmi
         iconUrl: '',
         category: 'general',
         unlockCondition: '{"type": "manual"}',
+        _conditionType: 'manual',
+        _threshold: 0,
         displayOrder: 0,
         isActive: true,
       });
@@ -62,19 +81,33 @@ export function BadgeFormDialog({ open, onOpenChange, mode, initialData, onSubmi
 
   const onFormSubmit = async (data) => {
     try {
-      // Validate JSON
-      try {
-        JSON.parse(data.unlockCondition);
-      } catch (e) {
-        toast.error('解锁条件必须是有效的 JSON 格式');
-        return;
+      // 从 UI 字段构建 JSON
+      const conditionObj = {
+        type: data._conditionType,
+      };
+      
+      if (data._conditionType !== 'manual') {
+        conditionObj.threshold = Number(data._threshold);
       }
       
-      await onSubmit(data);
+      const finalData = {
+        ...data,
+        unlockCondition: JSON.stringify(conditionObj)
+      };
+      
+      // 移除辅助字段
+      delete finalData._conditionType;
+      delete finalData._threshold;
+
+      await onSubmit(finalData);
     } catch (error) {
        // handled by parent
     }
   };
+  
+  // 监听条件类型以有条件地显示阈值
+  const conditionType = useForm().watch ? useForm().watch('_conditionType') : 'manual'; 
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -85,92 +118,144 @@ export function BadgeFormDialog({ open, onOpenChange, mode, initialData, onSubmi
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">名称</Label>
-            <Input 
-              id="name" 
-              {...register('name', { required: '请输入勋章名称' })} 
-            />
-            {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">名称</Label>
+              <Input 
+                id="name" 
+                placeholder="勋章名称"
+                {...register('name', { required: '请输入勋章名称' })} 
+              />
+              {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="slug">Slug (唯一标识)</Label>
+              <Input 
+                id="slug" 
+                placeholder="例如: checkin-master" 
+                {...register('slug', { required: '请输入唯一标识 (Slug)' })} 
+              />
+              {errors.slug && <p className="text-sm text-red-500">{errors.slug.message}</p>}
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="slug">Slug (唯一标识)</Label>
-            <Input 
-              id="slug" 
-              placeholder="例如: checkin-master" 
-              {...register('slug', { required: '请输入唯一标识 (Slug)' })} 
-            />
-            {errors.slug && <p className="text-sm text-red-500">{errors.slug.message}</p>}
-          </div>
+          <div className="grid grid-cols-2 gap-4">
+             <div className="space-y-2">
+              <Label htmlFor="category">分类</Label>
+              <Controller
+                name="category"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="选择分类" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">通用 (General)</SelectItem>
+                      <SelectItem value="achievement">成就 (Achievement)</SelectItem>
+                      <SelectItem value="event">活动 (Event)</SelectItem>
+                      <SelectItem value="manual">人工 (Manual)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="iconUrl">图标 URL</Label>
-            <Input 
-              id="iconUrl" 
-              placeholder="/images/badges/example.png" 
-              {...register('iconUrl', { required: '请输入图标 URL' })} 
-            />
-            <p className="text-sm text-gray-500">建议使用 200x200 像素的 PNG 图片</p>
-            {errors.iconUrl && <p className="text-sm text-red-500">{errors.iconUrl.message}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="category">分类</Label>
-            <Controller
-              name="category"
-              control={control}
-              render={({ field }) => (
-                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="选择分类" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="general">通用 (General)</SelectItem>
-                    <SelectItem value="achievement">成就 (Achievement)</SelectItem>
-                    <SelectItem value="event">活动 (Event)</SelectItem>
-                    <SelectItem value="manual">人工 (Manual)</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="iconUrl">图标 URL</Label>
+              <Input 
+                id="iconUrl" 
+                placeholder="/images/badges/example.png" 
+                {...register('iconUrl', { required: '请输入图标 URL' })} 
+              />
+              {errors.iconUrl && <p className="text-sm text-red-500">{errors.iconUrl.message}</p>}
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="description">描述</Label>
             <Textarea 
               id="description" 
+              placeholder="简短描述该勋章的获取方式"
+              className="resize-none h-20"
               {...register('description')} 
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="unlockCondition">解锁条件 (JSON)</Label>
-            <Textarea 
-              id="unlockCondition" 
-              className="font-mono text-xs" 
-              rows={5}
-              {...register('unlockCondition')} 
-            />
-            <p className="text-sm text-gray-500">
-              配置自动解锁规则。例如: {'{"type": "checkin_streak", "threshold": 30}'}
-            </p>
+          {/* 解锁条件构建器 */}
+          <div className="space-y-4 border p-4 rounded-lg bg-slate-50">
+            <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-slate-900">解锁条件配置</h3>
+                <span className="text-xs text-slate-500">配置自动获取规则</span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-8">
+              <div className="space-y-2">
+                <Label htmlFor="_conditionType" className="text-xs">条件类型</Label>
+                <Controller
+                  name="_conditionType"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger className="bg-white">
+                        <SelectValue placeholder="选择类型" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="manual">人工发放 (Manual)</SelectItem>
+                        <SelectItem value="post_count">发帖数量 (Post Count)</SelectItem>
+                        <SelectItem value="topic_count">话题数量 (Topic Count)</SelectItem>
+                        <SelectItem value="like_received_count">获赞数量 (Likes Received)</SelectItem>
+                        <SelectItem value="checkin_streak">连续签到 (Check-in Streak)</SelectItem>
+                        <SelectItem value="registration_days">注册天数 (Days Registered)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+
+              {watch('_conditionType') !== 'manual' && (
+                <div className="space-y-2">
+                  <Label htmlFor="_threshold" className="text-xs">阈值</Label>
+                  <Input 
+                    id="_threshold" 
+                    type="number" 
+                    className="bg-white"
+                    placeholder="例如: 10" 
+                    {...register('_threshold', { 
+                        required: watch('_conditionType') !== 'manual' ? '请输入阈值' : false,
+                        valueAsNumber: true 
+                    })} 
+                  />
+                </div>
+              )}
+            </div>
+            
+             {watch('_conditionType') !== 'manual' && (
+                <div className="text-xs text-slate-500 font-mono bg-white p-2 rounded border truncate">
+                预览: {JSON.stringify({
+                    type: watch('_conditionType') || 'manual',
+                    threshold: Number(watch('_threshold') || 0)
+                })}
+                </div>
+             )}
           </div>
           
-          <div className="flex gap-4">
-            <div className="space-y-2 flex-1">
+          <div className="grid grid-cols-2 gap-4 items-end">
+            <div className="space-y-2">
               <Label htmlFor="displayOrder">排序权重</Label>
               <Input 
                 id="displayOrder" 
                 type="number" 
                 {...register('displayOrder', { valueAsNumber: true })} 
               />
+              <p className="text-[10px] text-muted-foreground">数字越小排序越靠前</p>
             </div>
 
-            <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm flex-1 mt-6">
+            <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-white h-[42px]">
               <div className="space-y-0.5">
-                <Label htmlFor="isActive">启用状态</Label>
+                <Label htmlFor="isActive" className="cursor-pointer">启用状态</Label>
               </div>
               <Controller
                 name="isActive"

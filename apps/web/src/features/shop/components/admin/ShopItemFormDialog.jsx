@@ -120,7 +120,7 @@ export function ShopItemFormDialog({ open, onOpenChange, mode, initialData, onSu
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle>
             {mode === 'create' ? '新建商品' : '编辑商品'}
@@ -268,6 +268,7 @@ export function ShopItemFormDialog({ open, onOpenChange, mode, initialData, onSu
               }
               placeholder="输入商品描述"
               rows={3}
+              className="resize-none"
             />
           </div>
 
@@ -362,7 +363,7 @@ export function ShopItemFormDialog({ open, onOpenChange, mode, initialData, onSu
               }
               placeholder='{"border": "2px solid gold", "animation": "glow"}'
               rows={4}
-              className="font-mono text-xs"
+              className="font-mono text-xs resize-none break-all"
             />
             <p className="text-xs text-muted-foreground">
               用于存储头像框样式、勋章图标等。

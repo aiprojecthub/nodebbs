@@ -172,7 +172,7 @@ export default function TopicSidebar({
             <UserAvatar
               url={author?.avatar}
               name={author?.username}
-              size='sm'
+              size='lg'
               frameMetadata={author?.avatarFrame?.itemMetadata}
             />
             <Link
