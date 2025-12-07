@@ -8,7 +8,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Check, X, Trash2, Settings, MessageCircle, Heart, UserPlus, Medal } from 'lucide-react';
+import { Bell, Check, X, Trash2, Settings, MessageCircle, Heart, UserPlus, Medal, Gift } from 'lucide-react';
 import { notificationApi } from '@/lib/api';
 import Link from 'next/link';
 import { Loading } from '../common/Loading';
@@ -116,6 +116,8 @@ export default function NotificationPopover() {
         return <MessageCircle className='h-4 w-4 text-blue-500' />;
       case 'badge_earned':
         return <Medal className='h-4 w-4 text-yellow-500' />;
+      case 'gift_received':
+        return <Gift className='h-4 w-4 text-pink-500' />;
       default:
         return <Bell className='h-4 w-4' />;
     }
@@ -157,6 +159,10 @@ export default function NotificationPopover() {
         return '你的举报已驳回';
       case 'badge_earned':
         return '恭喜！你获得了一枚新勋章';
+      case 'gift_received':
+        // message format: "你收到了一份礼物：ItemName"
+        // We can just return the message as is, or simplify
+        return notification.message;
       default:
         return notification.message || '发送了一条通知';
     }
@@ -213,6 +219,9 @@ export default function NotificationPopover() {
                 if (notification.type === 'message' && notification.triggeredByUserId) {
                   // 消息类型：跳转到与发送者的消息对话
                   linkUrl = `/profile/messages/${notification.triggeredByUserId}`;
+                } else if (notification.type === 'gift_received') {
+                  // 礼物类型：跳转到我的物品页面
+                  linkUrl = '/profile/items';
                 } else if (notification.topicId) {
                   // 其他类型：跳转到对应的话题/帖子
                   linkUrl = `/topic/${notification.topicId}${

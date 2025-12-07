@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Check, X, Medal } from 'lucide-react';
+import { Loader2, Check, X, Medal, Gift } from 'lucide-react';
 import { ItemTypeIcon } from '@/features/shop/components/shared/ItemTypeIcon';
 import { getItemTypeLabel, isItemExpired } from '@/features/shop/utils/itemTypes';
 import TimeAgo from '@/components/forum/TimeAgo';
@@ -74,6 +74,35 @@ export function ItemInventoryCard({ item, onEquip, onUnequip, actioning }) {
             </span>
           </div>
         )}
+
+        {/* Gift Info */}
+        {(() => {
+          try {
+            if (item.metadata) {
+              const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+              if (meta.fromUserId) {
+                return (
+                  <div className="w-full mt-1 pt-2 border-t border-border">
+                    <div className="flex items-center gap-1.5 text-sm text-amber-600 mb-1">
+                      <Gift className="h-3.5 w-3.5" />
+                      <span className="font-medium">
+                        来自 {meta.fromUsername || '好友'} 的礼物
+                      </span>
+                    </div>
+                    {meta.message && (
+                      <p className="text-xs text-muted-foreground italic bg-muted/50 p-2 rounded">
+                        "{meta.message}"
+                      </p>
+                    )}
+                  </div>
+                );
+              }
+            }
+          } catch (e) {
+            // ignore parsing error
+          }
+          return null;
+        })()}
 
         {!expired && (
           item.itemType === 'badge' ? (
