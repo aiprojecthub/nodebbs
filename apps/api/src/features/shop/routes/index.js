@@ -157,6 +157,7 @@ export default async function shopRoutes(fastify, options) {
   }, async (request, reply) => {
     try {
       const { page, limit, type } = request.query;
+      fastify.log.info(`[商城] 获取我的商品 userId=${request.user.id}, type=${type}`);
       const result = await getUserItems(request.user.id, { page, limit, type });
       return result;
     } catch (error) {

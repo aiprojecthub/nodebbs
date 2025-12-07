@@ -243,10 +243,23 @@ export async function buyItem(userId, itemId) {
  * @returns {Promise<Object>}
  */
 export async function getUserItems(userId, options = {}) {
+  if (!userId) {
+    throw new Error('User ID is required');
+  }
   const { page = 1, limit = 50, type = null, isEquipped = null } = options;
   const offset = (page - 1) * limit;
 
   try {
+    const conditions = [eq(userItems.userId, userId)];
+
+    if (type) {
+      conditions.push(eq(shopItems.type, type));
+    }
+
+    if (isEquipped !== null) {
+      conditions.push(eq(userItems.isEquipped, isEquipped));
+    }
+
     let query = db
       .select({
         id: userItems.id,
@@ -266,15 +279,7 @@ export async function getUserItems(userId, options = {}) {
       })
       .from(userItems)
       .innerJoin(shopItems, eq(userItems.itemId, shopItems.id))
-      .where(eq(userItems.userId, userId));
-
-    if (type) {
-      query = query.where(eq(shopItems.type, type));
-    }
-
-    if (isEquipped !== null) {
-      query = query.where(eq(userItems.isEquipped, isEquipped));
-    }
+      .where(and(...conditions));
 
     const items = await query
       .orderBy(desc(userItems.isEquipped), desc(userItems.createdAt))
@@ -286,15 +291,7 @@ export async function getUserItems(userId, options = {}) {
       .select({ count: sql`count(*)` })
       .from(userItems)
       .innerJoin(shopItems, eq(userItems.itemId, shopItems.id))
-      .where(eq(userItems.userId, userId));
-    
-    if (type) {
-      countQuery = countQuery.where(eq(shopItems.type, type));
-    }
-    
-    if (isEquipped !== null) {
-      countQuery = countQuery.where(eq(userItems.isEquipped, isEquipped));
-    }
+      .where(and(...conditions));
 
     const [{ count }] = await countQuery;
 
