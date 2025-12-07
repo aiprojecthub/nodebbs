@@ -16,6 +16,7 @@ export const TRANSACTION_TYPES = {
   ADMIN_GRANT: 'admin_grant',
   ADMIN_DEDUCT: 'admin_deduct',
   GIFT_SENT: 'gift_sent',
+  SHOP_PURCHASE: 'shop_purchase',
 };
 
 export const TRANSACTION_TYPE_LABELS = {
@@ -32,6 +33,7 @@ export const TRANSACTION_TYPE_LABELS = {
   [TRANSACTION_TYPES.ADMIN_GRANT]: '管理员发放',
   [TRANSACTION_TYPES.ADMIN_DEDUCT]: '管理员扣除',
   [TRANSACTION_TYPES.GIFT_SENT]: '赠送商品',
+  [TRANSACTION_TYPES.SHOP_PURCHASE]: '购买商品',
 };
 
 export const TRANSACTION_TYPE_COLORS = {
@@ -48,6 +50,7 @@ export const TRANSACTION_TYPE_COLORS = {
   [TRANSACTION_TYPES.ADMIN_GRANT]: 'default',
   [TRANSACTION_TYPES.ADMIN_DEDUCT]: 'destructive',
   [TRANSACTION_TYPES.GIFT_SENT]: 'destructive',
+  [TRANSACTION_TYPES.SHOP_PURCHASE]: 'destructive',
 };
 
 /**
