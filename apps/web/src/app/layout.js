@@ -24,27 +24,36 @@ const $title = 'NodeBBS';
 const $description = '一个基于 Node.js 和 React 的现代化论坛系统';
 
 export async function generateMetadata({ params }) {
+  let name = $title;
+  let description = $description;
+
   try {
     const settings = await request('/api/settings');
-    const name = settings?.site_name?.value || $title;
-    const description = settings?.site_description?.value || $description;
-    return {
-      title: {
-        template: `\%s | ${name}`,
-        default: $title, // a default is required when creating a template
-      },
-      description,
-    };
+    if (settings?.site_name?.value) {
+      name = settings.site_name.value;
+    }
+    if (settings?.site_description?.value) {
+      description = settings.site_description.value;
+    }
   } catch (error) {
     console.error('Error fetching settings for metadata:', error);
-    return {
-      title: {
-        template: `\%s | ${$title}`,
-        default: $title,
-      },
-      description: $description,
-    };
   }
+
+  return {
+    title: {
+      template: `%s | ${name}`,
+      default: $title, // a default is required when creating a template
+    },
+    description,
+    applicationName: $title,
+    appleWebApp: {
+      title: $title,
+    },
+    icons: {
+      icon: '/logo.svg',
+      apple: '/apple-touch-icon.png',
+    },
+  };
 }
 
 async function AppLayout({ children }) {
