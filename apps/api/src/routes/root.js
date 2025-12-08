@@ -1,6 +1,14 @@
+import { readFile } from 'fs/promises';
+import { join } from 'path';
+import { dirname } from '../utils/index.js';
 import db from '../db/index.js';
 import { topics, posts, users } from '../db/schema.js';
 import { sql, gte, eq, and, ne } from 'drizzle-orm';
+
+const __dirname = dirname(import.meta.url);
+const pkg = JSON.parse(
+  await readFile(join(__dirname, '../../package.json'), 'utf-8')
+);
 
 export default async function rootRoutes(fastify, options) {
   // Health check
@@ -27,6 +35,7 @@ export default async function rootRoutes(fastify, options) {
       return {
         status: 'ok',
         service: 'Nodebbs API',
+        version: pkg.version,
         timestamp: new Date().toISOString(),
       };
     }

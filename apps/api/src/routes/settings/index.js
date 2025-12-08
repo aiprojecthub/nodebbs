@@ -33,6 +33,11 @@ const SETTING_KEYS = {
     accessLevel: ACCESS_LEVEL.PUBLIC,
     category: 'general',
   },
+  SITE_FOOTER_HTML: {
+    key: 'site_footer_html',
+    accessLevel: ACCESS_LEVEL.PUBLIC,
+    category: 'general',
+  },
 
   // 功能开关
   REGISTRATION_MODE: {

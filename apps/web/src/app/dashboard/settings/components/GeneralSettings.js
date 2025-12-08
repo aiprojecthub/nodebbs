@@ -2,6 +2,7 @@
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 
 export function GeneralSettings({
@@ -58,6 +59,35 @@ export function GeneralSettings({
               }
               disabled={saving}
               className='max-w-md'
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 页脚自定义 HTML */}
+      {settings.site_footer_html && (
+        <div className='border border-border rounded-lg bg-card'>
+          <div className='px-4 py-4 space-y-3'>
+            <div className='space-y-1'>
+              <Label
+                htmlFor='site_footer_html'
+                className='text-sm font-semibold'
+              >
+                页脚自定义 HTML
+              </Label>
+              <p className='text-sm text-muted-foreground'>
+                {settings.site_footer_html.description || '支持 HTML 标签，将显示在页脚区域'}
+              </p>
+            </div>
+            <Textarea
+              id='site_footer_html'
+              defaultValue={settings.site_footer_html.value}
+              onBlur={(e) =>
+                handleStringChange('site_footer_html', e.target.value)
+              }
+              disabled={saving}
+              className='max-w-md min-h-[100px] font-mono text-xs'
+              placeholder='<span>...</span>'
             />
           </div>
         </div>

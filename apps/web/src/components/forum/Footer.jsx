@@ -1,9 +1,10 @@
 'use client';
 
-import Link from 'next/link';
-import { Github, Twitter, Mail } from 'lucide-react';
 
-export default function Footer({ settings }) {
+import Link from 'next/link';
+import { Github } from 'lucide-react';
+
+export default function Footer({ settings, version }) {
   const currentYear = new Date().getFullYear();
 
   const footerLinks = [
@@ -11,47 +12,49 @@ export default function Footer({ settings }) {
     { label: '关于', href: '/about' },
   ];
 
-  const socialLinks = [
-    { icon: Github, href: 'https://github.com/aiprojecthub/nodebbs', label: 'GitHub' }
-  ];
-
   return (
     <footer className="border-t border-border bg-background mt-auto">
       <div className="container mx-auto px-4 py-6">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          {/* 左侧：版权和链接 */}
-          <div className="flex flex-col md:flex-row items-center gap-4 text-xs text-muted-foreground">
-            <div className="flex items-center space-x-1">
-              <span>© {currentYear} {settings?.site_name?.value || 'NodeBBS'}</span>
-            </div>
-            <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-              {footerLinks.map((link, index) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  prefetch={false}
-                  className="hover:text-primary transition-colors"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+          {/* 左侧：自定义内容 或 默认版权信息 */}
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-3 gap-y-1">
+            <span>© {currentYear} {settings?.site_name?.value || 'NodeBBS'}</span>
+            {settings?.site_footer_html?.value ? (
+              <div 
+                className="flex flex-wrap items-center gap-x-3 gap-y-1 [&_a]:hover:text-foreground [&_a]:transition-colors"
+                dangerouslySetInnerHTML={{ __html: settings.site_footer_html.value }} 
+              />
+            ) : (
+              <>
+                {footerLinks.map((link) => (
+                  <span key={link.href} className="flex items-center gap-3">
+                    <span>•</span>
+                    <Link
+                      href={link.href}
+                      prefetch={false}
+                      className="hover:text-foreground transition-colors"
+                    >
+                      {link.label}
+                    </Link>
+                  </span>
+                ))}
+              </>
+            )}
           </div>
 
-          {/* 右侧：社交链接 */}
-          <div className="flex items-center space-x-3">
-            {socialLinks.map((social) => (
+          {/* 右侧：程序声明 */}
+          <div className="flex items-center gap-6">
+            {version && (
               <a
-                key={social.label}
-                href={social.href}
+                href="https://github.com/aiprojecthub/nodebbs"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground transition-colors"
-                aria-label={social.label}
+                className="hover:text-foreground transition-colors inline-flex items-center gap-1"
               >
-                <social.icon className="h-4 w-4" />
+                Built with NodeBBS v{version}
+                <Github className='w-4 h-4'/>
               </a>
-            ))}
+            )}
           </div>
         </div>
       </div>

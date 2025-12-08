@@ -22,6 +22,13 @@ export const SETTING_KEYS = {
     description: '站点描述',
     category: 'general',
   },
+  SITE_FOOTER_HTML: {
+    key: 'site_footer_html',
+    value: '',
+    valueType: 'string',
+    description: '页脚自定义 HTML 内容（支持 ICP 备案号、公安备案等显示）',
+    category: 'general',
+  },
 
   // 功能开关
   REGISTRATION_MODE: {

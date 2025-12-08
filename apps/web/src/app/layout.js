@@ -59,11 +59,18 @@ export async function generateMetadata({ params }) {
 
 async function AppLayout({ children }) {
   let settings = null;
+  let apiInfo = null;
   try {
-    settings = await request('/api/settings');
+    const [settingsData, apiData] = await Promise.all([
+      request('/api/settings'),
+      request('/api/'),
+    ]);
+    settings = settingsData;
+    apiInfo = apiData;
   } catch (error) {
-    console.error('Error fetching settings for layout:', error);
+    console.error('Error fetching data for layout:', error);
     settings = null;
+    apiInfo = null;
   }
 
   return (
@@ -71,7 +78,7 @@ async function AppLayout({ children }) {
       <Header settings={settings} />
       <EmailVerificationBanner />
       <div className='flex-1'>{children}</div>
-      <Footer settings={settings} />
+      <Footer settings={settings} version={apiInfo?.version} />
     </div>
   );
 }
