@@ -54,6 +54,15 @@ export async function generateMetadata({ params }) {
       icon: '/logo.svg',
       apple: '/apple-touch-icon.png',
     },
+    openGraph: {
+      title: {
+        template: `%s | ${name}`,
+        default: $title,
+      },
+      description,
+      siteName: name,
+      type: 'website',
+    },
   };
 }
 

@@ -3,30 +3,11 @@ import { TopicListClient } from '@/components/forum/TopicList';
 
 // 生成页面元数据（SEO优化）
 export async function generateMetadata({ searchParams }) {
-  const resolvedParams = await searchParams;
-  const page = parseInt(resolvedParams.p) || 1;
-  const sort = resolvedParams.sort || 'latest';
-
-  const sortNames = {
-    latest: '最新',
-    oldest: '最早',
-    most_commented: '最热',
-    most_viewed: '最多浏览',
-    recently_updated: '最近更新',
-  };
-
-  const title =
-    page > 1 ? `全部话题 - 第${page}页` : '全部话题';
-
-  const description = `浏览社区中的${
-    sortNames[sort] || '最新'
-  }话题，发现精彩讨论`;
+  const description = `浏览社区中的最新话题，发现精彩讨论`;
 
   return {
-    title,
     description,
     openGraph: {
-      title,
       description,
       type: 'website',
     },
