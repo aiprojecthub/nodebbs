@@ -22,10 +22,12 @@ async function authPlugin(fastify) {
       path: '/',
       httpOnly: true,
       // 开发环境：
-      // - Secure: false (允许 HTTP)
+      // - Secure: 自动检测 (HTTPS时为true，HTTP时为false)
       // - SameSite: Lax (localhost 不同端口视为同站，允许发送)
-      secure: isProd,
-      sameSite: 'lax',
+      secure: process.env.COOKIE_SECURE !== undefined 
+        ? process.env.COOKIE_SECURE === 'true' 
+        : this.request.protocol === 'https',
+      sameSite: process.env.COOKIE_SAMESITE || 'lax',
       domain: process.env.COOKIE_DOMAIN || undefined, // 生产环境如果是子域名部署，需要设置主域名 (如 .example.com)
       maxAge: ms(expiresIn) / 1000,
     });
