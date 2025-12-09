@@ -284,28 +284,5 @@ export default async function qrLoginRoutes(fastify, options) {
     }
   );
 
-  // 清理过期的登录请求（定时任务可调用）
-  fastify.delete(
-    '/cleanup',
-    {
-      preHandler: [fastify.authenticate, fastify.requireAdmin],
-      schema: {
-        tags: ['auth'],
-        description: '清理过期的扫码登录请求',
-        security: [{ bearerAuth: [] }],
-      },
-    },
-    async (request, reply) => {
-      const result = await db
-        .delete(qrLoginRequests)
-        .where(
-          and(
-            eq(qrLoginRequests.status, 'pending'),
-            gt(new Date(), qrLoginRequests.expiresAt)
-          )
-        );
 
-      return { message: '清理完成', deletedCount: result.rowCount };
-    }
-  );
 }
