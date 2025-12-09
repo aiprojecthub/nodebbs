@@ -622,39 +622,7 @@ export default async function invitationsRoutes(fastify) {
     }
   );
 
-  // 获取用户列表（用于筛选）
-  fastify.get(
-    '/users',
-    {
-      preHandler: [fastify.requireAdmin],
-      schema: {
-        tags: ['invitations', 'admin'],
-        description: '获取有邀请码的用户列表（管理员）',
-        security: [{ bearerAuth: [] }],
-      },
-    },
-    async (request, reply) => {
-      try {
-        const usersWithCodes = await db
-          .select({
-            id: users.id,
-            username: users.username,
-            avatar: users.avatar,
-            totalCodes: sql`count(${invitationCodes.id})::int`,
-          })
-          .from(users)
-          .leftJoin(invitationCodes, eq(users.id, invitationCodes.createdBy))
-          .groupBy(users.id, users.username, users.avatar)
-          .having(sql`count(${invitationCodes.id}) > 0`)
-          .orderBy(desc(sql`count(${invitationCodes.id})`));
 
-        return usersWithCodes;
-      } catch (error) {
-        fastify.log.error('Error fetching users with codes:', error);
-        return reply.code(500).send({ error: '获取用户列表失败' });
-      }
-    }
-  );
 
   // ============= 邀请规则管理 API =============
 

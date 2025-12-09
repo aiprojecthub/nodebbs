@@ -809,12 +809,9 @@ export const invitationsApi = {
     async getStats() {
       return apiClient.get('/invitations/stats');
     },
-
-    // 获取用户列表
-    async getUsers() {
-      return apiClient.get('/invitations/users');
-    },
   },
+
+
 
   // 邀请规则管理 API（管理员）
   rules: {

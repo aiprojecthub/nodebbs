@@ -57,8 +57,7 @@ export default function AdminInvitationsPage() {
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [userFilter, setUserFilter] = useState('all');
-  const [users, setUsers] = useState([]);
+
   const [selectedCode, setSelectedCode] = useState(null);
   const [showDisableDialog, setShowDisableDialog] = useState(false);
   const [showEnableDialog, setShowEnableDialog] = useState(false);
@@ -76,8 +75,7 @@ export default function AdminInvitationsPage() {
   useEffect(() => {
     fetchCodes();
     fetchStats();
-    fetchUsers();
-  }, [page, statusFilter, userFilter]);
+  }, [page, statusFilter]);
 
   const fetchCodes = async () => {
     setLoading(true);
@@ -85,7 +83,6 @@ export default function AdminInvitationsPage() {
       const params = { page, limit };
       if (search) params.search = search;
       if (statusFilter !== 'all') params.status = statusFilter;
-      if (userFilter !== 'all') params.createdBy = parseInt(userFilter);
 
       const data = await invitationsApi.admin.getAll(params);
       setCodes(data.items || []);
@@ -107,14 +104,7 @@ export default function AdminInvitationsPage() {
     }
   };
 
-  const fetchUsers = async () => {
-    try {
-      const data = await invitationsApi.admin.getUsers();
-      setUsers(data);
-    } catch (err) {
-      console.error('获取用户列表失败:', err);
-    }
-  };
+
 
   const handleSearch = () => {
     setPage(1);
@@ -470,18 +460,16 @@ export default function AdminInvitationsPage() {
           placeholder: '搜索邀请码或备注...',
         }}
         filter={{
-          value: `${statusFilter}-${userFilter}`,
+          value: statusFilter,
           onChange: (value) => {
-            const [status, user] = value.split('-');
-            setStatusFilter(status);
-            setUserFilter(user);
+            setStatusFilter(value);
           },
           options: [
-            { value: 'all-all', label: '全部' },
-            { value: 'active-all', label: '活跃' },
-            { value: 'used-all', label: '已使用' },
-            { value: 'expired-all', label: '已过期' },
-            { value: 'disabled-all', label: '已禁用' },
+            { value: 'all', label: '全部' },
+            { value: 'active', label: '活跃' },
+            { value: 'used', label: '已使用' },
+            { value: 'expired', label: '已过期' },
+            { value: 'disabled', label: '已禁用' },
             // ...users.map((user) => ({
             //   value: `all-${user.id}`,
             //   label: `生成者: ${user.username}`,
