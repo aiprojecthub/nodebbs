@@ -6,20 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { FormDialog } from '@/components/common/FormDialog';
 import { invitationsApi } from '@/lib/api';
 import { toast } from 'sonner';
 import { Copy, Plus, Check, X, Clock, Ticket } from 'lucide-react';
@@ -334,15 +327,15 @@ export default function InvitationsPage() {
       )}
 
       {/* 生成邀请码对话框 */}
-      <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>生成邀请码</DialogTitle>
-            <DialogDescription>
-              创建一个新的邀请码，邀请好友加入社区
-            </DialogDescription>
-          </DialogHeader>
-
+      <FormDialog
+          open={isGenerateDialogOpen}
+          onOpenChange={setIsGenerateDialogOpen}
+          title="生成邀请码"
+          description="创建一个新的邀请码，邀请好友加入社区"
+          submitText={generating ? '生成中...' : '生成'}
+          onSubmit={handleGenerate}
+          loading={generating}
+      >
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="count">生成数量</Label>
@@ -403,21 +396,7 @@ export default function InvitationsPage() {
               </div>
             )}
           </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsGenerateDialogOpen(false)}
-              disabled={generating}
-            >
-              取消
-            </Button>
-            <Button onClick={handleGenerate} disabled={generating}>
-              {generating ? '生成中...' : '生成'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </FormDialog>
     </div>
   );
 }

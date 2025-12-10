@@ -19,36 +19,46 @@ export function FormDialog({
   cancelText = '取消',
   onSubmit,
   loading = false,
-  disabled = false,
   maxWidth = 'sm:max-w-[425px]',
+  disabled = false,
+  submitClassName = '',
+  footer = undefined, // Custom footer content. Pass null to hide footer.
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={maxWidth}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          {description && (
-            <DialogDescription>{description}</DialogDescription>
-          )}
+          <DialogDescription>
+            {description}
+          </DialogDescription>
         </DialogHeader>
         
         {children}
 
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={loading}
-          >
-            {cancelText}
-          </Button>
-          {onSubmit && (
-            <Button onClick={onSubmit} disabled={loading || disabled}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {submitText}
+        {footer === undefined ? (
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={loading}
+            >
+              {cancelText}
             </Button>
-          )}
-        </DialogFooter>
+            {onSubmit && (
+              <Button
+                  onClick={onSubmit}
+                  disabled={loading || disabled}
+                  className={submitClassName}
+              >
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {submitText}
+              </Button>
+            )}
+          </DialogFooter>
+        ) : (
+            footer
+        )}
       </DialogContent>
     </Dialog>
   );
