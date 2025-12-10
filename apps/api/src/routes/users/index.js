@@ -945,6 +945,15 @@ export default async function userRoutes(fastify, options) {
       return reply.code(404).send({ error: '用户不存在' });
     }
 
+    // 隐私检查：只有本人或管理员/版主可以查看收藏列表
+    const currentUser = request.user;
+    const isOwner = currentUser && currentUser.id === user.id;
+    const isModerator = currentUser && ['moderator', 'admin'].includes(currentUser.role);
+
+    if (!isOwner && !isModerator) {
+      return reply.code(403).send({ error: '无权查看该用户的收藏列表' });
+    }
+
     const bookmarkedTopics = await db
       .select({
         id: topics.id,
@@ -975,8 +984,7 @@ export default async function userRoutes(fastify, options) {
       .limit(limit)
       .offset(offset);
 
-    // 检查用户权限
-    const isModerator = request.user && ['moderator', 'admin'].includes(request.user.role);
+    // 检查用户权限 (isModerator 已在上文定义)
     
     // 如果话题作者被封禁且访问者不是管理员/版主，隐藏头像
     bookmarkedTopics.forEach(topic => {
