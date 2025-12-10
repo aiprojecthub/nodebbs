@@ -8,24 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/forum/DataTable';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { ConfirmDialog } from '@/components/common/AlertDialog';
+import { FormDialog } from '@/components/common/FormDialog';
 import { Plus, Edit, Trash2, Loader2, Tag as TagIcon } from 'lucide-react';
 import { tagApi } from '@/lib/api';
 import { toast } from 'sonner';
@@ -268,14 +252,15 @@ export default function TagsManagement() {
       />
 
       {/* 标签对话框 */}
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{isEdit ? '编辑标签' : '创建标签'}</DialogTitle>
-            <DialogDescription>
-              {isEdit ? '修改标签信息' : '添加一个新的话题标签'}
-            </DialogDescription>
-          </DialogHeader>
+      <FormDialog
+          open={showDialog}
+          onOpenChange={setShowDialog}
+          title={isEdit ? '编辑标签' : '创建标签'}
+          description={isEdit ? '修改标签信息' : '添加一个新的话题标签'}
+          submitText={isEdit ? '保存' : '创建'}
+          onSubmit={handleSubmit}
+          loading={submitting}
+      >
           <div className="space-y-4 py-4">
             <div className='space-y-2'>
               <Label htmlFor="name">标签名称 *</Label>
@@ -330,43 +315,28 @@ export default function TagsManagement() {
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDialog(false)}>
-              取消
-            </Button>
-            <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : isEdit ? '保存' : '创建'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </FormDialog>
 
       {/* 删除确认对话框 */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>确认删除？</AlertDialogTitle>
-            <AlertDialogDescription>
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="确认删除？"
+        description={
+            <>
               确定要删除标签 "{selectedTag?.name}" 吗？此操作不可撤销。
               {selectedTag?.topicCount > 0 && (
                 <span className="block mt-2 text-orange-600">
                   注意：该标签被 {selectedTag.topicCount} 个话题使用。
                 </span>
               )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={submitting}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : '删除'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </>
+        }
+        confirmText="删除"
+        variant="destructive"
+        onConfirm={handleDelete}
+        loading={submitting}
+      />
     </div>
   );
 }

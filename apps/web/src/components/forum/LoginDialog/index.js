@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { FormDialog } from '@/components/common/FormDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { settingsApi, invitationsApi, oauthConfigApi } from '@/lib/api';
 import { toast } from 'sonner';
@@ -251,21 +251,21 @@ export default function LoginDialog({ open, onOpenChange }) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[450px]" onInteractOutside={handleInteractOutside}>
-        <DialogHeader>
-          <DialogTitle>
-            {isForgotPassword ? '找回密码' : isLogin ? '登录' : '注册'}
-          </DialogTitle>
-          <DialogDescription>
-            {isForgotPassword
-              ? '输入您的邮箱地址，我们将发送密码重置链接'
-              : isLogin
-              ? '登录到您的账户以继续'
-              : '创建新账户以加入社区'}
-          </DialogDescription>
-        </DialogHeader>
-
+    <FormDialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      onInteractOutside={handleInteractOutside}
+      title={isForgotPassword ? '找回密码' : isLogin ? '登录' : '注册'}
+      description={
+        isForgotPassword
+          ? '输入您的邮箱地址，我们将发送密码重置链接'
+          : isLogin
+          ? '登录到您的账户以继续'
+          : '创建新账户以加入社区'
+      }
+      maxWidth="sm:max-w-[450px]"
+      footer={null}
+    >
         {/* 登录时显示密码/扫码选项卡 */}
         {isLogin && qrLoginEnabled ? (
           <Tabs value={loginMethod} onValueChange={setLoginMethod} className="w-full">
@@ -365,7 +365,6 @@ export default function LoginDialog({ open, onOpenChange }) {
           loadingSettings={loadingSettings}
           onModeChange={handleModeChange}
         />
-      </DialogContent>
-    </Dialog>
+    </FormDialog>
   );
 }

@@ -12,14 +12,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { ConfirmDialog } from '@/components/common/AlertDialog';
+import { FormDialog } from '@/components/common/FormDialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { moderationApi } from '@/lib/api';
@@ -387,14 +381,11 @@ export default function ReportsManagement() {
       />
 
       {/* 处理举报对话框 */}
-      <Dialog open={resolveDialogOpen} onOpenChange={setResolveDialogOpen}>
-        <DialogContent className='sm:max-w-[500px]'>
-          <DialogHeader>
-            <DialogTitle>
-              {resolveAction === 'resolve' ? '处理举报' : '驳回举报'}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedReport && (
+      <FormDialog
+          open={resolveDialogOpen}
+          onOpenChange={setResolveDialogOpen}
+          title={resolveAction === 'resolve' ? '处理举报' : '驳回举报'}
+          description={selectedReport && (
                 <div className='mt-2 space-y-2'>
                   <div className='flex items-center space-x-2'>
                     <span className='text-sm font-medium'>类型：</span>
@@ -408,9 +399,12 @@ export default function ReportsManagement() {
                   </div>
                 </div>
               )}
-            </DialogDescription>
-          </DialogHeader>
-
+          submitText={resolveAction === 'resolve' ? '确认处理' : '确认驳回'}
+          onSubmit={handleResolve}
+          loading={resolving}
+          submitClassName={resolveAction === 'resolve' ? 'bg-green-600 hover:bg-green-700' : ''}
+          maxWidth='sm:max-w-[500px]'
+      >
           <div className='space-y-4 py-4'>
             <div className='space-y-2'>
               <Label htmlFor='resolve-note'>处理备注（可选）</Label>
@@ -425,48 +419,17 @@ export default function ReportsManagement() {
               />
             </div>
           </div>
-
-          <DialogFooter>
-            <Button
-              type='button'
-              variant='outline'
-              onClick={() => setResolveDialogOpen(false)}
-              disabled={resolving}
-            >
-              取消
-            </Button>
-            <Button
-              type='submit'
-              onClick={handleResolve}
-              disabled={resolving}
-              className={
-                resolveAction === 'resolve'
-                  ? 'bg-green-600 hover:bg-green-700'
-                  : ''
-              }
-            >
-              {resolving ? (
-                <>
-                  <Loader2 className='h-4 w-4 animate-spin' />
-                  处理中...
-                </>
-              ) : resolveAction === 'resolve' ? (
-                '确认处理'
-              ) : (
-                '确认驳回'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </FormDialog>
 
       {/* 详情对话框 */}
-      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className='sm:max-w-[600px]'>
-          <DialogHeader>
-            <DialogTitle>举报详情</DialogTitle>
-          </DialogHeader>
-
+      <FormDialog
+          open={detailDialogOpen}
+          onOpenChange={setDetailDialogOpen}
+          title="举报详情"
+          cancelText="关闭"
+          maxWidth='sm:max-w-[600px]'
+          // Read-only, so no submit button
+      >
           {detailReport && (
             <div className='space-y-4 py-4'>
               <div className='grid grid-cols-2 gap-4'>
@@ -561,18 +524,7 @@ export default function ReportsManagement() {
               )}
             </div>
           )}
-
-          <DialogFooter>
-            <Button
-              type='button'
-              variant='outline'
-              onClick={() => setDetailDialogOpen(false)}
-            >
-              关闭
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </FormDialog>
     </div>
   );
 }

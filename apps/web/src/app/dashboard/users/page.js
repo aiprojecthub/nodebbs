@@ -13,24 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { ConfirmDialog } from '@/components/common/AlertDialog';
+import { FormDialog } from '@/components/common/FormDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -502,11 +486,12 @@ export default function UsersManagement() {
       />
 
       {/* 封禁确认对话框 */}
-      <AlertDialog open={showBanDialog} onOpenChange={setShowBanDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>确认封禁用户？</AlertDialogTitle>
-            <AlertDialogDescription>
+      <ConfirmDialog
+        open={showBanDialog}
+        onOpenChange={setShowBanDialog}
+        title="确认封禁用户？"
+        description={
+            <>
               确定要封禁用户 "{selectedUser?.username}" 吗？
               <br />
               封禁后该用户将无法登录和发布内容。
@@ -518,47 +503,38 @@ export default function UsersManagement() {
                   </span>
                 </>
               )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleBan}
-              disabled={submitting}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : '确认封禁'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </>
+        }
+        confirmText="确认封禁"
+        variant="destructive"
+        onConfirm={handleBan}
+        loading={submitting}
+      />
 
       {/* 解封确认对话框 */}
-      <AlertDialog open={showUnbanDialog} onOpenChange={setShowUnbanDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>确认解封用户？</AlertDialogTitle>
-            <AlertDialogDescription>
+      <ConfirmDialog
+        open={showUnbanDialog}
+        onOpenChange={setShowUnbanDialog}
+        title="确认解封用户？"
+        description={
+            <>
               确定要解封用户 "{selectedUser?.username}" 吗？
               <br />
               解封后该用户将恢复正常使用权限。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction onClick={handleUnban} disabled={submitting}>
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : '确认解封'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </>
+        }
+        confirmText="确认解封"
+        onConfirm={handleUnban}
+        loading={submitting}
+      />
 
-      {/* 修改角色对话框 */}
-      <AlertDialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>修改用户角色</AlertDialogTitle>
-            <AlertDialogDescription>
+      {/* 修改角色对话框 - using FormDialog because it has inputs */}
+      <FormDialog
+         open={showRoleDialog}
+         onOpenChange={setShowRoleDialog}
+         title="修改用户角色"
+         description={
+            <>
               为用户 "{selectedUser?.username}" 设置新角色
               {selectedUser?.role === 'admin' && (
                 <>
@@ -568,8 +544,13 @@ export default function UsersManagement() {
                   </span>
                 </>
               )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+            </>
+         }
+         submitText="确认修改"
+         onSubmit={handleChangeRole}
+         loading={submitting}
+         // FormDialog internally wraps children in a div but we can pass Select directly
+      >
           <div className="py-4">
             <Select value={newRole} onValueChange={setNewRole}>
               <SelectTrigger>
@@ -583,24 +564,15 @@ export default function UsersManagement() {
               </SelectContent>
             </Select>
           </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction onClick={handleChangeRole} disabled={submitting}>
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : '确认修改'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      </FormDialog>
 
       {/* 删除确认对话框 */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {deleteType === 'hard' ? '确认彻底删除用户？' : '确认软删除用户？'}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteType === 'hard' ? (
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title={deleteType === 'hard' ? '确认彻底删除用户？' : '确认软删除用户？'}
+        description={
+             deleteType === 'hard' ? (
                 <>
                   此操作将
                   <span className="font-semibold text-destructive">
@@ -616,46 +588,27 @@ export default function UsersManagement() {
                   <br />
                   软删除后用户将无法登录，但数据仍保留在数据库中。
                 </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={submitting}>取消</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={submitting}
-              className={
-                deleteType === 'hard'
-                  ? 'bg-destructive hover:bg-destructive/90'
-                  : ''
-              }
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  删除中...
-                </>
-              ) : (
-                '确认删除'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              )
+        }
+        confirmText="确认删除"
+        variant={deleteType === 'hard' ? 'destructive' : 'default'}
+        onConfirm={handleDelete}
+        loading={submitting}
+      />
 
       {/* 创建/编辑用户对话框 */}
-      <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>
-              {dialogMode === 'create' ? '创建新用户' : '编辑用户'}
-            </DialogTitle>
-            <DialogDescription>
-              {dialogMode === 'create'
-                ? '填写用户信息以创建新账号'
-                : '修改用户信息'}
-            </DialogDescription>
-          </DialogHeader>
+      <FormDialog
+          open={showUserDialog}
+          onOpenChange={setShowUserDialog}
+          title={dialogMode === 'create' ? '创建新用户' : '编辑用户'}
+          description={dialogMode === 'create'
+            ? '填写用户信息以创建新账号'
+            : '修改用户信息'}
+          submitText={dialogMode === 'create' ? '创建用户' : '保存修改'}
+          onSubmit={handleSubmitUser}
+          loading={submitting}
+          maxWidth="sm:max-w-[500px]"
+      >
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="username">
@@ -742,27 +695,7 @@ export default function UsersManagement() {
               </Label>
             </div>
           </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowUserDialog(false)}
-              disabled={submitting}
-            >
-              取消
-            </Button>
-            <Button onClick={handleSubmitUser} disabled={submitting}>
-              {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  {dialogMode === 'create' ? '创建中...' : '保存中...'}
-                </>
-              ) : (
-                dialogMode === 'create' ? '创建用户' : '保存修改'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </FormDialog>
     </div>
   );
 }

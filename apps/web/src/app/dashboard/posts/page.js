@@ -12,16 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { ConfirmDialog } from '@/components/common/AlertDialog';
 import { postApi } from '@/lib/api';
 import { toast } from 'sonner';
 import {
@@ -326,14 +317,12 @@ export default function AdminPostsPage() {
       />
 
       {/* 删除确认对话框 */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {deleteType === 'hard' ? '确认彻底删除？' : '确认删除？'}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteType === 'hard' ? (
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title={deleteType === 'hard' ? '确认彻底删除？' : '确认删除？'}
+        description={
+            deleteType === 'hard' ? (
                 <>
                   此操作将
                   <span className='font-semibold text-destructive'>
@@ -349,32 +338,13 @@ export default function AdminPostsPage() {
                   <br />
                   软删除后回复将不再显示，但数据仍保留在数据库中。
                 </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>取消</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDelete}
-              disabled={deleting}
-              className={
-                deleteType === 'hard'
-                  ? 'bg-destructive hover:bg-destructive/90'
-                  : ''
-              }
-            >
-              {deleting ? (
-                <>
-                  <Loader2 className='h-4 w-4 animate-spin' />
-                  删除中...
-                </>
-              ) : (
-                '确认删除'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              )
+        }
+        confirmText="确认删除"
+        variant={deleteType === 'hard' ? 'destructive' : 'default'}
+        onConfirm={handleConfirmDelete}
+        loading={deleting}
+      />
     </div>
   );
 }

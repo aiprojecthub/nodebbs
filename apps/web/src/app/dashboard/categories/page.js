@@ -7,24 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { DataTable } from '@/components/forum/DataTable';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { ConfirmDialog } from '@/components/common/AlertDialog';
+import { FormDialog } from '@/components/common/FormDialog';
 import { Plus, Edit, Trash2, Loader2, Lock } from 'lucide-react';
 import { categoryApi } from '@/lib/api';
 import { toast } from 'sonner';
@@ -362,18 +346,17 @@ export default function CategoriesManagement() {
       />
 
       {/* 创建/编辑分类对话框 */}
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {dialogMode === 'create' ? '创建分类' : '编辑分类'}
-            </DialogTitle>
-            <DialogDescription>
-              {dialogMode === 'create'
-                ? '添加一个新的论坛分类'
-                : '修改分类信息'}
-            </DialogDescription>
-          </DialogHeader>
+      <FormDialog
+         open={showDialog}
+         onOpenChange={setShowDialog}
+         title={dialogMode === 'create' ? '创建分类' : '编辑分类'}
+         description={dialogMode === 'create'
+           ? '添加一个新的论坛分类'
+           : '修改分类信息'}
+         submitText={dialogMode === 'create' ? '创建' : '保存'}
+         onSubmit={handleSubmit}
+         loading={submitting}
+      >
           <div className='space-y-4 py-4'>
             <div className='space-y-2'>
               <Label htmlFor='name'>名称 *</Label>
@@ -505,29 +488,15 @@ export default function CategoriesManagement() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant='outline' onClick={() => setShowDialog(false)}>
-              取消
-            </Button>
-            <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting ? (
-                <Loader2 className='h-4 w-4 animate-spin' />
-              ) : dialogMode === 'create' ? (
-                '创建'
-              ) : (
-                '保存'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </FormDialog>
 
       {/* 删除确认对话框 */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>确认删除？</AlertDialogTitle>
-            <AlertDialogDescription>
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="确认删除？"
+        description={
+            <>
               确定要删除分类 "{selectedCategory?.name}" 吗？此操作不可撤销。
               {selectedCategory?.topicCount > 0 && (
                 <span className='block mt-2 text-destructive'>
@@ -535,24 +504,14 @@ export default function CategoriesManagement() {
                   个话题，无法删除。
                 </span>
               )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={submitting || selectedCategory?.topicCount > 0}
-              className='bg-destructive hover:bg-destructive/90'
-            >
-              {submitting ? (
-                <Loader2 className='h-4 w-4 animate-spin' />
-              ) : (
-                '删除'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </>
+        }
+        confirmText="删除"
+        variant="destructive"
+        onConfirm={handleDelete}
+        loading={submitting}
+        confirmDisabled={selectedCategory?.topicCount > 0}
+      />
     </div>
   );
 }

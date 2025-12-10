@@ -15,24 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { ConfirmDialog } from '@/components/common/AlertDialog';
+import { FormDialog } from '@/components/common/FormDialog';
 import {
   Loader2,
   Plus,
@@ -492,15 +476,15 @@ export default function AdminInvitationsPage() {
       />
 
       {/* 生成邀请码对话框 */}
-      <Dialog open={showGenerateDialog} onOpenChange={setShowGenerateDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>生成邀请码</DialogTitle>
-            <DialogDescription>
-              手动生成一个新的邀请码（管理员不受每日限制）
-            </DialogDescription>
-          </DialogHeader>
-
+      <FormDialog
+          open={showGenerateDialog}
+          onOpenChange={setShowGenerateDialog}
+          title="生成邀请码"
+          description="手动生成一个新的邀请码（管理员不受每日限制）"
+          submitText="生成"
+          onSubmit={handleGenerate}
+          loading={submitting}
+      >
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="note">备注（可选）</Label>
@@ -546,81 +530,44 @@ export default function AdminInvitationsPage() {
               />
             </div>
           </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowGenerateDialog(false)}
-              disabled={submitting}
-            >
-              取消
-            </Button>
-            <Button onClick={handleGenerate} disabled={submitting}>
-              {submitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                '生成'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </FormDialog>
 
       {/* 禁用确认对话框 */}
-      <AlertDialog open={showDisableDialog} onOpenChange={setShowDisableDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>确认禁用邀请码？</AlertDialogTitle>
-            <AlertDialogDescription>
+      <ConfirmDialog
+        open={showDisableDialog}
+        onOpenChange={setShowDisableDialog}
+        title="确认禁用邀请码？"
+        description={
+            <>
               确定要禁用邀请码 "{selectedCode?.code}" 吗？
               <br />
               禁用后该邀请码将无法使用。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDisable}
-              disabled={submitting}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              {submitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                '确认禁用'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </>
+        }
+        confirmText="确认禁用"
+        variant="destructive"
+        onConfirm={handleDisable}
+        loading={submitting}
+      />
 
       {/* 恢复确认对话框 */}
-      <AlertDialog open={showEnableDialog} onOpenChange={setShowEnableDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>确认恢复邀请码？</AlertDialogTitle>
-            <AlertDialogDescription>
+      <ConfirmDialog
+        open={showEnableDialog}
+        onOpenChange={setShowEnableDialog}
+        title="确认恢复邀请码？"
+        description={
+            <>
               确定要恢复邀请码 "{selectedCode?.code}" 吗？
               <br />
               恢复后该邀请码将可以继续使用。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleEnable}
-              disabled={submitting}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {submitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                '确认恢复'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </>
+        }
+        confirmText="确认恢复"
+        onConfirm={handleEnable}
+        loading={submitting}
+        variant="default" 
+        confirmClassName="bg-green-600 hover:bg-green-700" 
+      />
     </div>
   );
 }

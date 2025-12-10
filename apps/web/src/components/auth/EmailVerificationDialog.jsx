@@ -4,14 +4,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { DialogFooter } from '@/components/ui/dialog';
+import { FormDialog } from '@/components/common/FormDialog';
 import { Mail, Loader2, Send } from 'lucide-react';
 import { authApi } from '@/lib/api';
 import { toast } from 'sonner';
@@ -91,56 +85,13 @@ export function EmailVerificationDialog({ open, onOpenChange, user, onVerified }
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className='sm:max-w-[425px]'>
-        <DialogHeader>
-          <DialogTitle>验证邮箱</DialogTitle>
-          <DialogDescription>
-            我们将向您的邮箱发送验证码以确认邮箱所有权
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className='space-y-4 py-4'>
-          <div className='p-3 bg-muted rounded-lg'>
-            <div className='flex items-center gap-2'>
-              <Mail className='h-4 w-4 text-muted-foreground' />
-              <p className='text-sm text-muted-foreground'>
-                邮箱地址：
-                <span className='font-medium text-card-foreground ml-1'>
-                  {user?.email}
-                </span>
-              </p>
-            </div>
-          </div>
-
-          {!codeSent ? (
-            <p className='text-sm text-muted-foreground'>
-              点击下方按钮，我们将向您的邮箱发送一个6位数字验证码
-            </p>
-          ) : (
-            <div className='space-y-3'>
-              <div className='p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg'>
-                <p className='text-sm text-green-800 dark:text-green-200'>
-                  验证码已发送到您的邮箱，请查收
-                </p>
-              </div>
-
-              <div className='space-y-2'>
-                <Label htmlFor='verificationCode'>验证码 *</Label>
-                <Input
-                  id='verificationCode'
-                  type='text'
-                  placeholder='输入6位验证码'
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value)}
-                  maxLength={6}
-                  disabled={isVerifying}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
+    <FormDialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      title="验证邮箱"
+      description="我们将向您的邮箱发送验证码以确认邮箱所有权"
+      maxWidth="sm:max-w-[425px]"
+      footer={
         <DialogFooter>
           <Button
             type='button'
@@ -197,7 +148,48 @@ export function EmailVerificationDialog({ open, onOpenChange, user, onVerified }
             </div>
           )}
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      }
+    >
+        <div className='space-y-4 py-4'>
+          <div className='p-3 bg-muted rounded-lg'>
+            <div className='flex items-center gap-2'>
+              <Mail className='h-4 w-4 text-muted-foreground' />
+              <p className='text-sm text-muted-foreground'>
+                邮箱地址：
+                <span className='font-medium text-card-foreground ml-1'>
+                  {user?.email}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          {!codeSent ? (
+            <p className='text-sm text-muted-foreground'>
+              点击下方按钮，我们将向您的邮箱发送一个6位数字验证码
+            </p>
+          ) : (
+            <div className='space-y-3'>
+              <div className='p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg'>
+                <p className='text-sm text-green-800 dark:text-green-200'>
+                  验证码已发送到您的邮箱，请查收
+                </p>
+              </div>
+
+              <div className='space-y-2'>
+                <Label htmlFor='verificationCode'>验证码 *</Label>
+                <Input
+                  id='verificationCode'
+                  type='text'
+                  placeholder='输入6位验证码'
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value)}
+                  maxLength={6}
+                  disabled={isVerifying}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+    </FormDialog>
   );
 }

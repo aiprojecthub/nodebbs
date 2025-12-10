@@ -2,14 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { FormDialog } from '@/components/common/FormDialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -113,15 +106,17 @@ export default function SendMessageButton({ recipientId, recipientName, recipien
         发送消息
       </Button>
 
-      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className='sm:max-w-[500px]'>
-          <DialogHeader>
-            <DialogTitle>发送站内信</DialogTitle>
-            <DialogDescription>
-              发送私信给 {recipientName}
-            </DialogDescription>
-          </DialogHeader>
-
+      <FormDialog
+        open={isOpen}
+        onOpenChange={handleOpenChange}
+        title="发送站内信"
+        description={`发送私信给 ${recipientName}`}
+        submitText="发送"
+        onSubmit={handleSend}
+        loading={sending}
+        disabled={sending || !content.trim()}
+        maxWidth="sm:max-w-[500px]"
+      >
           <div className='space-y-4 py-4'>
             <div className='space-y-2'>
               <Label htmlFor='subject'>主题（可选）</Label>
@@ -142,38 +137,11 @@ export default function SendMessageButton({ recipientId, recipientName, recipien
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 disabled={sending}
-                rows={6}
-                className='resize-none'
+                className='resize-none min-h-24'
               />
             </div>
           </div>
-
-          <DialogFooter>
-            <Button
-              type='button'
-              variant='outline'
-              onClick={() => setIsOpen(false)}
-              disabled={sending}
-            >
-              取消
-            </Button>
-            <Button
-              type='submit'
-              onClick={handleSend}
-              disabled={sending || !content.trim()}
-            >
-              {sending ? (
-                <>
-                  <Loader2 className='h-4 w-4 animate-spin' />
-                  发送中...
-                </>
-              ) : (
-                '发送'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </FormDialog>
     </>
   );
 }

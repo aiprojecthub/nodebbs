@@ -1,14 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { FormDialog } from '@/components/common/FormDialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -61,22 +54,29 @@ export default function ReportDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-[500px]'>
-        <DialogHeader>
-          <DialogTitle className='flex items-center space-x-2'>
-            <AlertTriangle className='h-5 w-5 text-orange-500' />
-            <span>举报{getTypeText()}</span>
-          </DialogTitle>
-          <DialogDescription asChild>
-            {targetTitle && (
-              <div className='mt-2 p-2 bg-muted rounded text-sm'>
-                {getTypeText()}：{targetTitle}
-              </div>
-            )}
-          </DialogDescription>
-        </DialogHeader>
-
+    <FormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={
+        <div className='flex items-center space-x-2'>
+          <AlertTriangle className='h-5 w-5 text-orange-500' />
+          <span>举报{getTypeText()}</span>
+        </div>
+      }
+      description={
+        targetTitle && (
+            <span className='block mt-2 p-2 bg-muted rounded text-sm'>
+            {getTypeText()}：{targetTitle}
+            </span>
+        )
+      }
+      submitText="提交举报"
+      onSubmit={handleSubmit}
+      loading={submitting}
+      submitClassName="bg-orange-500 hover:bg-orange-600"
+      disabled={submitting || reason.trim().length < 10}
+      maxWidth="sm:max-w-[500px]"
+    >
         <div className='space-y-4 py-4'>
           <div className='space-y-2'>
             <Label htmlFor='reason'>举报原因 *</Label>
@@ -103,33 +103,6 @@ export default function ReportDialog({
             </ul>
           </div>
         </div>
-
-        <DialogFooter>
-          <Button
-            type='button'
-            variant='outline'
-            onClick={() => onOpenChange(false)}
-            disabled={submitting}
-          >
-            取消
-          </Button>
-          <Button
-            type='submit'
-            onClick={handleSubmit}
-            disabled={submitting || reason.trim().length < 10}
-            className='bg-orange-500 hover:bg-orange-600'
-          >
-            {submitting ? (
-              <>
-                <Loader2 className='h-4 w-4 animate-spin' />
-                提交中...
-              </>
-            ) : (
-              '提交举报'
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </FormDialog>
   );
 }

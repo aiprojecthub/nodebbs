@@ -1,12 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { FormDialog } from '@/components/common/FormDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -239,13 +233,15 @@ export default function TopicSidebar({
       </div>
 
       {/* 编辑话题对话框 */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className='sm:max-w-[95vw] lg:max-w-[1200px] max-h-[90vh] overflow-y-auto'>
-          <DialogHeader>
-            <DialogTitle>编辑话题</DialogTitle>
-            <DialogDescription>修改话题的标题、内容和分类</DialogDescription>
-          </DialogHeader>
-
+      {/* 编辑话题对话框 */}
+      <FormDialog
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          title="编辑话题"
+          description="修改话题的标题、内容和分类"
+          maxWidth="sm:max-w-[95vw] lg:max-w-[1200px] max-h-[90vh] overflow-y-auto"
+          footer={null}
+      >
           <TopicForm
             initialData={{
               title: topic.title,
@@ -259,8 +255,7 @@ export default function TopicSidebar({
             submitButtonText='保存修改'
             isEditMode={true}
           />
-        </DialogContent>
-      </Dialog>
+      </FormDialog>
 
       {/* 举报对话框 */}
       <ReportDialog

@@ -13,14 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { ConfirmDialog } from '@/components/common/AlertDialog';
+import { FormDialog } from '@/components/common/FormDialog';
 import { toast } from 'sonner';
 import { Shield, Edit, Plus, Trash2 } from 'lucide-react';
 import { Loading } from '@/components/common/Loading';
@@ -39,6 +33,11 @@ export default function InvitationRulesPage() {
   const [editingRule, setEditingRule] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  
+  // Delete Dialog State
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteRole, setDeleteRole] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [formData, setFormData] = useState({
     role: '',
@@ -159,22 +158,31 @@ export default function InvitationRulesPage() {
     }
   };
 
-  // 删除规则
-  const handleDelete = async (role) => {
-    if (!confirm(`确定要删除角色 "${ROLE_LABELS[role] || role}" 的规则吗？`)) {
-      return;
-    }
+  // 打开删除确认框
+  const handleDelete = (role) => {
+    setDeleteRole(role);
+    setDeleteDialogOpen(true);
+  };
 
+  // 确认删除
+  const confirmDelete = async () => {
+    if (!deleteRole) return;
+    
+    setDeleting(true);
     try {
-      await invitationsApi.rules.delete(role);
+      await invitationsApi.rules.delete(deleteRole);
 
       // 局部更新：从列表中移除删除的规则
-      setRules((prevRules) => prevRules.filter((r) => r.role !== role));
+      setRules((prevRules) => prevRules.filter((r) => r.role !== deleteRole));
 
       toast.success('规则已删除');
+      setDeleteDialogOpen(false);
+      setDeleteRole(null);
     } catch (error) {
       console.error('Failed to delete rule:', error);
       toast.error(error.message || '删除规则失败');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -285,13 +293,15 @@ export default function InvitationRulesPage() {
       </div>
 
       {/* 编辑/新建对话框 */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingRule ? '编辑规则' : '新建规则'}</DialogTitle>
-            <DialogDescription>配置该角色的邀请码生成规则</DialogDescription>
-          </DialogHeader>
-
+      <FormDialog
+          open={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          title={editingRule ? '编辑规则' : '新建规则'}
+          description="配置该角色的邀请码生成规则"
+          submitText={saving ? '保存中...' : '保存'}
+          onSubmit={handleSave}
+          loading={saving}
+      >
           <div className='space-y-4 py-4'>
             <div className='space-y-2'>
               <Label htmlFor='role'>角色</Label>
@@ -389,21 +399,19 @@ export default function InvitationRulesPage() {
               />
             </div>
           </div>
+      </FormDialog>
 
-          <DialogFooter>
-            <Button
-              variant='outline'
-              onClick={() => setIsDialogOpen(false)}
-              disabled={saving}
-            >
-              取消
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? '保存中...' : '保存'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* 删除确认对话框 */}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="确认删除规则？"
+        description={`确定要删除角色 "${ROLE_LABELS[deleteRole] || deleteRole}" 的规则吗？`}
+        confirmText="确认删除"
+        variant="destructive"
+        onConfirm={confirmDelete}
+        loading={deleting}
+      />
     </div>
   );
 }

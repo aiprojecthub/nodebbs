@@ -3,14 +3,8 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { DialogFooter } from '@/components/ui/dialog';
+import { FormDialog } from '@/components/common/FormDialog';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 
 /**
@@ -132,7 +126,7 @@ export function EmailChangeDialog({
   };
 
   return (
-    <Dialog
+    <FormDialog
       open={open}
       onOpenChange={(open) => {
         if (!open) {
@@ -141,13 +135,47 @@ export function EmailChangeDialog({
           onOpenChange(true);
         }
       }}
+      title="修改邮箱地址"
+      description={getStepDescription()}
+      maxWidth="sm:max-w-[500px]"
+      footer={
+        <DialogFooter>
+          <Button
+            variant='outline'
+            onClick={() => {
+              if (emailStep === 1) {
+                handleClose();
+              } else if (emailStep === 2 && emailData.newEmailCodeSent) {
+                // 在步骤2且已发送验证码，点击返回重新输入邮箱
+                onEmailDataChange({
+                  ...emailData,
+                  newEmailCodeSent: false,
+                  newEmailCode: ''
+                });
+              } else {
+                onStepChange(emailStep - 1);
+              }
+            }}
+            disabled={loading}
+          >
+            {emailStep === 1 ? '取消' : '上一步'}
+          </Button>
+          <Button
+            onClick={handleNextStep}
+            disabled={loading || (emailStep === 1 && emailData.oldEmailCodeSent && !emailData.oldEmailCode.trim()) || (emailStep === 2 && emailData.newEmailCodeSent && !emailData.newEmailCode.trim())}
+          >
+            {loading ? (
+              <>
+                <Loader2 className='h-4 w-4 animate-spin mr-2' />
+                {getButtonText()}
+              </>
+            ) : (
+              getButtonText()
+            )}
+          </Button>
+        </DialogFooter>
+      }
     >
-      <DialogContent className='sm:max-w-[500px]'>
-        <DialogHeader>
-          <DialogTitle>修改邮箱地址</DialogTitle>
-          <DialogDescription>{getStepDescription()}</DialogDescription>
-        </DialogHeader>
-
         <div className='space-y-4 py-4'>
           {/* 步骤指示器 */}
           <div className='flex items-center justify-center space-x-2 pb-2'>
@@ -291,43 +319,6 @@ export function EmailChangeDialog({
             </>
           )}
         </div>
-
-        <DialogFooter>
-          <Button
-            variant='outline'
-            onClick={() => {
-              if (emailStep === 1) {
-                handleClose();
-              } else if (emailStep === 2 && emailData.newEmailCodeSent) {
-                // 在步骤2且已发送验证码，点击返回重新输入邮箱
-                onEmailDataChange({
-                  ...emailData,
-                  newEmailCodeSent: false,
-                  newEmailCode: ''
-                });
-              } else {
-                onStepChange(emailStep - 1);
-              }
-            }}
-            disabled={loading}
-          >
-            {emailStep === 1 ? '取消' : '上一步'}
-          </Button>
-          <Button
-            onClick={handleNextStep}
-            disabled={loading || (emailStep === 1 && emailData.oldEmailCodeSent && !emailData.oldEmailCode.trim()) || (emailStep === 2 && emailData.newEmailCodeSent && !emailData.newEmailCode.trim())}
-          >
-            {loading ? (
-              <>
-                <Loader2 className='h-4 w-4 animate-spin mr-2' />
-                {getButtonText()}
-              </>
-            ) : (
-              getButtonText()
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </FormDialog>
   );
 }
