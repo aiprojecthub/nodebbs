@@ -1,251 +1,55 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { TopicList } from '@/components/forum/TopicList';
-import { topicApi } from '@/lib/api';
-import { useAuth } from '@/contexts/AuthContext';
-import {
-  MessageSquare,
-  Loader2,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
-import { Loading } from '@/components/common/Loading';
-import { Pager } from '@/components/common/Pagination';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CreatedTopics } from './components/CreatedTopics';
+import { FavoriteTopics } from './components/FavoriteTopics';
 
 export default function MyTopicsPage() {
-  const { user } = useAuth();
-  const [topics, setTopics] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all, pinned, closed, pending
-  const [sortBy, setSortBy] = useState('latest'); // latest, popular, trending
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const limit = 20;
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // 统计数据
-  const [stats, setStats] = useState({
-    total: 0,
-    pinned: 0,
-    closed: 0,
-    pending: 0,
-  });
+  // 从 URL 获取当前 Tab，默认为 'created'
+  const currentTab = searchParams.get('tab') || 'created';
 
-  // 初始加载时获取统计数据
-  useEffect(() => {
-    if (user?.id) {
-      // fetchStats();
+  const handleTabChange = (value) => {
+    const params = new URLSearchParams(searchParams);
+    if (value === 'created') {
+      params.delete('tab');
+    } else {
+      params.set('tab', value);
     }
-  }, [user]);
-
-  // 当筛选、排序、分页变化时获取话题列表
-  useEffect(() => {
-    if (user?.id) {
-      fetchTopics();
-    }
-  }, [user, filter, sortBy, page]);
-
-  const fetchStats = async () => {
-    try {
-      // 获取统计数据 - 分别请求各个筛选条件的数量
-      const [allData, pinnedData, closedData, pendingData] = await Promise.all([
-        topicApi.getList({ userId: user.id, page: 1, limit: 1 }),
-        topicApi.getList({
-          userId: user.id,
-          isPinned: true,
-          page: 1,
-          limit: 1,
-        }),
-        topicApi.getList({
-          userId: user.id,
-          isClosed: true,
-          page: 1,
-          limit: 1,
-        }),
-        topicApi.getList({
-          userId: user.id,
-          approvalStatus: 'pending',
-          page: 1,
-          limit: 1,
-        }),
-      ]);
-
-      setStats({
-        total: allData.total || 0,
-        pinned: pinnedData.total || 0,
-        closed: closedData.total || 0,
-        pending: pendingData.total || 0,
-      });
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    }
-  };
-
-  const fetchTopics = async () => {
-    setIsLoading(true);
-    try {
-      const params = {
-        userId: user.id,
-        sort: sortBy,
-        page,
-        limit,
-      };
-
-      // 添加筛选参数
-      if (filter === 'pinned') {
-        params.isPinned = true;
-      } else if (filter === 'closed') {
-        params.isClosed = true;
-      } else if (filter === 'pending') {
-        params.approvalStatus = 'pending';
-      }
-
-      const data = await topicApi.getList(params);
-      setTopics(data.items || []);
-      setTotalCount(data.total || 0);
-      setTotalPages(Math.ceil((data.total || 0) / limit));
-    } catch (error) {
-      console.error('Error fetching topics:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleFilterChange = (newFilter) => {
-    setFilter(newFilter);
-    setPage(1); // 重置到第一页
-  };
-
-  const handleSortChange = (newSort) => {
-    setSortBy(newSort);
-    setPage(1);
-  };
-
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setPage(newPage);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    router.push(`/profile/topics?${params.toString()}`);
   };
 
   return (
-    <div>
-      <div className='mb-6'>
-        <div className='flex items-center justify-between mb-4'>
-          <div>
-            <h1 className='text-2xl font-bold text-card-foreground mb-2'>
-              我的话题
-            </h1>
-            <p className='text-muted-foreground'>管理和查看你发布的所有话题</p>
-          </div>
-        </div>
-
-        {/* 筛选和排序 */}
-        <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4'>
-          {/* 快速筛选 */}
-          <div className='flex items-center space-x-2 flex-wrap'>
-            <Badge
-              variant={filter === 'all' ? 'default' : 'outline'}
-              className='cursor-pointer'
-              onClick={() => handleFilterChange('all')}
-            >
-              全部
-            </Badge>
-            <Badge
-              variant={filter === 'pinned' ? 'default' : 'outline'}
-              className='cursor-pointer'
-              onClick={() => handleFilterChange('pinned')}
-            >
-              置顶
-            </Badge>
-            <Badge
-              variant={filter === 'closed' ? 'default' : 'outline'}
-              className='cursor-pointer'
-              onClick={() => handleFilterChange('closed')}
-            >
-              已关闭
-            </Badge>
-            <Badge
-              variant={filter === 'pending' ? 'default' : 'outline'}
-              className='cursor-pointer'
-              onClick={() => handleFilterChange('pending')}
-            >
-              待审核
-            </Badge>
-          </div>
-
-          {/* 排序选择 */}
-          <div className='flex items-center gap-2'>
-            <span className='text-sm text-muted-foreground'>排序:</span>
-            <Select value={sortBy} onValueChange={handleSortChange}>
-              <SelectTrigger className='w-[140px]'>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='latest'>最新发布</SelectItem>
-                <SelectItem value='popular'>最多回复</SelectItem>
-                <SelectItem value='trending'>最多浏览</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+    <div className='space-y-4'>
+      <div className='flex items-center justify-between'>
+        <div>
+          <h1 className='text-2xl font-bold text-card-foreground mb-2'>
+            我的话题
+          </h1>
+          <p className='text-muted-foreground'>查看发布和收藏的话题</p>
         </div>
       </div>
+      <Tabs
+        defaultValue='created'
+        value={currentTab}
+        onValueChange={handleTabChange}
+      >
+        <TabsList className='grid grid-cols-2 mb-2'>
+          <TabsTrigger value='created'>我的发布</TabsTrigger>
+          <TabsTrigger value='favorites'>我的收藏</TabsTrigger>
+        </TabsList>
 
-      {/* 加载状态 */}
-      {isLoading ? (
-        <Loading text='加载中...' className='py-12' />
-      ) : topics.length > 0 ? (
-        <>
-          {/* 话题列表 */}
-          <Suspense fallback={<Loading text='加载中...' />}>
-            <TopicList data={topics} />
-          </Suspense>
+        <TabsContent value='created' className='mt-0'>
+          <CreatedTopics />
+        </TabsContent>
 
-          {/* 分页 */}
-          {totalPages > 1 && (
-            <Pager
-              total={totalCount}
-              page={page}
-              pageSize={limit}
-              onPageChange={(page) => {
-                handlePageChange(page);
-              }}
-            />
-          )}
-        </>
-      ) : (
-        <div className='bg-card border border-border rounded-lg p-12 text-center'>
-          <MessageSquare className='h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50' />
-          <h3 className='text-lg font-medium text-card-foreground mb-2'>
-            {filter === 'all'
-              ? '还没有发布话题'
-              : filter === 'pinned'
-              ? '没有置顶的话题'
-              : filter === 'closed'
-              ? '没有已关闭的话题'
-              : '没有待审核的话题'}
-          </h3>
-          <p className='text-muted-foreground mb-4'>
-            {filter === 'all' && '开始你的第一个话题，与社区分享你的想法'}
-          </p>
-          {filter === 'all' && (
-            <Link href='/create'>
-              <Button>发布新话题</Button>
-            </Link>
-          )}
-        </div>
-      )}
+        <TabsContent value='favorites' className='mt-0'>
+          <FavoriteTopics />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -43,11 +43,7 @@ export default function ProfileSidebar() {
       icon: MessageSquare,
       label: '我的话题',
     },
-    {
-      href: '/profile/favorites',
-      icon: Star,
-      label: '我的收藏',
-    },
+
     {
       href: '/profile/replies',
       icon: MessageCircle,

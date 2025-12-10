@@ -295,8 +295,8 @@ export const userApi = {
   },
 
   // 获取用户收藏列表
-  async getBookmarks(username, page = 1, limit = 20) {
-    return apiClient.get(`/users/${username}/bookmarks`, { page, limit });
+  async getBookmarks(username, params = {}) {
+    return apiClient.get(`/users/${username}/bookmarks`, params);
   },
 
   // 删除用户（管理员）

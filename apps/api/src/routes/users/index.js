@@ -1,6 +1,6 @@
 import db from '../../db/index.js';
 import { users, topics, posts, follows, bookmarks, categories } from '../../db/schema.js';
-import { eq, sql, desc, and, ne } from 'drizzle-orm';
+import { eq, sql, desc, and, ne, like } from 'drizzle-orm';
 import { pipeline } from 'stream/promises';
 import fs from 'fs';
 import path from 'path';
@@ -930,16 +930,22 @@ export default async function userRoutes(fastify, options) {
         type: 'object',
         properties: {
           page: { type: 'number', default: 1 },
-          limit: { type: 'number', default: 20, maximum: 100 }
+          limit: { type: 'number', default: 20, maximum: 100 },
+          search: { type: 'string' },
+          sort: { type: 'string' }
         }
       }
     }
   }, async (request, reply) => {
     const { username } = request.params;
-    const { page = 1, limit = 20 } = request.query;
+    const { page = 1, limit = 20, search, sort } = request.query;
     const offset = (page - 1) * limit;
 
-    const [user] = await db.select().from(users).where(eq(users.username, username)).limit(1);
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1);
 
     if (!user) {
       return reply.code(404).send({ error: '用户不存在' });
@@ -948,10 +954,28 @@ export default async function userRoutes(fastify, options) {
     // 隐私检查：只有本人或管理员/版主可以查看收藏列表
     const currentUser = request.user;
     const isOwner = currentUser && currentUser.id === user.id;
-    const isModerator = currentUser && ['moderator', 'admin'].includes(currentUser.role);
+    const isModerator =
+      currentUser && ['moderator', 'admin'].includes(currentUser.role);
 
     if (!isOwner && !isModerator) {
       return reply.code(403).send({ error: '无权查看该用户的收藏列表' });
+    }
+    
+    const conditions = [
+      eq(bookmarks.userId, user.id),
+      eq(topics.isDeleted, false)
+    ];
+
+    if (search && search.trim()) {
+      conditions.push(like(topics.title, `%${search.trim()}%`));
+    }
+
+    let orderBy = desc(bookmarks.createdAt);
+    if (sort === 'latest_topic') {
+      orderBy = desc(topics.createdAt);
+    } else if (sort === 'popular') {
+       // 受欢迎排序：综合浏览量和回复数
+       orderBy = desc(sql`(${topics.viewCount} * 0.3 + ${topics.postCount} * 5)`);
     }
 
     const bookmarkedTopics = await db
@@ -973,14 +997,14 @@ export default async function userRoutes(fastify, options) {
         isClosed: topics.isClosed,
         lastPostAt: topics.lastPostAt,
         createdAt: topics.createdAt,
-        bookmarkedAt: bookmarks.createdAt
+        bookmarkedAt: bookmarks.createdAt,
       })
       .from(bookmarks)
       .innerJoin(topics, eq(bookmarks.topicId, topics.id))
       .innerJoin(categories, eq(topics.categoryId, categories.id))
       .innerJoin(users, eq(topics.userId, users.id))
-      .where(and(eq(bookmarks.userId, user.id), eq(topics.isDeleted, false)))
-      .orderBy(desc(bookmarks.createdAt))
+      .where(and(...conditions))
+      .orderBy(orderBy)
       .limit(limit)
       .offset(offset);
 
@@ -999,7 +1023,7 @@ export default async function userRoutes(fastify, options) {
       .select({ count: sql`count(*)` })
       .from(bookmarks)
       .innerJoin(topics, eq(bookmarks.topicId, topics.id))
-      .where(and(eq(bookmarks.userId, user.id), eq(topics.isDeleted, false)));
+      .where(and(...conditions));
 
     return {
       items: bookmarkedTopics,
