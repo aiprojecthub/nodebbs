@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import BadgesList from '@/features/badges/components/BadgesList';
+import BadgesList from '@/extensions/badges/components/BadgesList';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Medal } from 'lucide-react';

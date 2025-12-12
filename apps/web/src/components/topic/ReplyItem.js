@@ -26,13 +26,13 @@ import {
 import UserAvatar from '@/components/forum/UserAvatar';
 import TimeAgo from '@/components/forum/TimeAgo';
 import ReportDialog from '@/components/moderation/ReportDialog';
-import { RewardDialog } from '@/features/credits/components/RewardDialog';
+import { RewardDialog } from '@/extensions/credits/components/RewardDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { postApi, creditsApi } from '@/lib/api';
 import { toast } from 'sonner';
 import MarkdownRender from '../common/MarkdownRender';
 
-import { RewardListDialog } from '@/features/credits/components/RewardListDialog';
+import { RewardListDialog } from '@/extensions/credits/components/RewardListDialog';
 
 export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isCreditEnabled, rewardStats, onRewardSuccess }) {
   const { user, isAuthenticated, openLoginDialog } = useAuth();

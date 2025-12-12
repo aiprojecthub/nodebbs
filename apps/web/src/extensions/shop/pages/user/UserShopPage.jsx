@@ -5,13 +5,13 @@ import { ShoppingCart } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { shopApi } from '@/lib/api';
 import { toast } from 'sonner';
-import { useCreditsBalance } from '@/features/credits/hooks/useCreditsBalance';
-import { useShopItems } from '@/features/shop/hooks/useShopItems';
-import { BalanceCard } from '@/features/credits/components/user/BalanceCard';
-import { ItemTypeSelector } from '@/features/shop/components/shared/ItemTypeSelector';
-import { ShopItemGrid } from '@/features/credits/components/user/ShopItemGrid';
-import { PurchaseDialog } from '@/features/credits/components/user/PurchaseDialog';
-import { BadgeUnlockDialog } from '@/features/credits/components/user/BadgeUnlockDialog';
+import { useCreditsBalance } from '@/extensions/credits/hooks/useCreditsBalance';
+import { useShopItems } from '@/extensions/shop/hooks/useShopItems';
+import { BalanceCard } from '@/extensions/credits/components/user/BalanceCard';
+import { ItemTypeSelector } from '@/extensions/shop/components/shared/ItemTypeSelector';
+import { ShopItemGrid } from '@/extensions/credits/components/user/ShopItemGrid';
+import { PurchaseDialog } from '@/extensions/credits/components/user/PurchaseDialog';
+import { BadgeUnlockDialog } from '@/extensions/credits/components/user/BadgeUnlockDialog';
 
 export default function UserShopPage() {
   const { isAuthenticated } = useAuth();

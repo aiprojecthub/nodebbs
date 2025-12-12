@@ -2,7 +2,7 @@
  * 勋章系统初始化
  */
 
-import { badges, userBadges } from '../../features/badges/schema.js';
+import { badges, userBadges } from '../../extensions/badges/schema.js';
 import { eq } from 'drizzle-orm';
 
 /**

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Package } from 'lucide-react';
 import { Loading } from '@/components/common/Loading';
 import { ItemInventoryCard } from './ItemInventoryCard';
-import { getItemTypeLabel } from '@/features/shop/utils/itemTypes';
+import { getItemTypeLabel } from '@/extensions/shop/utils/itemTypes';
 
 /**
  * 用户物品网格

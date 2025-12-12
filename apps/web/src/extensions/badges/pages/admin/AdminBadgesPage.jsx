@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Medal, Plus } from 'lucide-react';
-import { badgesApi } from '@/features/badges/api';
+import { badgesApi } from '@/extensions/badges/api';
 import { toast } from 'sonner';
 import { BadgeTable } from '../../components/admin/BadgeTable';
 import { BadgeFormDialog } from '../../components/admin/BadgeFormDialog';

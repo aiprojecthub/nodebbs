@@ -2,8 +2,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Check, X, Medal, Gift } from 'lucide-react';
-import { ItemTypeIcon } from '@/features/shop/components/shared/ItemTypeIcon';
-import { getItemTypeLabel, isItemExpired } from '@/features/shop/utils/itemTypes';
+import { ItemTypeIcon } from '@/extensions/shop/components/shared/ItemTypeIcon';
+import { getItemTypeLabel, isItemExpired } from '@/extensions/shop/utils/itemTypes';
 import TimeAgo from '@/components/forum/TimeAgo';
 
 /**

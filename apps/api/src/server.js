@@ -23,9 +23,9 @@ export default async function (fastify, opts) {
     maxDepth: 1,
   })
 
-  // This loads all features defined in features
+  // This loads all features defined in extensions
   fastify.register(AutoLoad, {
-    dir: path.join(__dirname, 'features'),
+    dir: path.join(__dirname, 'extensions'),
     options: Object.assign({}, opts),
     maxDepth: 1,
   })

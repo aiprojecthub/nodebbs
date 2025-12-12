@@ -16,7 +16,7 @@
 - ✅ 创建了数据库迁移文件：`drizzle/0002_credit_system.sql`
 
 #### 2. 后端 API
-- ✅ 创建了积分服务模块：`features/credits/services/creditService.js`
+- ✅ 创建了积分服务模块：`extensions/credits/services/creditService.js`
   - 获取/创建用户积分账户
   - 发放/扣除积分
   - 转账积分（打赏）
@@ -25,7 +25,7 @@
   - 获取排行榜
   - 配置管理
 
-- ✅ 创建了积分路由：`features/credits/routes/index.js`
+- ✅ 创建了积分路由：`extensions/credits/routes/index.js`
   - `GET /api/credits/balance` - 获取余额
   - `POST /api/credits/check-in` - 每日签到
   - `GET /api/credits/transactions` - 交易记录
@@ -36,10 +36,10 @@
   - 管理员接口（统计、发放、扣除、配置管理）
 
 #### 3. 前端页面
-- ✅ 创建了积分 API 客户端：`features/credits/api/index.js`
+- ✅ 创建了积分 API 客户端：`extensions/credits/api/index.js`
   - 完整的 `creditsApi` 模块
 
-- ✅ 创建了积分中心页面：`features/credits/pages/user/UserCreditsPage.jsx`
+- ✅ 创建了积分中心页面：`extensions/credits/pages/user/UserCreditsPage.jsx`
   - 积分余额展示（当前/累计获得/累计消费）
   - 签到功能（显示连续签到天数）
   - 积分交易记录列表（分页）
@@ -140,8 +140,8 @@ PUT    /api/credits/admin/config/:key - 更新配置
    - 获得点赞时自动发放积分给被点赞者
 
 4. 创建打赏功能 UI 组件 ✅
-   - 打赏弹窗：`features/credits/components/RewardDialog.jsx`
-   - 打赏记录：`features/credits/components/RewardListDialog.jsx`
+   - 打赏弹窗：`extensions/credits/components/RewardDialog.jsx`
+   - 打赏记录：`extensions/credits/components/RewardListDialog.jsx`
    - 在帖子中集成打赏按钮
 
 5. 创建积分排行榜页面 ✅
@@ -235,7 +235,7 @@ A: 将配置项 `system_enabled` 设置为 `false`
 ### 后端结构 (Feature-based)
 ```
 apps/api/src/
-└── features/
+└── extensions/
     └── credits/
         ├── schema.js                    ✅ 积分系统数据表定义
         ├── services/
@@ -248,7 +248,7 @@ apps/api/src/
 ### 前端结构 (Feature-based)
 ```
 apps/web/src/
-└── features/
+└── extensions/
     └── credits/
         ├── api/
         │   └── index.js                 ✅ 积分 API 客户端
@@ -347,7 +347,7 @@ apps/web/src/app/
 
 ### 创建的文件
 ```
-apps/web/src/features/credits/
+apps/web/src/extensions/credits/
 ├── components/
 │   ├── RewardDialog.jsx         ✅ 打赏弹窗
 │   └── RewardListDialog.jsx     ✅ 打赏记录弹窗
@@ -404,11 +404,11 @@ apps/web/src/components/topic/
 4. ✅ **管理后台** - 商品管理页面
 
 ### 创建/确认的文件
-- `apps/api/src/features/shop/services/shopService.js` - 商城业务逻辑 ✅
-- `apps/api/src/features/shop/routes/index.js` - 商城 API ✅
-- `apps/web/src/features/shop/pages/user/UserShopPage.jsx` - 商城页面 ✅
-- `apps/web/src/features/shop/pages/user/UserItemsPage.jsx` - 我的道具页面 ✅
-- `apps/web/src/features/shop/pages/admin/AdminShopPage.jsx` - 商城管理页面 ✅
+- `apps/api/src/extensions/shop/services/shopService.js` - 商城业务逻辑 ✅
+- `apps/api/src/extensions/shop/routes/index.js` - 商城 API ✅
+- `apps/web/src/extensions/shop/pages/user/UserShopPage.jsx` - 商城页面 ✅
+- `apps/web/src/extensions/shop/pages/user/UserItemsPage.jsx` - 我的道具页面 ✅
+- `apps/web/src/extensions/shop/pages/admin/AdminShopPage.jsx` - 商城管理页面 ✅
 
 ---
 
@@ -422,8 +422,8 @@ apps/web/src/components/topic/
 
 ### 创建的文件
 - `apps/web/src/app/dashboard/settings/components/CreditSystemSettings.jsx` - 配置组件
-- `apps/web/src/features/credits/pages/admin/AdminCreditsPage.jsx` - 积分管理页面
-- `apps/web/src/features/credits/components/admin/*` - 管理后台组件
+- `apps/web/src/extensions/credits/pages/admin/AdminCreditsPage.jsx` - 积分管理页面
+- `apps/web/src/extensions/credits/components/admin/*` - 管理后台组件
 
 ### 修改的文件
 - `apps/web/src/app/dashboard/settings/page.js` - 添加积分系统 Tab
@@ -450,7 +450,7 @@ apps/web/src/components/topic/
 
 目标是将积分系统从核心代码中解耦，使其成为一个独立的模块，具备以下特性：
 - **独立目录**：所有后端代码（Schema, Routes, Services）集中在 `apps/api/src/plugins/credits`。
-- **独立前端**：前端组件和页面集中在 `apps/web/src/features/credits`（或类似目录）。
+- **独立前端**：前端组件和页面集中在 `apps/web/src/extensions/credits`（或类似目录）。
 - **松耦合**：核心系统通过"事件"或"钩子"与积分系统交互，而不是直接调用。
 - **可插拔**：可以通过配置开启/关闭，甚至通过 npm 包的形式安装/卸载。
 
@@ -494,7 +494,7 @@ apps/web/src/components/topic/
 
 **方案**：
 - 保持 `api.js` 作为核心入口，但允许"注入"扩展。
-- 或者，在 `features/credits/api.js` 中定义 `creditsApi`，在需要的地方单独导入，而不是挂载在全局 `api` 对象上。
+- 或者，在 `extensions/credits/api.js` 中定义 `creditsApi`，在需要的地方单独导入，而不是挂载在全局 `api` 对象上。
 
 #### 3.2 组件与页面
 **现状**：
@@ -502,9 +502,9 @@ apps/web/src/components/topic/
 - 组件分散在 `components/credits`。
 
 **方案**：
-- 采用 "Feature-based" 目录结构，将页面、组件、API、Hooks 全部移入 `apps/web/src/features/credits`。
-- Next.js 的 App Router 路由（`app/` 目录）本质上是文件系统路由，难以完全物理移动到 `features/` 目录。
-- **折衷**：保持 `app/` 目录结构用于路由定义，但页面内容（Page Content）作为组件从 `features/credits` 导入。
+- 采用 "Feature-based" 目录结构，将页面、组件、API、Hooks 全部移入 `apps/web/src/extensions/credits`。
+- Next.js 的 App Router 路由（`app/` 目录）本质上是文件系统路由，难以完全物理移动到 `extensions/` 目录。
+- **折衷**：保持 `app/` 目录结构用于路由定义，但页面内容（Page Content）作为组件从 `extensions/credits` 导入。
 
 #### 3.3 UI 集成点（插槽）
 **现状**：
@@ -571,7 +571,7 @@ DELETE /api/badges/admin/:id    - [Admin] 删除勋章
 
 ### 5. 文件结构
 ```
-apps/api/src/features/badges/
+apps/api/src/extensions/badges/
 ├── index.js                    ✅ 插件入口
 ├── schema.js                   ✅ 数据库表定义
 ├── services/
@@ -580,7 +580,7 @@ apps/api/src/features/badges/
     └── index.js                ✅ API 路由
 ```
 ```
-apps/web/src/features/badges/
+apps/web/src/extensions/badges/
 ├── components/                 ✅ 前端组件 (BadgeList, BadgeIcon等)
 ├── hooks/                      ✅ React Hooks
 └── pages/                      ✅ 相关页面

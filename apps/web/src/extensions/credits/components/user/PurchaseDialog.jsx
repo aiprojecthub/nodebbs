@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Loader2, Check, Search, X, Gift } from 'lucide-react';
 import { CreditsBadge } from '../shared/CreditsBadge';
-import { getItemTypeLabel } from '@/features/shop/utils/itemTypes';
+import { getItemTypeLabel } from '@/extensions/shop/utils/itemTypes';
 import UserAvatar from '@/components/forum/UserAvatar';
 import { searchApi } from '@/lib/api';
 

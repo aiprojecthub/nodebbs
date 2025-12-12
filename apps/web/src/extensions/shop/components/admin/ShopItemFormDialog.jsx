@@ -13,7 +13,7 @@ import {
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { ITEM_TYPES, getItemTypeLabel } from '../../utils/itemTypes';
-import { badgesApi } from '@/features/badges/api';
+import { badgesApi } from '@/extensions/badges/api';
 import UserAvatar from '@/components/forum/UserAvatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { FormDialog } from '@/components/common/FormDialog';

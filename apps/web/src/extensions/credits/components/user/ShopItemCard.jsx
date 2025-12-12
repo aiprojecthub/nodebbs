@@ -1,9 +1,9 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ItemTypeIcon } from '@/features/shop/components/shared/ItemTypeIcon';
+import { ItemTypeIcon } from '@/extensions/shop/components/shared/ItemTypeIcon';
 import { CreditsBadge } from '../shared/CreditsBadge';
-import { getItemTypeLabel } from '@/features/shop/utils/itemTypes';
+import { getItemTypeLabel } from '@/extensions/shop/utils/itemTypes';
 
 /**
  * 带有购买按钮的单个商品卡片

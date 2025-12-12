@@ -19,8 +19,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { postApi } from '@/lib/api';
 import { toast } from 'sonner';
 
-import { RewardDialog } from '@/features/credits/components/RewardDialog';
-import { RewardListDialog } from '@/features/credits/components/RewardListDialog';
+import { RewardDialog } from '@/extensions/credits/components/RewardDialog';
+import { RewardListDialog } from '@/extensions/credits/components/RewardListDialog';
 import { creditsApi } from '@/lib/api';
 import { Coins } from 'lucide-react';
 

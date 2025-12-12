@@ -1,1 +1,1 @@
-export { default } from '@/features/credits/pages/user/UserCreditsPage';
+export { default } from '@/extensions/credits/pages/user/UserCreditsPage';

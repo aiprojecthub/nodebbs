@@ -1,1 +1,1 @@
-export { default } from '@/features/badges/pages/admin/AdminBadgesPage';
+export { default } from '@/extensions/badges/pages/admin/AdminBadgesPage';

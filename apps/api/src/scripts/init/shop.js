@@ -2,7 +2,7 @@
  * 商城数据初始化
  */
 
-import { shopItems, userItems } from '../../features/shop/schema.js';
+import { shopItems, userItems } from '../../extensions/shop/schema.js';
 import { eq, and } from 'drizzle-orm';
 
 /**
