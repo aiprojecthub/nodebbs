@@ -23,7 +23,6 @@ export default function UserShopPage() {
   const [unlockedBadge, setUnlockedBadge] = useState(null);
   const [showUnlockDialog, setShowUnlockDialog] = useState(false);
 
-  // const { balance, refetch: refetchBalance } = useRewardsBalance(); // Deprecated for multi-currency
   const [accounts, setAccounts] = useState([]);
   const { items, loading, refetch: refetchItems } = useShopItems({ type: itemType });
   
