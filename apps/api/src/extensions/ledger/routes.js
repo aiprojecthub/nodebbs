@@ -291,4 +291,52 @@ export default async function ledgerRoutes(fastify, options) {
       return { success: true };
   });
 
+  // 管理员操作：发放/扣除货币 (通用)
+  fastify.post('/admin/operation', {
+    preHandler: [fastify.authenticate, fastify.requireAdmin],
+    schema: {
+        tags: ['ledger'],
+        description: '管理员发放或扣除用户货币',
+        body: {
+            type: 'object',
+            required: ['userId', 'currency', 'amount', 'type'],
+            properties: {
+                userId: { type: 'integer' },
+                currency: { type: 'string' },
+                amount: { type: 'number', minimum: 0 },
+                type: { type: 'string', enum: ['grant', 'deduct'] },
+                description: { type: 'string' }
+            }
+        }
+    }
+  }, async (req, reply) => {
+      const { userId, currency, amount, type, description } = req.body;
+      const service = fastify.ledger;
+
+      if (type === 'grant') {
+          await service.grant({
+              userId,
+              amount,
+              currencyCode: currency,
+              type: 'admin_grant',
+              referenceType: 'admin_operation',
+              referenceId: req.user.id, // 管理员ID作为参考
+              description: description || '管理员后台发放'
+          });
+      } else {
+          await service.deduct({
+              userId,
+              amount,
+              currencyCode: currency,
+              type: 'admin_deduct',
+              referenceType: 'admin_operation',
+              referenceId: req.user.id,
+              description: description || '管理员后台扣除',
+              allowNegative: true // 允许扣成负数? 暂时允许，符合管理员强制操作
+          });
+      }
+
+      return { success: true };
+  });
+
 }

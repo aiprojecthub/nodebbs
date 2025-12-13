@@ -24,6 +24,9 @@ export const ledgerApi = {
       },
       async upsertCurrency(data) {
           return apiClient.post('/ledger/currencies', data);
+      },
+      async operation(data) {
+          return apiClient.post('/ledger/admin/operation', data);
       }
       // getTransactions 已移除，请使用带 userId 的主 getTransactions 方法
   }
