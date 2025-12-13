@@ -100,6 +100,9 @@ export const sysTransactions = pgTable(
     userId: integer('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    accountId: integer('account_id')
+      .notNull()
+      .references(() => sysAccounts.id, { onDelete: 'cascade' }),
     currencyCode: varchar('currency_code', { length: 20 })
       .notNull()
       .references(() => sysCurrencies.code, { onDelete: 'cascade' }),
@@ -120,6 +123,7 @@ export const sysTransactions = pgTable(
   },
   (table) => [
     index('sys_transactions_user_idx').on(table.userId),
+    index('sys_transactions_account_idx').on(table.accountId),
     index('sys_transactions_currency_idx').on(table.currencyCode),
     index('sys_transactions_type_idx').on(table.type),
     index('sys_transactions_ref_idx').on(table.referenceType, table.referenceId),
@@ -131,6 +135,10 @@ export const sysTransactionsRelations = relations(sysTransactions, ({ one }) => 
   user: one(users, {
     fields: [sysTransactions.userId],
     references: [users.id],
+  }),
+  account: one(sysAccounts, {
+    fields: [sysTransactions.accountId],
+    references: [sysAccounts.id],
   }),
   currency: one(sysCurrencies, {
     fields: [sysTransactions.currencyCode],

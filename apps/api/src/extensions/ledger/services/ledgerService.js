@@ -91,6 +91,7 @@ export class LedgerService {
       // 创建交易记录
       const [transaction] = await tx.insert(sysTransactions).values({
         userId,
+        accountId: account.id,
         currencyCode,
         amount,
         balanceAfter: newBalance,
@@ -141,6 +142,7 @@ export class LedgerService {
 
       const [transaction] = await tx.insert(sysTransactions).values({
         userId,
+        accountId: account.id,
         currencyCode,
         amount: -amount, // 扣除为负数
         balanceAfter: newBalance,
@@ -204,6 +206,7 @@ export class LedgerService {
       // 创建来源交易
       const [fromTx] = await tx.insert(sysTransactions).values({
         userId: fromUserId,
+        accountId: fromAccount.id,
         currencyCode,
         amount: -amount,
         balanceAfter: fromNewBalance,
@@ -218,6 +221,7 @@ export class LedgerService {
       // 创建目标交易
       const [toTx] = await tx.insert(sysTransactions).values({
         userId: toUserId,
+        accountId: toAccount.id,
         currencyCode,
         amount: amount,
         balanceAfter: toNewBalance,
