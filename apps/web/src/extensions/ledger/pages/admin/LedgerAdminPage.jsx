@@ -40,38 +40,26 @@ export default function LedgerAdminPage() {
       name: '',
       symbol: '',
       exchangeRate: 1,
-      isActive: true
+      isActive: true,
+      config: {}
   });
-  const [transactions, setTransactions] = useState([]);
-  const [txPagination, setTxPagination] = useState({
-    page: 1,
-    limit: 20,
-    total: 0
-  });
+
+  // State for transaction table
   const [txFilterUser, setTxFilterUser] = useState(null);
   const [txFilterCurrency, setTxFilterCurrency] = useState('all');
+  const [txPagination, setTxPagination] = useState({ page: 1, limit: 20, total: 0 });
+  const [transactions, setTransactions] = useState([]);
 
-  useEffect(() => {
-    fetchCurrencies();
-    fetchStats();
-    fetchTransactions();
-  }, []);
-
-  useEffect(() => {
-      fetchTransactions();
-  }, [txPagination.page, txFilterUser, txFilterCurrency]);
-
-  const fetchStats = async () => {
-    setStatsLoading(true);
-    try {
-      const data = await ledgerApi.getStats();
-      setStats(data || []);
-    } catch (error) {
-      console.error('获取统计失败:', error);
-      toast.error('获取统计数据失败');
-    } finally {
-      setStatsLoading(false);
-    }
+  // Fetch functions
+  const fetchCurrencies = async () => {
+      try {
+          const data = await ledgerApi.admin.getCurrencies();
+          setCurrencies(data);
+          setLoading(false);
+      } catch (error) {
+          toast.error('获取货币列表失败');
+          setLoading(false);
+      }
   };
 
   const fetchTransactions = async () => {
@@ -79,7 +67,7 @@ export default function LedgerAdminPage() {
       try {
           const params = {
               page: txPagination.page,
-              limit: txPagination.limit,
+              limit: txPagination.limit
           };
           if (txFilterCurrency && txFilterCurrency !== 'all') {
               params.currency = txFilterCurrency;
@@ -88,27 +76,51 @@ export default function LedgerAdminPage() {
               params.userId = txFilterUser.id;
           }
           const data = await ledgerApi.getTransactions(params);
-          setTransactions(data.items || []);
-          setTxPagination(prev => ({ ...prev, total: data.total || 0 }));
-      } catch (err) {
-          console.error("Failed to load transactions", err);
-          toast.error("加载交易记录失败");
+          setTransactions(data.items);
+          setTxPagination(prev => ({ ...prev, total: data.total }));
+      } catch (error) {
+          console.error(error);
+          toast.error('获取交易记录失败');
       } finally {
           setTxLoading(false);
       }
   };
 
-  const fetchCurrencies = async () => {
-    setLoading(true);
-    try {
-      const data = await ledgerApi.admin.getCurrencies();
-      setCurrencies(data);
-    } catch (err) {
-      console.error('Failed to load currencies:', err);
-      toast.error('加载货币列表失败');
-    } finally {
-      setLoading(false);
-    }
+  const fetchStats = async () => {
+      setStatsLoading(true);
+      try {
+          const data = await ledgerApi.getStats();
+          setStats(Array.isArray(data) ? data : (data.items || [data]));
+      } catch (error) {
+          console.error(error);
+      } finally {
+          setStatsLoading(false);
+      }
+  };
+
+  useEffect(() => {
+      Promise.all([fetchCurrencies(), fetchStats()]);
+  }, []);
+
+  useEffect(() => {
+      fetchTransactions();
+  }, [txPagination.page, txFilterCurrency, txFilterUser]);
+
+  const handleOperationSubmit = async (data) => {
+      setSubmitting(true);
+      try {
+          await ledgerApi.admin.operation(data);
+          toast.success(data.type === 'grant' ? '发放成功' : '扣除成功');
+          setOperationOpen(false);
+          // Refresh data
+          fetchStats();
+          fetchTransactions();
+      } catch (error) {
+          console.error(error);
+          toast.error(error.message || '操作失败');
+      } finally {
+          setSubmitting(false);
+      }
   };
 
   const handleSaveCurrency = async () => {
@@ -118,7 +130,8 @@ export default function LedgerAdminPage() {
           code: formData.code,
           name: formData.name,
           symbol: formData.symbol,
-          isActive: formData.isActive
+          isActive: formData.isActive,
+          config: JSON.stringify(formData.config)
       };
       
       try {
@@ -134,44 +147,69 @@ export default function LedgerAdminPage() {
       }
   };
 
-  const handleOperationSubmit = async (data) => {
-      setSubmitting(true);
-      try {
-          await ledgerApi.admin.operation(data);
-          toast.success(data.type === 'grant' ? '货币发放成功' : '货币扣除成功');
-          setOperationOpen(false);
-          fetchStats();
-          // optionally refresh transactions if we were viewing them
-          fetchTransactions();
-      } catch (err) {
-          console.error(err);
-          toast.error('操作失败');
-      } finally {
-          setSubmitting(false);
-      }
-  };
-
-
   const handleCreateClick = () => {
       setEditingCurrency(null);
       setFormData({
         code: '',
         name: '',
         symbol: '',
-        isActive: true
+        isActive: true,
+        config: {}
       });
       setIsDialogOpen(true);
   };
 
   const handleEditClick = (currency) => {
       setEditingCurrency(currency);
+      let config = {};
+      try {
+          config = currency.config ? JSON.parse(currency.config) : {};
+      } catch (e) {
+          config = {};
+      }
+
+      // Normalize config items if they exist
+      const normalizeConfig = (conf) => {
+          const normalized = {};
+          Object.keys(conf).forEach(key => {
+              const item = conf[key];
+              if (item && typeof item === 'object' && 'value' in item) {
+                  normalized[key] = { 
+                      value: item.value, 
+                      description: item.description || key
+                  };
+              } else if (item !== undefined) {
+                  // Legacy format (value only)
+                  normalized[key] = { 
+                      value: item, 
+                      description: key 
+                  };
+              }
+          });
+          return normalized;
+      };
+
       setFormData({
         code: currency.code,
         name: currency.name,
         symbol: currency.symbol,
-        isActive: currency.isActive
+        isActive: currency.isActive,
+        config: normalizeConfig(config)
       });
       setIsDialogOpen(true);
+  };
+
+  const updateConfig = (key, value) => {
+      setFormData(prev => ({
+          ...prev,
+          config: {
+              ...prev.config,
+              [key]: {
+                  ...prev.config[key],
+                  value: parseFloat(value) || 0
+              }
+          }
+      }));
   };
 
   return (
@@ -199,15 +237,6 @@ export default function LedgerAdminPage() {
             </Button>
         </div>
       </div>
-
-      <CurrencyOperationDialog 
-          open={operationOpen}
-          onOpenChange={setOperationOpen}
-          onSubmit={handleOperationSubmit}
-          submitting={submitting}
-          mode={operationMode}
-          currencies={currencies}
-      />
 
       <CurrencyOperationDialog 
           open={operationOpen}
@@ -259,9 +288,9 @@ export default function LedgerAdminPage() {
                 description={editingCurrency ? `编辑 ${editingCurrency.name} (${editingCurrency.code}) 的信息` : '添加新的系统货币类型'}
                 onSubmit={handleSaveCurrency}
                 loading={submitting}
-                maxWidth="sm:max-w-[500px]"
+                maxWidth="sm:max-w-[600px]"
             >
-                <div className="space-y-4 py-2">
+                <div className="space-y-4 py-2 overflow-y-auto pr-2">
                     <div className="grid gap-2">
                         <Label htmlFor="code">代码 (Code)</Label>
                         <Input 
@@ -306,6 +335,25 @@ export default function LedgerAdminPage() {
                             onCheckedChange={(checked) => setFormData({...formData, isActive: checked})}
                         />
                     </div>
+                    {
+                    formData.config && <div className="border-t pt-4 mt-4">
+                        <h4 className="font-semibold mb-4">奖励规则配置</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {Object.entries(formData.config || {}).map(([key, item]) => (
+                                <div key={key} className="grid gap-2 p-3 border rounded-md">
+                                    <Label title={key} className="flex justify-between">
+                                        <span>{item.description || key}</span>
+                                    </Label>
+                                    <Input 
+                                        type="number" 
+                                        value={item.value ?? 0}
+                                        onChange={(e) => updateConfig(key, e.target.value)}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    }
                 </div>
             </FormDialog>
 
@@ -343,6 +391,7 @@ export default function LedgerAdminPage() {
         </TabsContent>
 
         <TabsContent value="transactions" className="space-y-4">
+             {/* Transaction Table Content (Re-using what was there or ensuring tabs work) */}
             <div className="flex flex-col sm:flex-row gap-4 mb-4 items-end">
                 <div className="w-full sm:w-[300px]">
                     <UserSearchInput 

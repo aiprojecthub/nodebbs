@@ -3,7 +3,6 @@ import { posts, topics, users, likes, notifications, subscriptions, moderationLo
 import { eq, sql, desc, and, inArray, ne, like, or } from 'drizzle-orm';
 import { getSetting } from '../../utils/settings.js';
 import { userEnricher } from '../../services/userEnricher.js';
-import { getRewardConfig } from '../../extensions/rewards/services/rewardService.js';
 import { sysCurrencies, sysAccounts } from '../../extensions/ledger/schema.js';
 import { getPassiveEffects } from '../../extensions/badges/services/badgeService.js';
 
@@ -663,7 +662,7 @@ export default async function postRoutes(fastify, options) {
     // 4. 检查积分扣除 (如果配置为负数)
     if (postNumber > 1) {
       try {
-        const replyCreditChange = await getRewardConfig('post_reply_amount', 2); // 默认值2，表示回复奖励2积分
+        const replyCreditChange = await fastify.ledger.getCurrencyConfig('credits', 'post_reply_amount', 2); // 默认值2，表示回复奖励2积分
         const replyCost = replyCreditChange < 0 ? Math.abs(Number(replyCreditChange)) : 0;
         
         if (replyCost > 0) {
@@ -698,7 +697,7 @@ export default async function postRoutes(fastify, options) {
       } catch (err) {
         // 如果是余额不足，返回 400
         if (err.message.includes('余额不足') || err.message.includes('Insufficient funds')) {
-           return reply.code(400).send({ error: `积分余额不足，发表回复需要 ${Math.abs(await getRewardConfig('post_reply_amount', 0))} 积分` });
+           return reply.code(400).send({ error: `积分余额不足，发表回复需要 ${Math.abs(await fastify.ledger.getCurrencyConfig('credits', 'post_reply_amount', 0))} 积分` });
         }
         // 其他积分系统错误（如未启用），记录日志但允许发帖（或者也可以选择拦截）
         // 这里选择允许发帖，避免积分系统故障影响核心功能，除非是余额不足这种明确的业务限制

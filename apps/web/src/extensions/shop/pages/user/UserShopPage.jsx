@@ -10,6 +10,7 @@ import { BalanceCard } from '@/extensions/ledger/components/user/BalanceCard';
 import { ItemTypeSelector } from '@/extensions/shop/components/shared/ItemTypeSelector';
 import { PurchaseDialog } from '../../components/user/PurchaseDialog';
 import { BadgeUnlockDialog } from '../../components/user/BadgeUnlockDialog';
+import { ShopItemGrid } from '../../components/user/ShopItemGrid';
 
 export default function UserShopPage() {
   const { isAuthenticated } = useAuth();

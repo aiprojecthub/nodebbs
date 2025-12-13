@@ -1,7 +1,6 @@
 import db from '../../../db/index.js';
 import {
   userCheckIns,
-  rewardSystemConfig,
   postRewards,
 } from '../schema.js';
 import {
@@ -13,45 +12,6 @@ import { users, userItems, shopItems } from '../../../db/schema.js';
 import { eq, sql, desc, ilike, and, inArray } from 'drizzle-orm';
 import { getPassiveEffects } from '../../badges/services/badgeService.js';
 
-/**
- * 获取奖励系统配置
- */
-export async function getRewardConfig(key, defaultValue = null) {
-  try {
-    const [config] = await db
-      .select()
-      .from(rewardSystemConfig)
-      .where(eq(rewardSystemConfig.key, key))
-      .limit(1);
-
-    if (!config) return defaultValue;
-
-    switch (config.valueType) {
-      case 'number': return parseFloat(config.value);
-      case 'boolean': return config.value === 'true';
-      case 'string': default: return config.value;
-    }
-  } catch (error) {
-    console.error('[奖励配置] 获取配置失败:', error);
-    return defaultValue;
-  }
-}
-
-// 修改：检查积分货币是否启用，而不是读取独立的系统配置
-export async function isRewardSystemEnabled() {
-  try {
-    const [currency] = await db
-      .select({ isActive: sysCurrencies.isActive })
-      .from(sysCurrencies)
-      .where(eq(sysCurrencies.code, 'credits'))
-      .limit(1);
-
-    return currency?.isActive ?? false;
-  } catch (error) {
-    console.error('[奖励服务] 检查系统状态失败:', error);
-    return false;
-  }
-}
 
 /**
  * 获取或创建用户签到数据
@@ -106,7 +66,7 @@ export async function grantReward(fastify, {
   relatedPostId,
   metadata = {}
 }) {
-  const systemEnabled = await isRewardSystemEnabled();
+  const systemEnabled = await fastify.ledger.isCurrencyActive('credits');
   if (!systemEnabled) throw new Error('奖励系统未启用');
 
   const fullMetadata = {
@@ -140,7 +100,7 @@ export async function deductCredits(fastify, {
   relatedUserId,
   metadata = {}
 }) {
-  const systemEnabled = await isRewardSystemEnabled();
+  const systemEnabled = await fastify.ledger.isCurrencyActive('credits');
   if (!systemEnabled) throw new Error('奖励系统未启用');
 
   return await fastify.ledger.deduct({
@@ -167,7 +127,7 @@ export async function transferCredits(fastify, {
   relatedPostId,
   metadata = {}
 }) {
-  const systemEnabled = await isRewardSystemEnabled();
+  const systemEnabled = await fastify.ledger.isCurrencyActive('credits');
   if (!systemEnabled) throw new Error('奖励系统未启用');
 
   const fullMetadata = {
@@ -193,7 +153,7 @@ export async function transferCredits(fastify, {
  */
 export async function checkIn(fastify, userId) {
   // console.log('Starting CheckIn for user:', userId);
-  const systemEnabled = await isRewardSystemEnabled();
+  const systemEnabled = await fastify.ledger.isCurrencyActive('credits');
   if (!systemEnabled) throw new Error('奖励系统未启用');
 
   // Need separate transaction for CheckIn Logic OR combine?
@@ -263,8 +223,8 @@ export async function checkIn(fastify, userId) {
 
   // 2. Grant Reward (Ledger)
   try {
-    const baseAmount = await getRewardConfig('check_in_base_amount', 10);
-    const streakBonus = await getRewardConfig('check_in_streak_bonus', 5);
+    const baseAmount = await fastify.ledger.getCurrencyConfig('credits', 'check_in_base_amount', 10);
+    const streakBonus = await fastify.ledger.getCurrencyConfig('credits', 'check_in_streak_bonus', 5);
       
     let bonusAmount = Math.min(result.newStreak - 1, 6) * streakBonus;
     let effectBonus = 0;

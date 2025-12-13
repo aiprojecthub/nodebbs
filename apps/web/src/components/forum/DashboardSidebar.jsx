@@ -90,7 +90,7 @@ export default function DashboardSidebar() {
       icon: Store,
       children: [
         { href: '/dashboard/ledger', icon: Coins, label: '货币管理' },
-        { href: '/dashboard/rewards', icon: Coins, label: '积分账户' },
+
         { href: '/dashboard/shop', icon: ShoppingCart, label: '商城管理' },
         { href: '/dashboard/badges', icon: Medal, label: '勋章管理' },
       ],

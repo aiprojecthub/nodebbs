@@ -236,4 +236,47 @@ export class LedgerService {
       return { fromTx, toTx };
     });
   }
+
+  /**
+   * 检查货币是否启用
+   */
+  async isCurrencyActive(currencyCode) {
+    const [currency] = await db
+      .select({ isActive: sysCurrencies.isActive })
+      .from(sysCurrencies)
+      .where(eq(sysCurrencies.code, currencyCode))
+      .limit(1);
+    return currency?.isActive ?? false;
+  }
+
+  /**
+   * 获取货币配置
+   * @param {string} currencyCode
+   * @param {string} key 配置键名
+   * @param {any} defaultValue 默认值
+   */
+  async getCurrencyConfig(currencyCode, key, defaultValue = null) {
+    try {
+      const [currency] = await db
+        .select({ config: sysCurrencies.config })
+        .from(sysCurrencies)
+        .where(eq(sysCurrencies.code, currencyCode))
+        .limit(1);
+
+      if (!currency || !currency.config) return defaultValue;
+
+      const config = JSON.parse(currency.config);
+      const item = config[key];
+      if (item === undefined) return defaultValue;
+      
+      // Handle both old format (direct value) and new format ({ value, description })
+      if (item !== null && typeof item === 'object' && 'value' in item) {
+          return item.value;
+      }
+      return item;
+    } catch (error) {
+      console.error(`[Ledger] Error parsing config for ${currencyCode}:`, error);
+      return defaultValue;
+    }
+  }
 }

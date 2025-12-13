@@ -24,7 +24,7 @@ import {
 import { initOAuthProviders, listOAuthProviders } from './oauth.js';
 import { initInvitationRules, listInvitationRules } from './invitation.js';
 import { initEmailProviders, listEmailProviders } from './email.js';
-import { initRewardConfigs, listRewardConfigs, cleanRewards } from './rewards.js';
+import { initRewardConfigs, cleanRewards } from './rewards.js';
 import { initBadges, listBadges, cleanBadges } from './badges.js';
 import { initLedger, listCurrencies, cleanLedger } from './ledger.js';
 import { initShopItems, cleanShopItems } from './shop.js';
@@ -85,7 +85,6 @@ function listAllSettings() {
   listOAuthProviders();
   listEmailProviders();
   listInvitationRules();
-  listRewardConfigs();
   listCurrencies();
   listBadges();
 }

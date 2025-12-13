@@ -3,10 +3,8 @@ import {
   transferCredits,
   getPostRewards,
   getCreditRanking,
-  getRewardConfig,
   grantReward,
   deductCredits,
-  isRewardSystemEnabled
 } from '../services/rewardService.js';
 import db from '../../../db/index.js';
 import { posts, users } from '../../../db/schema.js';
@@ -31,7 +29,7 @@ export default async function rewardsRoutes(fastify, options) {
       },
     },
   }, async (request, reply) => {
-    const enabled = await isRewardSystemEnabled();
+    const enabled = await fastify.ledger.isCurrencyActive('credits');
     return { enabled };
   });
 
@@ -81,8 +79,8 @@ export default async function rewardsRoutes(fastify, options) {
       if (post.userId === request.user.id) return reply.code(400).send({ error: '不能打赏自己的帖子' });
 
       // 检查金额限制
-      const minAmount = await getRewardConfig('reward_min_amount', 1);
-      const maxAmount = await getRewardConfig('reward_max_amount', 1000);
+      const minAmount = await fastify.ledger.getCurrencyConfig('credits', 'reward_min_amount', 1);
+      const maxAmount = await fastify.ledger.getCurrencyConfig('credits', 'reward_max_amount', 1000);
 
       if (amount < minAmount) return reply.code(400).send({ error: `打赏金额不能低于 ${minAmount}` });
       if (amount > maxAmount) return reply.code(400).send({ error: `打赏金额不能超过 ${maxAmount}` });
@@ -232,24 +230,6 @@ export default async function rewardsRoutes(fastify, options) {
           metadata: { adminId: request.user.id }
       });
       return { message: '扣除成功', transaction: tx };
-  });
-  
-  const { rewardSystemConfig } = await import('../schema.js');
-  
-  fastify.get('/admin/config', { preHandler: [fastify.requireAdmin] }, async () => {
-      const items = await db.select().from(rewardSystemConfig);
-      return { items };
-  });
-  
-  fastify.put('/admin/config/:key', { preHandler: [fastify.requireAdmin] }, async (req, reply) => {
-      const { key } = req.params;
-      const { value } = req.body;
-      const [updated] = await db.update(rewardSystemConfig)
-        .set({ value: String(value), updatedAt: new Date() })
-        .where(eq(rewardSystemConfig.key, key))
-        .returning();
-      if(!updated) return reply.code(404).send({error:'Config not found'});
-      return updated;
   });
 
 }

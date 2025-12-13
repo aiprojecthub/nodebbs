@@ -20,6 +20,16 @@ export const DEFAULT_CURRENCIES = [
       icon: 'coins',
       color: 'yellow',
     }),
+    config: JSON.stringify({
+      check_in_base_amount: { value: 10, description: '签到基础奖励' },
+      check_in_streak_bonus: { value: 5, description: '连续签到每日递增奖励' },
+      post_topic_amount: { value: 5, description: '发布话题奖励' },
+      post_reply_amount: { value: 2, description: '发布回复的积分变动 (正数=奖励，负数=扣费)' },
+      receive_like_amount: { value: 1, description: '获赞奖励' },
+      reward_min_amount: { value: 1, description: '打赏最小金额' },
+      reward_max_amount: { value: 1000, description: '打赏最大金额' },
+      invite_reward_amount: { value: 50, description: '邀请新用户奖励' }
+    })
   },
   {
     code: 'gold',

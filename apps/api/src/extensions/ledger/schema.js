@@ -48,6 +48,7 @@ export const sysCurrencies = pgTable(
     precision: integer('precision').notNull().default(0), // 小数位，0表示整数
     isActive: boolean('is_active').notNull().default(true),
     metadata: text('metadata'), // JSON 配置，如汇率、图标等
+    config: text('config'), // JSON 业务规则配置 (如奖励规则)
   },
   (table) => [
     index('sys_currencies_code_idx').on(table.code),

@@ -106,24 +106,3 @@ export const postRewardsRelations = relations(postRewards, ({ one }) => ({
   }),
 }));
 
-// 奖励系统配置表 (原 CreditSystemConfig)
-export const rewardSystemConfig = pgTable(
-  'reward_system_config',
-  {
-    ...$defaults,
-    key: varchar('key', { length: 100 }).notNull().unique(),
-    value: text('value').notNull(),
-    valueType: varchar('value_type', { length: 20 }).notNull(), // 'number', 'boolean', 'string'
-    description: text('description'),
-    category: varchar('category', { length: 50 }).notNull(), 
-  },
-  (table) => [
-    index('reward_system_config_key_idx').on(table.key),
-    index('reward_system_config_category_idx').on(table.category),
-  ]
-);
-
-export const rewardSystemConfigRelations = relations(
-  rewardSystemConfig,
-  () => ({})
-);
