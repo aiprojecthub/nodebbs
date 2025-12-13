@@ -34,10 +34,34 @@ export function RewardDialog({ open, onOpenChange, postId, postAuthor, onSuccess
 
   const fetchBalance = async () => {
     try {
-      const data = await ledgerApi.getBalance('credits');
-      setBalance(data.balance);
+      // 获取账户列表，包含配置信息
+      const accounts = await ledgerApi.getAccounts();
+      const creditsAccount = accounts.find(a => a.currency.code === 'credits');
+      
+      if (creditsAccount) {
+        setBalance(creditsAccount.balance);
+        
+        // 解析配置
+        if (creditsAccount.currency.config) {
+          try {
+            const config = typeof creditsAccount.currency.config === 'string' 
+              ? JSON.parse(creditsAccount.currency.config) 
+              : creditsAccount.currency.config;
+            
+            if (config.reward_min_amount?.value) {
+              setMinAmount(Number(config.reward_min_amount.value));
+            }
+            
+            if (config.reward_max_amount?.value) {
+              setMaxAmount(Number(config.reward_max_amount.value));
+            }
+          } catch (e) {
+            console.error('解析货币配置失败:', e);
+          }
+        }
+      }
     } catch (error) {
-      console.error('获取余额失败:', error);
+      console.error('获取账户信息失败:', error);
     }
   };
 
