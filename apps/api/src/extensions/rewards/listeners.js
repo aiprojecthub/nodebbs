@@ -1,4 +1,4 @@
-import { grantReward } from './services/rewardService.js';
+// import { grantReward } from './services/rewardService.js';
 import db from '../../db/index.js';
 import { eq, and } from 'drizzle-orm';
 
@@ -23,13 +23,22 @@ export async function registerRewardListeners(fastify) {
       const amountNum = Number(amount);
 
       if (amountNum > 0) {
-        await grantReward(fastify, {
-          userId: topic.userId,
-          amount: amountNum,
-          type: 'post_topic',
-          relatedTopicId: topic.id,
-          description: `发布话题：${topic.title}`,
-        });
+        const isCurrencyActive = await fastify.ledger.isCurrencyActive('credits');
+        if (isCurrencyActive) {
+            await fastify.ledger.grant({
+              userId: topic.userId,
+              amount: amountNum,
+              currencyCode: 'credits',
+              type: 'post_topic',
+              referenceType: 'reward_event',
+              referenceId: `post_topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              description: `发布话题：${topic.title}`,
+              metadata: {
+                  source: 'rewards-extension',
+                  relatedTopicId: topic.id
+              }
+            });
+        }
       }
     } catch (error) {
       fastify.log.error(error, `[积分系统] 处理话题创建奖励/扣费失败: TopicID=${topic.id}`);
@@ -49,14 +58,23 @@ export async function registerRewardListeners(fastify) {
       const amountNum = Number(replyAmount);
 
       if (amountNum > 0) {
-        await grantReward(fastify, {
-          userId: post.userId,
-          amount: amountNum,
-          type: 'post_reply',
-          relatedPostId: post.id,
-          relatedTopicId: post.topicId,
-          description: '发布回复',
-        });
+        const isCurrencyActive = await fastify.ledger.isCurrencyActive('credits');
+        if (isCurrencyActive) {
+            await fastify.ledger.grant({
+              userId: post.userId,
+              amount: amountNum,
+              currencyCode: 'credits',
+              type: 'post_reply',
+              referenceType: 'reward_event',
+              referenceId: `post_reply_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              description: '发布回复',
+              metadata: {
+                  source: 'rewards-extension',
+                  relatedPostId: post.id,
+                  relatedTopicId: post.topicId
+              }
+            });
+        }
       } else {
          fastify.log.debug(`[积分系统] 回复奖励未开启 (Amount=0)`);
       }
@@ -100,15 +118,23 @@ export async function registerRewardListeners(fastify) {
       const amount = await fastify.ledger.getCurrencyConfig('credits', 'receive_like_amount', 1);
 
       if (amount > 0) {
-        await grantReward(fastify, {
-          userId: postAuthorId, // 给帖子作者加分
-          amount: Number(amount),
-          type: 'receive_like',
-          relatedPostId: postId,
-          description: '获得点赞奖励',
-          metadata: { relatedPostId: postId, relatedUserId: userId },
-          referenceId: `receive_like_${postId}_${userId}` // Deterministic ID for deduplication
-        });
+        const isCurrencyActive = await fastify.ledger.isCurrencyActive('credits');
+        if (isCurrencyActive) {
+            await fastify.ledger.grant({
+              userId: postAuthorId, // 给帖子作者加分
+              amount: Number(amount),
+              currencyCode: 'credits',
+              type: 'receive_like',
+              referenceType: 'reward_event',
+              referenceId: `receive_like_${postId}_${userId}`, // Deterministic ID for deduplication
+              description: '获得点赞奖励',
+              metadata: { 
+                  source: 'rewards-extension',
+                  relatedPostId: postId, 
+                  relatedUserId: userId 
+              }
+            });
+        }
       }
     } catch (error) {
       fastify.log.error(error, `[积分系统] 发放点赞奖励失败: PostID=${postId}`);

@@ -23,6 +23,15 @@ export const ledgerApi = {
     return apiClient.get('/ledger/transactions', params);
   },
 
+  // 获取单个货币余额
+  async getBalance(currency = 'credits', userId) {
+    const params = { currency };
+    if (userId) {
+      params.userId = userId;
+    }
+    return apiClient.get('/ledger/balance', params);
+  },
+
   admin: {
       async getCurrencies() {
           return apiClient.get('/ledger/currencies');

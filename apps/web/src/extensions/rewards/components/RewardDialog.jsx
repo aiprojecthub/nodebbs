@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { rewardsApi } from '@/lib/api';
+import { rewardsApi, ledgerApi } from '@/lib/api';
 import { Coins, Loader2, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -34,7 +34,7 @@ export function RewardDialog({ open, onOpenChange, postId, postAuthor, onSuccess
 
   const fetchBalance = async () => {
     try {
-      const data = await rewardsApi.getBalance();
+      const data = await ledgerApi.getBalance('credits');
       setBalance(data.balance);
     } catch (error) {
       console.error('获取余额失败:', error);

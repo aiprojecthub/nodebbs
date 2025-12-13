@@ -220,13 +220,32 @@ export default async function authRoutes(fastify, options) {
         );
         const usedInvitation = await markInvitationCodeAsUsed(invitationCode.trim(), newUser.id);
         
-        // 给邀请人发放积分奖励
         if (usedInvitation && usedInvitation.createdBy) {
           try {
-            const { grantReward } = await import('../../extensions/rewards/services/rewardService.js');
-            // grantReward(fastify, userId, actionKey, description, referenceId, metadata)
-            await grantReward(fastify, usedInvitation.createdBy, 'invite_user', `邀请新用户注册：${newUser.username}`, newUser.id, { invitedUserId: newUser.id, invitedUsername: newUser.username });
-            fastify.log.info(`[奖励系统] 已给邀请人 ${usedInvitation.createdBy} 发放邀请奖励`);
+            // Check if rewards are active
+            const isRewardsActive = await fastify.ledger.isCurrencyActive('credits');
+            
+            if (isRewardsActive) {
+                const inviteAmount = await fastify.ledger.getCurrencyConfig('credits', 'invite_user_amount', 10);
+                
+                if (inviteAmount > 0) {
+                     await fastify.ledger.grant({
+                        userId: usedInvitation.createdBy,
+                        amount: inviteAmount,
+                        currencyCode: 'credits',
+                        type: 'invite_user',
+                        referenceType: 'invite_user',
+                        referenceId: `${usedInvitation.createdBy}_invite_${newUser.id}`,
+                        description: `邀请新用户注册：${newUser.username}`,
+                        metadata: { 
+                            invitedUserId: newUser.id, 
+                            invitedUsername: newUser.username,
+                            source: 'rewards-extension' 
+                        }
+                    });
+                    fastify.log.info(`[奖励系统] 已给邀请人 ${usedInvitation.createdBy} 发放邀请奖励`);
+                }
+            }
           } catch (creditError) {
              fastify.log.error(creditError, `[积分系统] 邀请奖励发放失败: Inviter=${usedInvitation.createdBy}, NewUser=${newUser.id}`);
              // 不阻断注册流程

@@ -1,10 +1,7 @@
 import {
   checkIn,
-  transferCredits,
   getPostRewards,
   getCreditRanking,
-  grantReward,
-  deductCredits,
 } from '../services/rewardService.js';
 import db from '../../../db/index.js';
 import { posts, users } from '../../../db/schema.js';
@@ -68,15 +65,25 @@ export default async function rewardsRoutes(fastify, options) {
       if (amount < minAmount) return reply.code(400).send({ error: `打赏金额不能低于 ${minAmount}` });
       if (amount > maxAmount) return reply.code(400).send({ error: `打赏金额不能超过 ${maxAmount}` });
 
+      // 检查系统是否启用
+      const isSystemEnabled = await fastify.ledger.isCurrencyActive('credits');
+      if (!isSystemEnabled) return reply.code(403).send({ error: '奖励系统未启用' });
+
       // 执行转账
-      const { fromTx } = await transferCredits(fastify, {
+      const { fromTx } = await fastify.ledger.transfer({
         fromUserId: request.user.id,
         toUserId: post.userId,
         amount,
+        currencyCode: 'credits',
         type: 'reward_post',
-        relatedPostId: postId,
+        referenceType: 'reward_transfer',
+        referenceId: `reward_post_${Date.now()}`,
         description: message || '打赏帖子',
-        metadata: { message },
+        metadata: { 
+            message,
+            relatedPostId: postId,
+            source: 'rewards-extension' 
+        },
       });
 
       // 记录打赏 (Feature Logic)
@@ -190,10 +197,13 @@ export default async function rewardsRoutes(fastify, options) {
     schema: { tags: ['rewards'], security: [{ bearerAuth: [] }] }
   }, async (request, reply) => {
       const { userId, amount, description } = request.body;
-      const tx = await grantReward(fastify, {
+      const tx = await fastify.ledger.grant({
           userId,
           amount,
+          currencyCode: 'credits',
           type: 'admin_grant',
+          referenceType: 'admin_operation',
+          referenceId: `admin_grant_${Date.now()}`, 
           description: description || '管理员发放',
           metadata: { adminId: request.user.id }
       });
@@ -205,10 +215,13 @@ export default async function rewardsRoutes(fastify, options) {
     schema: { tags: ['rewards'], security: [{ bearerAuth: [] }] }
   }, async (request, reply) => {
       const { userId, amount, description } = request.body;
-      const tx = await deductCredits(fastify, {
+      const tx = await fastify.ledger.deduct({
           userId,
           amount,
+          currencyCode: 'credits',
           type: 'admin_deduct',
+          referenceType: 'admin_operation',
+          referenceId: `admin_deduct_${Date.now()}`,
           description: description || '管理员扣除',
           metadata: { adminId: request.user.id }
       });
