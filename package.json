@@ -17,5 +17,6 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/aiprojecthub/nodebbs"
-  }
+  },
+  "version": "1.1.0-beta.1"
 }
