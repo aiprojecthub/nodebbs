@@ -15,7 +15,7 @@ export default function OAuthCallback() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const params = useParams();
-  const { updateUser } = useAuth();
+  const { updateUser, refreshUser } = useAuth();
   const [status, setStatus] = useState('processing'); // processing, success, error
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -26,6 +26,7 @@ export default function OAuthCallback() {
       const code = searchParams.get('code');
       const state = searchParams.get('state');
       const error = searchParams.get('error');
+      const token = searchParams.get('token'); // Apple 后端直连返回的 token
 
       // 验证 provider
       const validProviders = ['github', 'google', 'apple'];
@@ -49,11 +50,48 @@ export default function OAuthCallback() {
         return;
       }
 
-      // 没有 code，重定向到首页
-      if (!code) {
-        console.error('Missing code');
+      // 1. 如果有 token (Apple 直连模式)，尝试恢复会话
+      if (token && provider === 'apple') {
+        try {
+           setStatus('processing');
+           // Apple 后端直连会自动设置 HttpOnly Cookie
+           // 我们尝试调用 refreshUser (或 checkAuth) 来从 Cookie 恢复用户会话
+           // 这里我们从 URL 获取了 token，但这只是一个标志，真正的鉴权依赖 Cookie
+           // 或者我们可以手动把 token 保存到 localStorage (如果应用逻辑需要)
+           
+           // 等待一下 Cookie 生效 (通常不需要，但为了稳妥)
+           // await new Promise(r => setTimeout(r, 100));
+           
+           // 刷新用户状态
+           // 注意：我们要确保 refreshUser 是从 authContext 获取的
+           // 由于 hook 规则，我们不能在这里调用 hook，但 refreshUser 是从 useAuth 解构出来的，可以直接用
+           const user = await refreshUser();
+           
+           if (user) {
+               setStatus('success');
+               toast.success(`欢迎回来，${user.name || user.username}！`);
+               setTimeout(() => router.push('/'), 500);
+               return;
+           } else {
+               // 如果 Cookie 没生效，可能需要手动处理 token?
+               // 但 authApi 是基于 fetch 的，需要我们手动把 token 设为 headers? 
+               // authApi 默认是 credentials: include.
+               // 如果 refreshUser 失败 (没拿到 user)，说明 cookie 没带上或者无效
+               throw new Error('无法获取用户信息');
+           }
+        } catch(e) { 
+            console.error('Apple login verify failed', e);
+            setErrorMessage('Apple 登录验证失败，请重试');
+            setStatus('error');
+            return;
+        }
+      }
+
+      // 没有 code 且没有 token，重定向到首页
+      if (!code && !token) {
+        console.error('Missing code or token');
         setStatus('error');
-        setErrorMessage('授权失败，缺少授权码');
+        setErrorMessage('授权失败，缺少凭证');
         setTimeout(() => router.push('/'), 1000);
         return;
       }

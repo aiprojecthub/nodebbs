@@ -287,7 +287,11 @@ function OAuthProviderCard({
                 id={`${provider.provider}-callbackUrl`}
                 value={formData.callbackUrl}
                 onChange={(e) => setFormData({ ...formData, callbackUrl: e.target.value })}
-                placeholder={`例如: ${typeof window !== 'undefined' ? window.location.origin : 'http://your-domain.com'}/auth/${provider.provider}/callback`}
+                placeholder={
+                  provider.provider === 'apple' 
+                    ? `${typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com'}/api/oauth/apple/callback`
+                    : `${typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com'}/auth/${provider.provider}/callback`
+                }
               />
               <p className='text-xs text-muted-foreground'>
                 在 OAuth 提供商后台配置此回调地址

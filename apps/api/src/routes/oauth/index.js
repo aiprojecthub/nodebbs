@@ -355,6 +355,7 @@ export default async function oauthRoutes(fastify, options) {
 
         // 手动构建授权 URL
         const state = generateRandomState();
+        
         const params = new URLSearchParams({
           client_id: providerConfig.clientId,
           redirect_uri: providerConfig.callbackUrl || `${frontendUrl}/auth/google/callback`,
@@ -423,14 +424,19 @@ export default async function oauthRoutes(fastify, options) {
           scope = ['name', 'email'];
         }
 
-        // 手动构建授权 URL
-        const state = generateRandomState();
+        // 确定回调地址：优先使用配置，或者是前端代理的 API 地址
+        // Apple 的 redirect_uri 必须是公网可访问的 URL，所以不能用 backendUrl (可能是内网 IP)
+        // 我们利用 Next.js 的 /api 代理转发
+        
+        // 使用外部定义的 frontendUrl
+        const defaultCallbackUrl = `${frontendUrl}/api/oauth/apple/callback`;
+
         const params = new URLSearchParams({
           client_id: providerConfig.clientId,
-          redirect_uri: providerConfig.callbackUrl || `${frontendUrl}/auth/apple/callback`,
+          redirect_uri: providerConfig.callbackUrl || defaultCallbackUrl,
           scope: scope.join(' '),
           state: state,
-          response_type: 'code',
+          response_type: 'code id_token', 
           response_mode: 'form_post',
         });
 
@@ -739,22 +745,13 @@ export default async function oauthRoutes(fastify, options) {
           },
         },
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              user: {
-                type: 'object',
-                properties: {
-                  id: { type: 'number' },
-                  username: { type: 'string' },
-                  email: { type: 'string' },
-                  name: { type: 'string' },
-                  avatar: { type: 'string' },
-                  role: { type: 'string' },
-                  isEmailVerified: { type: 'boolean' },
-                },
+          302: {
+            description: '重定向到前端',
+            headers: {
+              Location: {
+                type: 'string',
+                description: '前端回调地址',
               },
-              token: { type: 'string' },
             },
           },
         },
@@ -762,7 +759,17 @@ export default async function oauthRoutes(fastify, options) {
     },
     async (request, reply) => {
       try {
-        const { code, user: appleUserWrap } = request.body;
+        const { code, user } = request.body;
+        // Apple 返回的 user 是仅在首次登录时提供的 JSON 字符串
+        let appleUserWrap = null;
+        if (user) {
+            try {
+                appleUserWrap = typeof user === 'string' ? JSON.parse(user) : user;
+            } catch (e) {
+                fastify.log.warn('Failed to parse Apple user JSON', e);
+            }
+        }
+
 
         // 从数据库获取 Apple 配置
         const providerConfig = await fastify.getOAuthProviderConfig('apple');
@@ -870,15 +877,25 @@ export default async function oauthRoutes(fastify, options) {
           }
         );
 
-        // 生成 Token 并设置 Cookie
+        // 生成 Token 并设置 Cookie (HttpOnly)
         const authToken = reply.generateAuthToken({
           id: result.user.id,
         });
 
-        return { ...result, token: authToken };
+        // 3. 构建前端重定向 URL
+        // 因为是 form_post，必须 redirect 回前端页面
+        const frontendRedirectUrl = new URL(`${frontendUrl}/auth/apple/callback`);
+        frontendRedirectUrl.searchParams.set('token', authToken);
+        frontendRedirectUrl.searchParams.set('status', 'success');
+
+        return reply.redirect(302, frontendRedirectUrl.toString());
+
       } catch (error) {
         fastify.log.error(error);
-        return reply.code(400).send({ error: error.message });
+        const errorRedirectUrl = new URL(`${frontendUrl}/auth/apple/callback`);
+        errorRedirectUrl.searchParams.set('error', error.message || 'Login failed');
+        errorRedirectUrl.searchParams.set('status', 'error');
+        return reply.redirect(302, errorRedirectUrl.toString());
       }
     }
   );
