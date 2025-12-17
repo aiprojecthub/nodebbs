@@ -7,17 +7,14 @@ name: Docker
 
 on:
   push:
-    branches: [ "main" ]
+    # branches: [ "main" ]
     # Publish semver tags as releases.
     tags: [ 'v*' ]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-  pull_request:
-    branches: [ "main" ]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
+#   pull_request:
+#     branches: [ "main" ]
+#     paths-ignore:
+#       - '**.md'
+#       - 'docs/**'
   workflow_dispatch:
 
 concurrency:
@@ -123,12 +120,9 @@ jobs:
         with:
           images: ${{ steps.target_images.outputs.images }}
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable=${{ startswith(github.ref, 'refs/tags/v') && !contains(github.ref, '-') }}
-            type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
             type=sha
 
       # Build and push Docker image with Buildx (don't push on PR)
