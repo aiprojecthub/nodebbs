@@ -306,6 +306,15 @@ export default async function oauthRoutes(fastify, options) {
 
         const authorizationUri = `https://github.com/login/oauth/authorize?${params.toString()}`;
 
+        // 设置 state cookie 防止 CSRF
+        reply.setCookie('oauth_state', state, {
+          path: '/',
+          httpOnly: true,
+          secure: isProd,
+          maxAge: 600, // 10 minutes
+          sameSite: 'lax',
+        });
+
         return { authorizationUri };
       } catch (error) {
         fastify.log.error(error);
@@ -430,6 +439,9 @@ export default async function oauthRoutes(fastify, options) {
         
         // 使用外部定义的 frontendUrl
         const defaultCallbackUrl = `${frontendUrl}/api/oauth/apple/callback`;
+        
+        // 手动构建授权 URL
+        const state = generateRandomState();
 
         const params = new URLSearchParams({
           client_id: providerConfig.clientId,
@@ -441,6 +453,15 @@ export default async function oauthRoutes(fastify, options) {
         });
 
         const authorizationUri = `https://appleid.apple.com/auth/authorize?${params.toString()}`;
+
+        // 设置 state cookie 防止 CSRF (与 Google 逻辑保持一致)
+        reply.setCookie('oauth_state', state, {
+          path: '/',
+          httpOnly: true,
+          secure: isProd,
+          maxAge: 600, // 10 minutes
+          sameSite: 'lax',
+        });
 
         return { authorizationUri };
       } catch (error) {
@@ -492,6 +513,16 @@ export default async function oauthRoutes(fastify, options) {
     async (request, reply) => {
       try {
         const { code, state } = request.body;
+
+        const savedState = request.cookies.oauth_state;
+        
+        // 验证 state 防止 CSRF
+        if (!state || state !== savedState) {
+           return reply.code(400).send({ error: '无效的 state 参数，可能的 CSRF 攻击' });
+        }
+        
+        // 清除 cookie
+        reply.clearCookie('oauth_state');
 
         // 从数据库获取 GitHub 配置
         const providerConfig = await fastify.getOAuthProviderConfig('github');
@@ -759,7 +790,16 @@ export default async function oauthRoutes(fastify, options) {
     },
     async (request, reply) => {
       try {
-        const { code, user } = request.body;
+        const { code, state, user } = request.body;
+        
+        // 验证 CSRF State
+        const savedState = request.cookies.oauth_state;
+        if (!state || state !== savedState) {
+           return reply.code(400).send({ error: '无效的 state 参数，可能的 CSRF 攻击' });
+        }
+        // 清除 cookie
+        reply.clearCookie('oauth_state');
+
         // Apple 返回的 user 是仅在首次登录时提供的 JSON 字符串
         let appleUserWrap = null;
         if (user) {
