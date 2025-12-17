@@ -52,13 +52,7 @@ RUN --mount=type=cache,id=pnpm,target=/root/.pnpm-store \
 FROM base AS builder
 WORKDIR /app
 
-# 声明构建参数（来自 docker-compose build args）
-ARG NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_APP_URL
-
-# 导入为环境变量供 Next.js 构建时使用
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+# 环境变量
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # 先复制已安装依赖的目录结构（包括所有 node_modules）
@@ -69,8 +63,7 @@ COPY --from=pruner /app/out/full/ ./
 
 # 构建应用（使用 turbo 在根目录构建）
 # Next.js 会生成 standalone 输出到 apps/web/.next
-RUN echo "🚧 Building Next.js with NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}" && \
-    pnpm turbo build --filter=nodebbs-web
+RUN pnpm turbo build --filter=nodebbs-web
 
 # ============================================
 # 阶段 4: 生产环境运行时（仅包含运行时文件）

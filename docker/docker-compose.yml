@@ -86,20 +86,21 @@ services:
     build:
       context: .  # 从 monorepo 根目录构建（turbo prune 需要完整的 workspace）
       dockerfile: apps/web/Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:7100}
-        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3100}
     container_name: nodebbs-web
     restart: unless-stopped
     environment:
       NODE_ENV: production
       APP_NAME: ${APP_NAME:-nodebbs}
       PORT: 3100
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:7100}
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3100}
+      SERVER_API_URL: ${SERVER_API_URL:-http://api:7100}
       TZ: Asia/Shanghai
     ports:
       - "${WEB_PORT:-3100}:3100"
+    # volumes:
+      # 自定义资源挂载（如有需要，请取消注释并在同级目录下创建 web 文件夹及对应文件）
+      # - ./web/favicon.ico:/app/apps/web/public/favicon.ico
+      # - ./web/logo.svg:/app/apps/web/public/logo.svg
+      # - ./web/apple-touch-icon.png:/app/apps/web/public/apple-touch-icon.png
     depends_on:
       api:
         condition: service_healthy

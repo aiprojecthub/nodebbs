@@ -1,9 +1,10 @@
+import { getApiBaseUrl } from './api-url';
+
 // API 客户端配置
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:7100';
 
 class ApiClient {
   constructor() {
-    this.baseURL = API_BASE_URL + '/api';
+    this.baseURL = getApiBaseUrl();
   }
 
   async request(endpoint, options = {}) {

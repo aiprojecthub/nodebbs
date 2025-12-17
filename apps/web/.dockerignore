@@ -1,57 +1,53 @@
-# 依赖
-node_modules
-npm-debug.log
-yarn-debug.log
-yarn-error.log
-.pnpm-debug.log
+# ============================================
+# apps/web/.dockerignore
+# 作用：优化 Docker 构建上下文，只打包源码和必要文件
+# ============================================
 
-# Next.js
-.next
-out
-build
+# ========================
+# Node / pnpm 依赖
+# ========================
+node_modules        # Node 依赖目录，在镜像内重新安装
+.pnpm-store         # pnpm 全局存储目录
 
-# 环境变量
-.env
-.env.local
-.env.*.local
-.env.production
-.env.development
+# ========================
+# Next.js 构建产物
+# ========================
+.next               # Next.js 构建目录（SSR / SSG）
+out                 # Next.js 静态导出目录（如果使用 export）
 
-# Git
-.git
-.gitignore
-.gitattributes
+# ========================
+# Turborepo 缓存
+# ========================
+.turbo              # Turborepo 缓存目录
 
-# 编辑器
+# ========================
+# 环境变量文件（运行时通过 docker-compose 注入）
+# ========================
+.env                # 本地环境文件
+.env.*              # 所有 .env 扩展文件
+!.env.example       # 保留示例文件
+
+# ========================
+# 日志文件
+# ========================
+*.log               # 所有日志文件
+
+# ========================
+# 测试相关文件
+# ========================
+__tests__           # 单元测试目录
+*.test.*            # 单元测试文件
+*.spec.*            # 单元测试文件
+
+# ========================
+# 编辑器 / 操作系统临时文件
+# ========================
 .vscode
 .idea
-*.swp
-*.swo
-*~
 .DS_Store
-.claude
-.kiro
 
-# 测试
-test
-coverage
-*.test.js
-*.test.jsx
-*.test.ts
-*.test.tsx
-
-# 文档
-*.md
-docs
-
-# 临时文件
-tmp
-temp
-*.log
-
-# 其他
-.prettierrc
-.eslintrc
-.eslintrc.json
-.editorconfig
-README.md
+# ========================
+# 运行时生成的用户数据（使用 Docker 卷挂载）
+# ========================
+public/uploads/     # 如果前端有上传文件目录，需要挂载卷
+.next/cache/        # Next.js 构建缓存，不打包

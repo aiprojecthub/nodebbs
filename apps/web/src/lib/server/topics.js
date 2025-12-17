@@ -41,7 +41,7 @@ export async function getTopicsData(params = {}) {
       queryParams.set('status', status);
     }
 
-    const data = await request(`/api/topics?${queryParams}`);
+    const data = await request(`/topics?${queryParams}`);
     
     return data || { items: [], total: 0, limit: 20 };
   } catch (error) {
@@ -71,7 +71,7 @@ export async function getCategoriesData(params = {}) {
     }
 
     const queryString = queryParams.toString();
-    const url = queryString ? `/api/categories?${queryString}` : '/api/categories';
+    const url = queryString ? `/categories?${queryString}` : '/categories';
 
     const data = await request(url);
     return data || [];
@@ -88,7 +88,7 @@ export async function getCategoriesData(params = {}) {
  */
 export async function getCategoryBySlug(slug) {
   try {
-    const data = await request(`/api/categories/${slug}`);
+    const data = await request(`/categories/${slug}`);
     return data || null;
   } catch (error) {
     console.error('Error fetching category:', error);
@@ -102,7 +102,7 @@ export async function getCategoryBySlug(slug) {
  */
 export async function getStatsData() {
   try {
-    const data = await request('/api/stats');
+    const data = await request('/stats');
     return data || {
       totalTopics: 0,
       totalPosts: 0,
@@ -128,7 +128,7 @@ export async function getStatsData() {
  */
 export const getTopicData = cache(async (id) => {
   try {
-    const data = await request(`/api/topics/${id}`);
+    const data = await request(`/topics/${id}`);
     return data;
   } catch (error) {
     console.error('Error fetching topic:', error);
@@ -151,7 +151,7 @@ export async function getPostsData(topicId, page = 1, limit = 20) {
       limit: limit.toString(),
     });
 
-    const data = await request(`/api/posts?${params}`);
+    const data = await request(`/posts?${params}`);
     return data || { items: [], total: 0 };
   } catch (error) {
     console.error('Error fetching posts:', error);
@@ -179,7 +179,7 @@ export async function getTopicRewardData(topic, posts) {
     if (isRewardEnabled) {
       const postIds = [topic.firstPostId, ...posts.map(p => p.id)].filter(Boolean);
       if (postIds.length > 0) {
-        initialRewardStats = await request('/api/rewards/posts/batch', {
+        initialRewardStats = await request('/rewards/posts/batch', {
             method: 'POST',
             body: JSON.stringify({ postIds })
         });

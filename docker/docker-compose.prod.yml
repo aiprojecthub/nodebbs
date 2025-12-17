@@ -3,17 +3,10 @@
 # 本文件只包含与 docker-compose.yml 的差异部分
 
 services:
-  # PostgreSQL 数据库 - 生产环境优化
+  # PostgreSQL - 生产环境安全与资源优化
   postgres:
     restart: always
-    ports: []  # 生产环境不暴露端口到主机，只在内部网络访问
-    environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  # 生产环境必须设置强密码
-    healthcheck:
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 40s
+    ports: []  # 安全：不暴露端口到主机
     deploy:
       resources:
         limits:
@@ -28,22 +21,17 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Redis 缓存 - 生产环境优化
+  # Redis - 生产环境安全与资源优化
   redis:
     restart: always
+    ports: []  # 安全：不暴露端口到主机
     command: >
       redis-server
-      --requirepass ${REDIS_PASSWORD}
+      --requirepass ${REDIS_PASSWORD:-redis_password}
       --appendonly yes
       --appendfsync everysec
       --maxmemory 256mb
       --maxmemory-policy allkeys-lru
-    ports: []  # 生产环境不暴露端口到主机
-    healthcheck:
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 20s
     deploy:
       resources:
         limits:
@@ -58,19 +46,15 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # API 服务 - 生产环境优化
+  # API - 生产环境资源优化
   api:
     restart: always
     environment:
-      USER_CACHE_TTL: ${USER_CACHE_TTL:-300}  # 生产环境缓存时间更长
-      JWT_SECRET: ${JWT_SECRET}  # 生产环境必须设置
-      CORS_ORIGIN: ${CORS_ORIGIN}  # 生产环境必须明确设置
-      APP_URL: ${APP_URL}  # 生产环境实际域名
-      NODE_OPTIONS: "--max-old-space-size=512"  # 限制 Node.js 内存使用
+      # 生产环境特有配置
+      NODE_OPTIONS: "--max-old-space-size=512"
     volumes:
-      - api_uploads:/app/apps/api/uploads  # 生产环境不挂载源代码
-    healthcheck:
-      start_period: 60s
+      # 覆盖 base 的挂载，生产环境不挂载源代码
+      - api_uploads:/app/apps/api/uploads
     deploy:
       resources:
         limits:
@@ -85,19 +69,12 @@ services:
         max-size: "20m"
         max-file: "5"
 
-  # Web 前端服务 - 生产环境优化
+  # Web - 生产环境资源优化
   web:
     restart: always
-    build:
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
-      NODE_OPTIONS: "--max-old-space-size=512"  # 限制 Node.js 内存使用
-    healthcheck:
-      start_period: 60s
+      # 生产环境特有配置
+      NODE_OPTIONS: "--max-old-space-size=512"
     deploy:
       resources:
         limits:
@@ -112,7 +89,7 @@ services:
         max-size: "20m"
         max-file: "5"
 
-# 网络 - 生产环境使用固定子网
+# 网络 - 生产环境使用固定子网 (可选，保持原样)
 networks:
   nodebbs-network:
     ipam:

@@ -1,7 +1,6 @@
 import ScalarAPI from '@/components/common/ScalarAPI';
-
 export default function ApiReference() {
-  const url = `${process.env.NEXT_PUBLIC_API_URL}/docs/json`;
+  const url = `/docs/json`;
   const config = {
     url,
     theme: 'alternate',

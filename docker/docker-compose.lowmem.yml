@@ -3,17 +3,10 @@
 # 使用方式: docker compose -f docker-compose.yml -f docker-compose.lowmem.yml up -d
 
 services:
-  # PostgreSQL 数据库 - 低内存优化
+  # PostgreSQL - 低内存优化
   postgres:
     restart: always
-    ports: []  # 不暴露端口到主机，只在内部网络访问
-    environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    healthcheck:
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 40s
+    ports: []
     deploy:
       resources:
         limits:
@@ -28,24 +21,19 @@ services:
         max-size: "5m"
         max-file: "2"
 
-  # Redis 缓存 - 低内存优化
+  # Redis - 低内存优化
   redis:
     restart: always
+    ports: []
     command: >
       redis-server
-      --requirepass ${REDIS_PASSWORD}
+      --requirepass ${REDIS_PASSWORD:-redis_password}
       --appendonly yes
       --appendfsync everysec
       --maxmemory 128mb
       --maxmemory-policy allkeys-lru
       --save 900 1
       --save 300 10
-    ports: []  # 不暴露端口到主机
-    healthcheck:
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 20s
     deploy:
       resources:
         limits:
@@ -60,21 +48,14 @@ services:
         max-size: "5m"
         max-file: "2"
 
-  # API 服务 - 低内存优化
+  # API - 低内存优化
   api:
     restart: always
     environment:
-      USER_CACHE_TTL: ${USER_CACHE_TTL:-300}
-      JWT_SECRET: ${JWT_SECRET}
-      CORS_ORIGIN: ${CORS_ORIGIN}
-      APP_URL: ${APP_URL}
-      # Node.js 内存限制
+      # 严格限制 Node.js 内存
       NODE_OPTIONS: "--max-old-space-size=384"
     volumes:
       - api_uploads:/app/apps/api/uploads
-    healthcheck:
-      start_period: 90s  # 低内存环境启动更慢
-      interval: 60s
     deploy:
       resources:
         limits:
@@ -89,21 +70,12 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Web 前端服务 - 低内存优化
+  # Web - 低内存优化
   web:
     restart: always
-    build:
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
-      # Node.js 内存限制
+      # 严格限制 Node.js 内存
       NODE_OPTIONS: "--max-old-space-size=384"
-    healthcheck:
-      start_period: 90s  # 低内存环境启动更慢
-      interval: 60s
     deploy:
       resources:
         limits:
@@ -117,10 +89,3 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
-# 网络配置
-networks:
-  nodebbs-network:
-    ipam:
-      config:
-        - subnet: 172.28.0.0/16

@@ -7,7 +7,7 @@ import { request } from '@/lib/server/api';
 // 服务端获取用户数据
 async function getUserData(username) {
   try {
-    return await request(`/api/users/${username}`);
+    return await request(`/users/${username}`);
   } catch (error) {
     console.error('Error fetching user:', error);
     return null;
@@ -22,7 +22,7 @@ async function getUserTopics(userId, page = 1, limit = 20) {
       page: page.toString(),
       limit: limit.toString(),
     });
-    return await request(`/api/topics?${params}`);
+    return await request(`/topics?${params}`);
   } catch (error) {
     console.error('Error fetching topics:', error);
     return { items: [], total: 0 };
@@ -37,7 +37,7 @@ async function getUserPosts(userId, page = 1, limit = 20) {
       page: page.toString(),
       limit: limit.toString(),
     });
-    return await request(`/api/posts?${params}`);
+    return await request(`/posts?${params}`);
   } catch (error) {
     console.error('Error fetching posts:', error);
     return { items: [], total: 0 };

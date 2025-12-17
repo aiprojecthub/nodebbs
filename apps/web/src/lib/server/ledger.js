@@ -8,7 +8,7 @@ import { request } from '@/lib/server/api';
  */
 export async function isCurrencyActive(currencyCode = 'credits') {
     try {
-        const activeCurrencies = await request('/api/ledger/active-currencies');
+        const activeCurrencies = await request('/ledger/active-currencies');
         if (!Array.isArray(activeCurrencies)) {
             return false;
         }

@@ -29,7 +29,7 @@ export async function generateMetadata({ params }) {
   let description = $description;
 
   try {
-    const settings = await request('/api/settings');
+    const settings = await request('/settings');
     if (settings?.site_name?.value) {
       name = settings.site_name.value;
     }
@@ -51,7 +51,10 @@ export async function generateMetadata({ params }) {
       title: name,
     },
     icons: {
-      icon: '/logo.svg',
+      icon: [
+        { url: '/logo.svg', type: 'image/svg+xml' },
+        { url: '/favicon.ico', type: 'image/x-icon', sizes: 'any' },
+      ],
       apple: '/apple-touch-icon.png',
     },
     openGraph: {
@@ -71,8 +74,8 @@ async function AppLayout({ children }) {
   let apiInfo = null;
   try {
     const [settingsData, apiData] = await Promise.all([
-      request('/api/settings'),
-      request('/api/'),
+      request('/settings'),
+      request('/'),
     ]);
     settings = settingsData;
     apiInfo = apiData;
