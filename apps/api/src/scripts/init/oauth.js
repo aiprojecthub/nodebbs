@@ -38,7 +38,7 @@ export const OAUTH_PROVIDERS = [
     clientId: null,
     clientSecret: null,
     callbackUrl: null,
-    additionalConfig: null,
+    additionalConfig: JSON.stringify({ teamId: null, keyId: null }),
   },
 ];
 

@@ -10,6 +10,7 @@ import {
 import db from '../../db/index.js';
 import { oauthProviders } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
+import jwt from 'jsonwebtoken';
 
 /**
  * OAuth 认证路由
@@ -713,6 +714,7 @@ export default async function oauthRoutes(fastify, options) {
           properties: {
             code: { type: 'string' },
             state: { type: 'string' },
+            user: { type: 'object' }, // Apple 仅在首次登录时返回 user 信息
           },
         },
         response: {
@@ -739,7 +741,7 @@ export default async function oauthRoutes(fastify, options) {
     },
     async (request, reply) => {
       try {
-        const { code, state } = request.body;
+        const { code, user: appleUserWrap } = request.body;
 
         // 从数据库获取 Apple 配置
         const providerConfig = await fastify.getOAuthProviderConfig('apple');
@@ -747,8 +749,31 @@ export default async function oauthRoutes(fastify, options) {
           return reply.code(500).send({ error: 'Apple OAuth 未启用' });
         }
 
-        // Apple OAuth 需要特殊处理，这里简化实现
-        // 生产环境需要生成 client_secret JWT
+        // 解析额外配置 (Team ID, Key ID)
+        let additionalConfig = {};
+        try {
+          additionalConfig = providerConfig.additionalConfig
+            ? JSON.parse(providerConfig.additionalConfig)
+            : {};
+        } catch (e) {
+          fastify.log.warn('Apple additionalConfig parsing failed', e);
+        }
+
+        const { teamId, keyId } = additionalConfig;
+
+        if (!providerConfig.clientId || !providerConfig.clientSecret || !teamId || !keyId) {
+          return reply.code(500).send({ error: 'Apple OAuth 配置不完整 (缺少 Team ID, Key ID 或 Key)' });
+        }
+
+        // 生成 Client Secret (JWT)
+        const clientSecret = generateAppleClientSecret(
+          providerConfig.clientId,
+          teamId,
+          keyId,
+          providerConfig.clientSecret // 这里存储的是 Private Key
+        );
+
+        // 获取 Token
         const tokenResponse = await fetch(
           'https://appleid.apple.com/auth/token',
           {
@@ -758,7 +783,7 @@ export default async function oauthRoutes(fastify, options) {
             },
             body: new URLSearchParams({
               client_id: providerConfig.clientId,
-              client_secret: providerConfig.clientSecret, // 需要是 JWT
+              client_secret: clientSecret,
               code: code,
               redirect_uri: providerConfig.callbackUrl,
               grant_type: 'authorization_code',
@@ -767,6 +792,8 @@ export default async function oauthRoutes(fastify, options) {
         );
 
         if (!tokenResponse.ok) {
+          const errorText = await tokenResponse.text();
+          fastify.log.error(`Apple token exchange failed: ${errorText}`);
           throw new Error('Failed to exchange code for token');
         }
 
@@ -776,22 +803,41 @@ export default async function oauthRoutes(fastify, options) {
           throw new Error(token.error_description || token.error);
         }
 
-        // Apple 的用户信息在 id_token 中
+        // 验证 ID Token
         const idToken = token.id_token;
         if (!idToken) {
           throw new Error('No id_token received from Apple');
         }
 
-        // 解码 JWT (不验证签名，生产环境应该验证)
-        const payload = JSON.parse(
-          Buffer.from(idToken.split('.')[1], 'base64').toString()
-        );
+        const payload = await verifyAppleIdToken(idToken, providerConfig.clientId);
+
+        // Apple 仅在首次授权时返回 user 字段 (包含 name)，后续只返回 email
+        // 需要处理这种情况，如果 payload 中有 email，但 appleUserWrap 也是空的
+        // 则只能获取到邮箱
+        
+        // 尝试从首次请求的 user 字段中获取名字
+        let nameMap = {};
+        if (appleUserWrap) {
+          // appleUserWrap 可能是 json 字符串或对象，请求体解析可能会处理
+          // form-post 模式下 apple 返回的是 json 字符串
+          try {
+             const userObj = typeof appleUserWrap === 'string' ? JSON.parse(appleUserWrap) : appleUserWrap;
+             if (userObj.name) {
+               nameMap = userObj.name;
+             }
+          } catch(e) {}
+        }
+
+        const profileData = {
+          ...payload,
+          name: nameMap, // 传递可能存在的 name 信息
+        };
 
         const result = await handleOAuthLogin(
           fastify,
           'apple',
           payload.sub,
-          normalizeOAuthProfile('apple', payload),
+          normalizeOAuthProfile('apple', profileData),
           {
             accessToken: token.access_token,
             refreshToken: token.refresh_token,
@@ -815,6 +861,61 @@ export default async function oauthRoutes(fastify, options) {
       }
     }
   );
+
+/**
+ * 生成 Apple Client Secret (JWT)
+ */
+function generateAppleClientSecret(clientId, teamId, keyId, privateKey) {
+  const now = Math.floor(Date.now() / 1000);
+  const exp = now + 15777000; // 6个月 (Apple 允许最长 6 个月)
+
+  return jwt.sign(
+    {
+      iss: teamId,
+      iat: now,
+      exp: exp,
+      aud: 'https://appleid.apple.com',
+      sub: clientId,
+    },
+    privateKey,
+    {
+      algorithm: 'ES256',
+      header: {
+        kid: keyId,
+        typ: undefined, // Apple 可能会拒绝带有 typ 头的 JWT，具体视库实现而定，通常不需要
+      },
+    }
+  );
+}
+
+/**
+ * 验证 Apple ID Token
+ * 简化版：只解码并验证 aud 和 iss，不联网获取公钥验证签名
+ * 生产环境建议使用 jwks-rsa 等库获取 Apple 公钥进行完整验证
+ */
+async function verifyAppleIdToken(idToken, clientId) {
+  const decoded = jwt.decode(idToken);
+  
+  if (!decoded) {
+    throw new Error('Invalid ID Token');
+  }
+
+  if (decoded.iss !== 'https://appleid.apple.com') {
+    throw new Error('Invalid ID Token issuer');
+  }
+
+  if (decoded.aud !== clientId) {
+    throw new Error('Invalid ID Token audience');
+  }
+
+  // 检查有效期
+  const now = Math.floor(Date.now() / 1000);
+  if (decoded.exp < now) {
+    throw new Error('ID Token expired');
+  }
+
+  return decoded;
+}
 
   /**
    * 关联 OAuth 账号（需要登录）

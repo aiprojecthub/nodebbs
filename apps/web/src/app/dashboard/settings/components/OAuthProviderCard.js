@@ -82,6 +82,18 @@ function OAuthProviderCard({
     clientSecret: provider.clientSecret || '',
     callbackUrl: provider.callbackUrl || '',
     scope: provider.scope || '',
+    // 解析 additionalConfig
+    ...(() => {
+      try {
+        const additional = provider.additionalConfig ? JSON.parse(provider.additionalConfig) : {};
+        return {
+          teamId: additional.teamId || '',
+          keyId: additional.keyId || '',
+        };
+      } catch {
+        return { teamId: '', keyId: '' };
+      }
+    })(),
   });
   const [saving, setSaving] = useState(false);
 
@@ -90,11 +102,28 @@ function OAuthProviderCard({
   const handleSave = async () => {
     try {
       setSaving(true);
-      await oauthConfigApi.updateProvider(provider.provider, formData);
+      // 构造要保存的数据
+      const savePayload = {
+        isEnabled: formData.isEnabled,
+        clientId: formData.clientId,
+        clientSecret: formData.clientSecret,
+        callbackUrl: formData.callbackUrl,
+        scope: formData.scope,
+      };
+
+      // 对 Apple 特殊处理 additionalConfig
+      if (provider.provider === 'apple') {
+        savePayload.additionalConfig = JSON.stringify({
+          teamId: formData.teamId,
+          keyId: formData.keyId,
+        });
+      }
+
+      await oauthConfigApi.updateProvider(provider.provider, savePayload);
       toast.success(`${provider.displayName} 配置已保存`);
       setEditingProvider(null);
       // 局部更新状态，无需重新请求接口
-      onUpdate(provider.provider, formData);
+      onUpdate(provider.provider, savePayload);
     } catch (error) {
       console.error('Failed to update OAuth provider:', error);
       toast.error('保存配置失败');
@@ -162,6 +191,17 @@ function OAuthProviderCard({
                     clientSecret: provider.clientSecret || '',
                     callbackUrl: provider.callbackUrl || '',
                     scope: provider.scope || '',
+                    ...(() => {
+                      try {
+                        const additional = provider.additionalConfig ? JSON.parse(provider.additionalConfig) : {};
+                        return {
+                          teamId: additional.teamId || '',
+                          keyId: additional.keyId || '',
+                        };
+                      } catch {
+                        return { teamId: '', keyId: '' };
+                      }
+                    })(),
                   });
                 }}
               >
@@ -183,7 +223,9 @@ function OAuthProviderCard({
         {isEditing && (
           <div className='space-y-4 pt-4 border-t border-border'>
             <div className='space-y-2'>
-              <Label htmlFor={`${provider.provider}-clientId`}>Client ID *</Label>
+              <Label htmlFor={`${provider.provider}-clientId`}>
+                {provider.provider === 'apple' ? 'Service ID (Client ID) *' : 'Client ID *'}
+              </Label>
               <Input
                 id={`${provider.provider}-clientId`}
                 value={formData.clientId}
@@ -193,15 +235,51 @@ function OAuthProviderCard({
             </div>
 
             <div className='space-y-2'>
-              <Label htmlFor={`${provider.provider}-clientSecret`}>Client Secret *</Label>
-              <Input
-                id={`${provider.provider}-clientSecret`}
-                type='password'
-                value={formData.clientSecret}
-                onChange={(e) => setFormData({ ...formData, clientSecret: e.target.value })}
-                placeholder='输入 Client Secret'
-              />
+              <Label htmlFor={`${provider.provider}-clientSecret`}>
+                 {provider.provider === 'apple' ? 'Private Key (.p8 Content) *' : 'Client Secret *'}
+              </Label>
+              {provider.provider === 'apple' ? (
+                 <Textarea
+                  id={`${provider.provider}-clientSecret`}
+                  value={formData.clientSecret}
+                  onChange={(e) => setFormData({ ...formData, clientSecret: e.target.value })}
+                  placeholder='-----BEGIN PRIVATE KEY----- ...'
+                  rows={4}
+                  className="font-mono text-xs"
+                />
+              ) : (
+                <Input
+                  id={`${provider.provider}-clientSecret`}
+                  type='password'
+                  value={formData.clientSecret}
+                  onChange={(e) => setFormData({ ...formData, clientSecret: e.target.value })}
+                  placeholder='输入 Client Secret'
+                />
+              )}
             </div>
+
+            {provider.provider === 'apple' && (
+              <div className="grid grid-cols-2 gap-4">
+                 <div className='space-y-2'>
+                  <Label htmlFor={`${provider.provider}-teamId`}>Team ID *</Label>
+                  <Input
+                    id={`${provider.provider}-teamId`}
+                    value={formData.teamId}
+                    onChange={(e) => setFormData({ ...formData, teamId: e.target.value })}
+                    placeholder='App ID Prefix (e.g. A1B2C3D4E5)'
+                  />
+                </div>
+                 <div className='space-y-2'>
+                  <Label htmlFor={`${provider.provider}-keyId`}>Key ID *</Label>
+                  <Input
+                    id={`${provider.provider}-keyId`}
+                    value={formData.keyId}
+                    onChange={(e) => setFormData({ ...formData, keyId: e.target.value })}
+                    placeholder='Key ID (e.g. ABC1234567)'
+                  />
+                </div>
+              </div>
+            )}
 
             <div className='space-y-2'>
               <Label htmlFor={`${provider.provider}-callbackUrl`}>回调 URL</Label>
