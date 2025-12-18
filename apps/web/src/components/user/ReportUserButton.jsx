@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Flag } from 'lucide-react';
-import ReportDialog from '@/components/moderation/ReportDialog';
+import ReportDialog from '@/components/common/ReportDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 

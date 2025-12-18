@@ -30,7 +30,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import NotificationPopover from '@/components/forum/NotificationPopover';
+import NotificationPopover from '@/components/common/NotificationPopover';
 import ThemeSwitcher from '@/components/common/ThemeSwitcher';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loading } from '../common/Loading';

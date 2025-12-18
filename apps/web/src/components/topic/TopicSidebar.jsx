@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
-import ReportDialog from '@/components/moderation/ReportDialog';
+import ReportDialog from '@/components/common/ReportDialog';
 import TopicForm from '@/components/topic/TopicForm';
 import Time from '../common/Time';
 import UserCard from '@/components/user/UserCard';
