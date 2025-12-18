@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { DataTable } from '@/components/forum/DataTable';
+import { DataTable } from '@/components/common/DataTable';
 import { ConfirmDialog } from '@/components/common/AlertDialog';
 import { FormDialog } from '@/components/common/FormDialog';
 import { Plus, Edit, Trash2, Loader2, Tag as TagIcon } from 'lucide-react';

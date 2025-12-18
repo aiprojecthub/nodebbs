@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DataTable } from '@/components/forum/DataTable';
+import { DataTable } from '@/components/common/DataTable';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {

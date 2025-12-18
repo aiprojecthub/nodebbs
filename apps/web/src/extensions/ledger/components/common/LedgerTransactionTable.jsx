@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { DataTable } from '@/components/forum/DataTable';
+import { DataTable } from '@/components/common/DataTable';
 import { Loading } from '@/components/common/Loading';
 import { TransactionTypeBadge } from './TransactionTypeBadge';
 import Time from '@/components/forum/Time';

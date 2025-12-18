@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { DataTable } from '@/components/forum/DataTable';
+import { DataTable } from '@/components/common/DataTable';
 import { FormDialog } from '@/components/common/FormDialog';
 import { CurrencyOperationDialog } from './CurrencyOperationDialog';
 import { Plus, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useDebounce } from '@uidotdev/usehooks';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { DataTable } from '@/components/forum/DataTable';
+import { DataTable } from '@/components/common/DataTable';
 import UserAvatar from '@/components/forum/UserAvatar';
 import {
   Select,

@@ -20,8 +20,8 @@ import {
 } from '@/components/ui/select';
 import { Loader2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Loading } from '../common/Loading';
-import { Pager } from '../common/Pagination';
+import { Loading } from './Loading';
+import { Pager } from './Pagination';
 
 // 自定义 Table 包装器，移除默认的滚动容器以支持 sticky 列
 function TableWrapper({ className, children, ...props }) {
