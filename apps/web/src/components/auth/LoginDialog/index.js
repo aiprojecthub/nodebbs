@@ -258,7 +258,7 @@ export default function LoginDialog({ open, onOpenChange }) {
       title={isForgotPassword ? '找回密码' : isLogin ? '登录' : '注册'}
       description={
         isForgotPassword
-          ? '输入您的邮箱地址，我们将发送密码重置链接'
+          ? '输入您的邮箱地址，我们将发送密码重置验证码'
           : isLogin
           ? '登录到您的账户以继续'
           : '创建新账户以加入社区'

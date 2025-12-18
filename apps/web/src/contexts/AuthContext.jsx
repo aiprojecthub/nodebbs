@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { authApi } from '@/lib/api';
-import LoginDialog from '@/components/forum/LoginDialog';
+import LoginDialog from '@/components/auth/LoginDialog';
 
 const AuthContext = createContext(null);
 
