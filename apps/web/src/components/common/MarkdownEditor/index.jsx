@@ -308,9 +308,9 @@ export default function MarkdownEditor({
   };
 
   return (
-    <div className={cn('border rounded-lg flex flex-col', className)}>
+    <div className={cn('flex flex-col', className)}>
       {/* 工具栏 */}
-      <div className="flex items-center justify-between p-2 border-b bg-muted/30">
+      <div className="flex items-center justify-between p-2 border border-b-0 rounded-tl-lg rounded-tr-lg bg-muted/30">
         <div className="flex items-center gap-1 flex-wrap">
           {toolbar.map((item, index) => {
             if (item === '|') {
@@ -419,18 +419,18 @@ export default function MarkdownEditor({
       </div>
 
       {/* 内容区域 */}
-      <div className="flex-1 min-h-[300px] relative bg-background">
+      <div className="bg-card flex-1 relative">
         {isPreviewMode ? (
-          <div className="p-4 prose prose-sm dark:prose-invert max-w-none h-full overflow-y-auto">
+          <article className='min-h-[300px] max-h-[calc(100vh-430px)] overflow-y-auto  p-4 border rounded-lg rounded-tl-none rounded-tr-none max-w-none prose prose-stone dark:prose-invert wrap-break-word break-all'>
             <MarkdownRender content={value || ''} />
-          </div>
+          </article>
         ) : (
           <Textarea
             ref={textareaRef}
             value={value}
             onChange={(e) => onChange?.(e.target.value)}
             placeholder={placeholder}
-            className='min-h-[300px] max-h-[calc(100vh-280px)] resize-none overflow-y-auto field-sizing-fixed rounded-tl-none rounded-tr-none sm:field-sizing-content bg-card wrap-break-word break-all'
+            className='min-h-[300px] max-h-[calc(100vh-430px)] resize-none overflow-y-auto field-sizing-fixed rounded-tl-none rounded-tr-none sm:field-sizing-content wrap-break-word break-all'
           />
         )}
       </div>
