@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Select,
   SelectContent,
@@ -53,114 +53,119 @@ export default function CategorySelector({
     }
   };
 
-  // 构建分类层级结构，计算层级和父分类名称
-  const buildCategoryHierarchy = (cats) => {
-    // 创建分类映射表
+  // 使用 useMemo 缓存计算结果，避免每次渲染都重新计算
+  const flatCategories = useMemo(() => {
+    if (!categories || categories.length === 0) return [];
+
+    // 1. 构建 ID -> Node 映射 和 ParentID -> Children 映射
     const categoryMap = new Map();
-    cats.forEach((cat) => {
-      categoryMap.set(cat.id, { ...cat, level: 0, parentName: '' });
+    const childrenMap = new Map();
+
+    // 初始化映射
+    categories.forEach(cat => {
+      // 浅拷贝对象，避免修改原数据
+      categoryMap.set(cat.id, { ...cat, level: 0, children: [] });
+      
+      const pId = cat.parentId || null;
+      if (!childrenMap.has(pId)) {
+        childrenMap.set(pId, []);
+      }
+      childrenMap.get(pId).push(cat.id);
     });
 
-    // 计算每个分类的层级
-    const calculateLevel = (catId, visited = new Set()) => {
-      if (visited.has(catId)) return 0; // 防止循环引用
-      visited.add(catId);
-
-      const cat = categoryMap.get(catId);
-      if (!cat || !cat.parentId) return 0;
-
-      const parent = categoryMap.get(cat.parentId);
-      if (!parent) return 0;
-
-      return 1 + calculateLevel(cat.parentId, visited);
-    };
-
-    // 为每个分类设置层级和父分类名称
-    cats.forEach((cat) => {
-      const level = calculateLevel(cat.id);
-      const parent = cat.parentId ? categoryMap.get(cat.parentId) : null;
-
-      categoryMap.set(cat.id, {
-        ...cat,
-        level,
-        displayName: cat.name,
-        parentName: parent ? parent.name : '',
-      });
-    });
-
-    return Array.from(categoryMap.values());
-  };
-
-  // 将分类按树形结构展开（父分类后面紧跟子分类）
-  const flattenInTreeOrder = (cats) => {
-    const processedCategories = buildCategoryHierarchy(cats);
+    // 2. 递归构建树形列表 (DFS)
     const result = [];
-
-    // 按 position 和 name 排序的辅助函数
-    const sortByPositionAndName = (a, b) => {
+    
+    // 排序函数
+    const sortCats = (aId, bId) => {
+      const a = categoryMap.get(aId);
+      const b = categoryMap.get(bId);
+      // 防止数据缺失
+      if (!a || !b) return 0;
+      
       if (a.position !== b.position) {
         return (a.position || 0) - (b.position || 0);
       }
-      return a.name.localeCompare(b.name);
+      return (a.name || '').localeCompare(b.name || '');
     };
 
-    // 递归添加分类及其子分类
-    const addCategoryAndChildren = (parentId, currentLevel = 0) => {
-      // 找到所有属于当前父分类的子分类
-      const children = processedCategories
-        .filter((cat) => {
-          if (parentId === null) {
-            return cat.parentId === null;
-          }
-          return cat.parentId === parentId;
-        })
-        .sort(sortByPositionAndName);
+    const processNode = (id, level) => {
+      const node = categoryMap.get(id);
+      if (!node) return;
 
-      // 添加每个分类及其子分类
-      children.forEach((cat) => {
-        // 排除指定的分类
-        if (excludeId && cat.id === excludeId) {
-          return;
-        }
+      // 排除逻辑
+      if (excludeId && (node.id === excludeId || Number(node.id) === Number(excludeId))) {
+        return;
+      }
+      
+      // 顶级分类过滤
+      if (onlyTopLevel && level > 0) {
+        return;
+      }
 
-        // 如果只显示顶级分类，跳过子分类
-        if (onlyTopLevel && currentLevel > 0) {
-          return;
-        }
+      // 设置层级和父名称 (虽然 SelectItem 里其实只需要 level)
+      node.level = level;
+      if (node.parentId && categoryMap.has(node.parentId)) {
+        node.parentName = categoryMap.get(node.parentId).name;
+      }
+      node.displayName = node.name;
 
-        result.push(cat);
+      result.push(node);
 
-        // 递归添加子分类（如果不是只显示顶级分类）
-        if (!onlyTopLevel) {
-          addCategoryAndChildren(cat.id, currentLevel + 1);
-        }
-      });
+      // 处理子节点
+      // 如果 onlyTopLevel 为 true，其实不需要递归处理子节点，但在 processNode 开头已拦截，为了性能可在此处提前判断
+      if (onlyTopLevel) return;
+
+      const childIds = childrenMap.get(id);
+      if (childIds && childIds.length > 0) {
+        childIds.sort(sortCats).forEach(childId => {
+          processNode(childId, level + 1);
+        });
+      }
     };
 
-    // 从顶级分类开始
-    addCategoryAndChildren(null, 0);
+    // 3. 从根节点 (parentId === null) 开始处理
+    const rootIds = childrenMap.get(null);
+    if (rootIds && rootIds.length > 0) {
+       rootIds.sort(sortCats).forEach(id => {
+         processNode(id, 0);
+       });
+    }
 
     return result;
-  };
+  }, [categories, excludeId, onlyTopLevel]);
 
-  // 处理分类列表
-  const flatCategories = flattenInTreeOrder(categories);
-
-  // 获取选中分类的显示名称
-  const getSelectedCategoryName = () => {
-    if (!value) return null;
+  // 获取选中分类的显示内容
+  const renderSelectedValue = () => {
+    if (!value) return placeholder;
     const category = categories.find((cat) => cat.id === Number(value));
-    return category ? category.name : null;
+    if (!category) return placeholder;
+
+    return (
+      <div className="flex items-center gap-2">
+        {/* 分类颜色标识 */}
+        {category.color && (
+          <div
+            className="h-3 w-3 rounded-sm shrink-0"
+            style={{ backgroundColor: category.color }}
+          />
+        )}
+
+        {/* 分类图标 */}
+        {category.icon && (
+          <span className="text-base shrink-0">{category.icon}</span>
+        )}
+
+        {/* 分类名称 */}
+        <span className="truncate">
+          {category.name}
+        </span>
+      </div>
+    );
   };
 
   if (loading) {
-    return (
-      <div
-        className={`flex h-10 w-full items-center justify-center rounded-md border border-input bg-background px-3 py-2 ${className}`}
-      >
-        <Loading text='加载中...' size='sm' variant='inline' />
-      </div>
-    );
+// ... (omitted)
   }
 
   return (
@@ -171,7 +176,7 @@ export default function CategorySelector({
     >
       <SelectTrigger className={className}>
         <SelectValue placeholder={placeholder}>
-          {value ? getSelectedCategoryName() : placeholder}
+          {renderSelectedValue()}
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
