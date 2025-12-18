@@ -4,11 +4,10 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import MarkdownEditor from '../common/MarkdownEditor';
 import CategorySelector from '@/components/topic/CategorySelector';
 import { toast } from 'sonner';
 import { X, AlertCircle, Loader2 } from 'lucide-react';
-import MarkdownRender from '../common/MarkdownRender';
 
 /**
  * 话题表单组件 - 用于创建和编辑话题
@@ -35,7 +34,6 @@ export default function TopicForm({
     tags: initialData.tags || [],
   });
   const [tagInput, setTagInput] = useState('');
-  const [isPreview, setIsPreview] = useState(false);
   const [errors, setErrors] = useState({});
 
   // 当初始数据变化时更新表单
@@ -154,61 +152,17 @@ export default function TopicForm({
               <label htmlFor='content' className='text-sm font-semibold'>
                 内容
               </label>
-              <div className='flex items-center gap-1'>
-                <button
-                  type='button'
-                  onClick={() => setIsPreview(false)}
-                  className={`px-3 py-1 text-xs rounded-md transition-colors ${
-                    !isPreview
-                      ? 'bg-muted text-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  编辑
-                </button>
-                <button
-                  type='button'
-                  onClick={() => setIsPreview(true)}
-                  className={`px-3 py-1 text-xs rounded-md transition-colors ${
-                    isPreview
-                      ? 'bg-muted text-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  预览
-                </button>
-              </div>
             </div>
 
-            <div className='border border-border rounded-lg'>
-              {!isPreview ? (
-                <Textarea
-                  id='content'
-                  value={formData.content}
-                  onChange={(e) => {
-                    setFormData({ ...formData, content: e.target.value });
-                    if (errors.content) setErrors({ ...errors, content: '' });
-                  }}
-                  className='min-h-[300px] max-h-[calc(100vh-280px)] resize-none overflow-y-auto field-sizing-fixed sm:field-sizing-content bg-card wrap-break-word break-all'
-                  placeholder='详细描述你的话题内容，支持 Markdown 格式...'
-                  aria-invalid={!!errors.content}
-                />
-              ) : (
-                <div className='min-h-[300px] max-h-[calc(100vh-280px)] overflow-y-auto p-4 bg-card rounded-lg'>
-                  {formData.content ? (
-                    <article className='prose prose-stone dark:prose-invert wrap-break-word whitespace-pre-wrap'>
-                      <MarkdownRender content={formData.content} />
-                    </article>
-                  ) : (
-                    <div className='text-muted-foreground italic flex items-center justify-center h-[268px]'>
-                      <div className='text-center'>
-                        <p className='text-sm'>暂无内容预览</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            <MarkdownEditor
+              value={formData.content}
+              onChange={(value) => {
+                setFormData({ ...formData, content: value });
+                if (errors.content) setErrors({ ...errors, content: '' });
+              }}
+              placeholder='详细描述你的话题内容，支持 Markdown 格式...'
+              className={errors.content ? 'border-destructive' : ''}
+            />
 
             {errors.content && (
               <p className='text-sm text-destructive flex items-center gap-1'>

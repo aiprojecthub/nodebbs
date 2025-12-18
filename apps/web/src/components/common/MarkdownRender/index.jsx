@@ -1,42 +1,149 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Copy } from 'lucide-react';
 import Link from 'next/link';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkDirective from 'remark-directive';
+import remarkMedia from './plugins/remark-media';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
-export default function MarkdownRender({ content }) {
+function MarkdownRender({ content }) {
   return (
     <Markdown
-      remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
+      remarkPlugins={[[remarkGfm, { singleTilde: false }], remarkDirective, remarkMedia]}
       components={{
         a: ({ node, ...props }) => (
           <Link {...props} target='_blank' rel='noopener noreferrer' />
         ),
         img: ({ node, src, alt, ...props }) => {
-          // 如果 src 为空，不渲染图片
           if (!src || src.trim() === '') {
             return null;
           }
+
           return (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={src} alt={alt || ''} {...props} />
+            <img 
+              src={src} 
+              alt={alt || ''} 
+              loading="lazy"
+              {...props} 
+            />
+          );
+        },
+        audio: ({ node, src, ...props }) => {
+          return (
+            <audio
+              controls
+              className="w-full my-2"
+              src={src}
+              {...props}
+            >
+              您的浏览器不支持音频播放。
+            </audio>
+          );
+        },
+        video: ({ node, src, title, ...props }) => {
+          const { width, height, ...rest } = props;
+          
+          // Helper to get style object
+          const getWrapperStyle = () => {
+            const style = { maxWidth: '100%' };
+            if (width) style.width = width;
+            if (height) style.height = height;
+            return style;
+          };
+
+          // Handle YouTube
+          const youtubeMatch = src.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+          if (youtubeMatch) {
+             return (
+               <div 
+                 className="relative aspect-video my-4 rounded-lg overflow-hidden" 
+                 style={getWrapperStyle()}
+               >
+                 <iframe
+                   width="100%"
+                   height="100%"
+                   src={`https://www.youtube.com/embed/${youtubeMatch[1]}`}
+                   title={title || "YouTube video player"}
+                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                   allowFullScreen
+                   className="absolute top-0 left-0"
+                 ></iframe>
+               </div>
+             );
+          }
+
+          // Handle Bilibili
+          const biliMatch = src.match(/bilibili\.com\/video\/(BV[0-9a-zA-Z]+)/);
+          if (biliMatch) {
+            return (
+              <div 
+                className="relative aspect-video my-4 rounded-lg overflow-hidden"
+                style={getWrapperStyle()}
+              >
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src={`https://player.bilibili.com/player.html?bvid=${biliMatch[1]}&high_quality=1&danmaku=0`}
+                  title={title || "Bilibili video player"}
+                  allowFullScreen
+                  className="absolute top-0 left-0"
+                  sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"
+                ></iframe>
+              </div>
+            );
+          }
+          
+          // Default video tag
+          return (
+             <video
+               controls
+               className="max-w-full rounded-lg my-2 h-auto"
+               style={{ width: width || '100%' }}
+               src={src}
+               title={title}
+               {...rest}
+             >
+               您的浏览器不支持视频播放。
+             </video>
           );
         },
         code(props) {
           const { children, className, node, ...rest } = props;
-          const match = /language-(\w+)/.exec(className || '');
-          const code = String(children).replace(/\n$/, '');
-          return match ? (
-            <CodeBlock {...rest} language={match[1]} code={code} />
-          ) : (
-            <code {...rest} className={className}>
+          // Only handle inline code here since blocks are handled by pre
+          return (
+            <code 
+              {...rest} 
+              className={cn("not-prose bg-muted px-1.5 py-0.5 rounded-sm font-bold", className)}
+            >
               {children}
             </code>
           );
+        },
+        pre: ({ node, ...props }) => {
+          const codeNode = node.children && node.children[0];
+          
+          if (codeNode && codeNode.tagName === 'code') {
+             const className = codeNode.properties?.className || [];
+             const match = /language-(\w+)/.exec((Array.isArray(className) ? className.join(' ') : className) || '');
+             const language = match ? match[1] : 'text'; // Default to text if no language
+             
+             // Extract text content from the code node
+             const code = codeNode.children[0]?.value || '';
+
+             return (
+               <div className="not-prose">
+                 <CodeBlock language={language} code={code} />
+               </div>
+             );
+          }
+
+          return <pre {...props} />;
         },
       }}
     >
@@ -59,11 +166,12 @@ function CodeBlock({ language, code, ...rest }) {
   };
 
   return (
-    <div className='relative group'>
+    <div className='relative group rounded-lg'>
       <Button
         onClick={handleCopy}
         variant='ghost'
-        className='absolute right-2 top-2 h-7 shrink opacity-0 group-hover:opacity-100 transition'
+        size='sm'
+        className='absolute text-accent right-2 top-2 shrink opacity-0 group-hover:opacity-100 transition'
       >
         {copied ? '已复制' : <Copy className='w-4 h-4' />}
       </Button>
@@ -72,10 +180,12 @@ function CodeBlock({ language, code, ...rest }) {
         language={language}
         style={tomorrow}
         PreTag='div'
-        // className='rounded-xl border-[3px] border-border'
+        className='rounded-xl border-[3px] border-border'
       >
         {code}
       </SyntaxHighlighter>
     </div>
   );
 }
+
+export default React.memo(MarkdownRender);
