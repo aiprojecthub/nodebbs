@@ -185,8 +185,8 @@ const DEFAULT_TOOLBAR = [
   '|',
   'horizontalRule',
   '|',
-  'link', 'image', 'table'
-  // 'link', 'image', 'video', 'audio', 'table'
+  // 'link', 'image', 'table'
+  'link', 'image', 'video', 'audio', 'table'
 ];
 
 /**
@@ -303,7 +303,7 @@ export default function MarkdownEditor({
     table: { icon: TableIcon, title: '表格', type: 'table-selector' },
     link: { icon: LinkIcon, title: '链接', type: 'popover', placeholder: '输入链接地址...' },
     image: { icon: ImageIcon, title: '图片', type: 'popover', placeholder: '输入图片地址...' },
-    video: { icon: VideoIcon, title: '视频', type: 'popover', placeholder: '支持 Bilibili/YouTube/MP4' },
+    video: { icon: VideoIcon, title: '视频', type: 'popover', placeholder: '支持 Bilibili/YouTube/Douyin/MP4' },
     audio: { icon: MusicIcon, title: '音频', type: 'popover', placeholder: '支持网易云音乐 / MP3 URL...' },
   };
 

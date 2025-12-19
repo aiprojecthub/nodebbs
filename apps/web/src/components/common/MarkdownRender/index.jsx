@@ -75,7 +75,7 @@ function MarkdownRender({ content }) {
           };
 
           // 处理 YouTube
-          const youtubeMatch = src.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+          const youtubeMatch = src.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
           if (youtubeMatch) {
              return (
                <div 
@@ -93,6 +93,28 @@ function MarkdownRender({ content }) {
                  ></iframe>
                </div>
              );
+          }
+
+          // 处理抖音视频
+          // 匹配: https://www.douyin.com/video/7364265076712312127
+          const douyinMatch = src.match(/douyin\.com\/video\/(\d+)/);
+          if (douyinMatch) {
+            return (
+              <div 
+                className="relative aspect-video my-4 rounded-lg overflow-hidden" 
+                style={getWrapperStyle()}
+              >
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src={`https://open.douyin.com/player/video?vid=${douyinMatch[1]}&autoplay=0`}
+                  title={title || "Douyin video player"}
+                  allowFullScreen
+                  className="absolute top-0 left-0"
+                  referrerPolicy="unsafe-url"
+                ></iframe>
+              </div>
+            );
           }
 
           // 处理 Bilibili
