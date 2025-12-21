@@ -10,6 +10,12 @@ import {
   CATEGORY_NAMES 
 } from '../../config/systemSettings.js';
 
+export {
+  SETTING_KEYS,
+  SETTINGS_BY_CATEGORY,
+  CATEGORY_NAMES
+};
+
 /**
  * 初始化系统设置
  */
