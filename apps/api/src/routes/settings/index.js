@@ -38,6 +38,11 @@ const SETTING_KEYS = {
     accessLevel: ACCESS_LEVEL.PUBLIC,
     category: 'general',
   },
+  SITE_ANALYTICS_SCRIPTS: {
+    key: 'site_analytics_scripts',
+    accessLevel: ACCESS_LEVEL.PUBLIC,
+    category: 'general',
+  },
 
   // 功能开关
   REGISTRATION_MODE: {

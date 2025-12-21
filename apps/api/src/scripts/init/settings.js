@@ -29,6 +29,13 @@ export const SETTING_KEYS = {
     description: '页脚自定义 HTML 内容（支持 ICP 备案号、公安备案等显示）',
     category: 'general',
   },
+  SITE_ANALYTICS_SCRIPTS: {
+    key: 'site_analytics_scripts',
+    value: '',
+    valueType: 'string',
+    description: '自定义统计脚本（支持 Google Analytics、百度统计等，将被插入到页面中）',
+    category: 'general',
+  },
 
   // 功能开关
   REGISTRATION_MODE: {

@@ -64,6 +64,35 @@ export function GeneralSettings({
         </div>
       )}
 
+      {/* 站点统计脚本 */}
+      {settings.site_analytics_scripts && (
+        <div className='border border-border rounded-lg bg-card'>
+          <div className='px-4 py-4 space-y-3'>
+            <div className='space-y-1'>
+              <Label
+                htmlFor='site_analytics_scripts'
+                className='text-sm font-semibold'
+              >
+                站点统计脚本
+              </Label>
+              <p className='text-sm text-muted-foreground'>
+                {settings.site_analytics_scripts.description || '支持 Google Analytics、百度统计等脚本，不包含 <script> 标签的纯代码请自行包裹'}
+              </p>
+            </div>
+            <Textarea
+              id='site_analytics_scripts'
+              defaultValue={settings.site_analytics_scripts.value}
+              onBlur={(e) =>
+                handleStringChange('site_analytics_scripts', e.target.value)
+              }
+              disabled={saving}
+              className='max-w-md min-h-[100px] font-mono text-xs'
+              placeholder='<script>...</script>'
+            />
+          </div>
+        </div>
+      )}
+
       {/* 页脚自定义 HTML */}
       {settings.site_footer_html && (
         <div className='border border-border rounded-lg bg-card'>

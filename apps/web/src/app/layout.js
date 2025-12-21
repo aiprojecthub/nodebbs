@@ -76,22 +76,8 @@ export const viewport = {
   userScalable: false,
 };
 
-async function AppLayout({ children }) {
-  let settings = null;
-  let apiInfo = null;
-  try {
-    const [settingsData, apiData] = await Promise.all([
-      request('/settings'),
-      request('/'),
-    ]);
-    settings = settingsData;
-    apiInfo = apiData;
-  } catch (error) {
-    console.error('Error fetching data for layout:', error);
-    settings = null;
-    apiInfo = null;
-  }
-
+async function AppLayout({ children, settings, apiInfo }) {
+  // 移除内部 fetch，改为接收 props
   return (
     <div className='min-h-screen bg-background flex flex-col'>
       <Header settings={settings} />
@@ -103,6 +89,20 @@ async function AppLayout({ children }) {
 }
 
 export default async function RootLayout({ children }) {
+  // 获取配置和 API 信息
+  let settings = null;
+  let apiInfo = null;
+  try {
+    const [settingsData, apiData] = await Promise.all([
+      request('/settings'),
+      request('/'),
+    ]);
+    settings = settingsData;
+    apiInfo = apiData;
+  } catch (error) {
+    console.error('Error fetching data for layout:', error);
+  }
+
   // 从配置中提取需要的数据
   const themeClasses = THEMES.filter(t => t.class).map(t => t.class);
   const fontSizeClasses = FONT_SIZES.map(f => f.class);
@@ -143,16 +143,27 @@ export default async function RootLayout({ children }) {
   // 获取当前用户 (SSR)
   const user = await getCurrentUser();
 
+  // 准备统计脚本
+  const analyticsScript = settings?.site_analytics_scripts?.value || '';
+
   return (
     <html lang='en' suppressHydrationWarning className='overflow-y-scroll'>
       <head>
         <script dangerouslySetInnerHTML={{ __html: initScript }} />
       </head>
       <body className={`antialiased`}>
+        {/* 自定义统计脚本注入 */}
+        {analyticsScript && (
+          <div 
+             style={{ display: 'none' }} 
+             dangerouslySetInnerHTML={{ __html: analyticsScript }} 
+          />
+        )}
+
         <ThemeProvider>
           <AuthProvider initialUser={user}>
             <SettingsProvider>
-              <AppLayout>{children}</AppLayout>
+              <AppLayout settings={settings} apiInfo={apiInfo}>{children}</AppLayout>
               <AutoCheckIn />
               <Toaster position='top-right' richColors />
             </SettingsProvider>
