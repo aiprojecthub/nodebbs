@@ -65,8 +65,8 @@ export default fp(async function (fastify, opts) {
 
 
 
-  // 启动定时任务 (每5分钟)
-  const interval = setInterval(runAllTasks, 5 * 60 * 1000);
+  // 启动定时任务 (每2小时)
+  const interval = setInterval(runAllTasks, 2 * 60 * 60 * 1000);
 
   // 关闭时清除定时器
   fastify.addHook('onClose', async () => {
