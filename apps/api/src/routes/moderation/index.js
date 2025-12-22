@@ -701,6 +701,11 @@ export default async function moderationRoutes(fastify, options) {
         newStatus: 'approved'
       });
 
+      // 触发话题创建事件（用于勋章、积分等）
+      if (fastify.eventBus) {
+        fastify.eventBus.emit('topic.created', updated);
+      }
+
       return { message: '话题已批准（包含话题内容）', topic: updated };
     } else if (type === 'post') {
       const [post] = await db.select().from(posts).where(eq(posts.id, id)).limit(1);
@@ -728,6 +733,11 @@ export default async function moderationRoutes(fastify, options) {
         previousStatus: 'pending',
         newStatus: 'approved'
       });
+
+      // 触发回复创建事件（用于勋章、积分等）
+      if (fastify.eventBus) {
+        fastify.eventBus.emit('post.created', updated);
+      }
 
       return { message: '回复已批准', post: updated };
     }
