@@ -163,8 +163,30 @@ export default function NotificationPopover() {
                     notification.postId ? `#post-${notification.postId}` : ''
                   }`;
                 } else if (notification.type === 'badge_earned') {
-                  // 勋章类型：跳转到我的勋章页面
-                  linkUrl = '/profile/badges';
+                  // 勋章类型：跳转到我的勋章页面，并带上参数以触发弹窗
+                  let badgeId, badgeName, iconUrl;
+                  try {
+                    const meta = typeof notification.metadata === 'string' 
+                      ? JSON.parse(notification.metadata) 
+                      : notification.metadata;
+                    if (meta) {
+                      badgeId = meta.badgeId;
+                      badgeName = meta.badgeName;
+                      iconUrl = meta.iconUrl;
+                    }
+                  } catch (e) {
+                    console.error('Error parsing badge metadata', e);
+                  }
+                  
+                  if (badgeId && !notification.isRead) {
+                    const params = new URLSearchParams();
+                    params.set('unlockBadgeId', badgeId);
+                    if (badgeName) params.set('unlockBadgeName', badgeName);
+                    if (iconUrl) params.set('unlockBadgeIcon', iconUrl);
+                    linkUrl = `/profile/badges?${params.toString()}`;
+                  } else {
+                    linkUrl = '/profile/badges';
+                  }
                 }
 
                 return (
