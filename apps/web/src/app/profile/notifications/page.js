@@ -6,14 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Bell,
-  MessageCircle,
-  Heart,
-  UserPlus,
   CheckCheck,
   Trash2,
   Loader2,
-  Coins,
 } from 'lucide-react';
+import { getNotificationIcon, getNotificationMessage } from '@/lib/notification';
 import { useAuth } from '@/contexts/AuthContext';
 import { notificationApi } from '@/lib/api';
 import { toast } from 'sonner';
@@ -69,27 +66,7 @@ export default function NotificationsPage() {
     }
   };
 
-  const getIcon = (type) => {
-    switch (type) {
-      case 'reply':
-      case 'topic_reply':
-        return <MessageCircle className='h-4 w-4 text-blue-500' />;
-      case 'mention':
-        return <MessageCircle className='h-4 w-4 text-purple-500' />;
-      case 'like':
-        return <Heart className='h-4 w-4 text-red-500' />;
-      case 'follow':
-        return <UserPlus className='h-4 w-4 text-green-500' />;
-      case 'report_resolved':
-        return <CheckCheck className='h-4 w-4 text-green-600' />;
-      case 'report_dismissed':
-        return <Bell className='h-4 w-4 text-muted-foreground' />;
-      case 'reward':
-        return <Coins className='h-4 w-4 text-yellow-500' />;
-      default:
-        return <Bell className='h-4 w-4' />;
-    }
-  };
+
 
   const markAsRead = async (id) => {
     setActionLoading(`read-${id}`);
@@ -298,14 +275,14 @@ export default function NotificationsPage() {
                   <div className='flex-1 min-w-0'>
                     <div className='flex items-start justify-between mb-2'>
                       <div className='flex items-center space-x-2 flex-wrap'>
-                        {getIcon(notification.type)}
+                        {getNotificationIcon(notification.type)}
                         {notification.triggeredByUsername && (
                           <span className='text-sm font-medium text-card-foreground'>
                             {notification.triggeredByName || notification.triggeredByUsername}
                           </span>
                         )}
                         <span className='text-sm text-muted-foreground'>
-                          {notification.message}
+                          {getNotificationMessage(notification)}
                         </span>
                       </div>
                       <span className='text-xs text-muted-foreground whitespace-nowrap ml-2'>

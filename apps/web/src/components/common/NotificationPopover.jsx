@@ -8,7 +8,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Check, X, Trash2, Settings, MessageCircle, Heart, UserPlus, Medal, Gift, Coins } from 'lucide-react';
+import { Bell, Check, Trash2 } from 'lucide-react';
+import { getNotificationIcon, getNotificationMessage } from '@/lib/notification';
 import { notificationApi } from '@/lib/api';
 import Link from 'next/link';
 import { Loading } from '../common/Loading';
@@ -100,77 +101,7 @@ export default function NotificationPopover() {
     setIsOpen(false);
   };
 
-  const getNotificationIcon = (type) => {
-    // 根据不同类型返回不同的图标
-    switch (type) {
-      case 'reply':
-      case 'topic_reply':
-        return <MessageCircle className='h-4 w-4 text-blue-500' />;
-      case 'mention':
-        return <MessageCircle className='h-4 w-4 text-purple-500' />;
-      case 'like':
-        return <Heart className='h-4 w-4 text-red-500' />;
-      case 'follow':
-        return <UserPlus className='h-4 w-4 text-green-500' />;
-      case 'message':
-        return <MessageCircle className='h-4 w-4 text-blue-500' />;
-      case 'badge_earned':
-        return <Medal className='h-4 w-4 text-yellow-500' />;
-      case 'gift_received':
-        return <Gift className='h-4 w-4 text-pink-500' />;
-      case 'reward':
-        return <Coins className='h-4 w-4 text-yellow-500' />;
-      default:
-        return <Bell className='h-4 w-4' />;
-    }
-  };
 
-  const getNotificationMessage = (notification) => {
-    // 根据不同类型返回不同的消息内容（不包含用户名，因为用户名已在头像旁显示）
-    switch (notification.type) {
-      case 'topic_reply':
-        return notification.topicTitle
-          ? `在 "${notification.topicTitle}" 中回复了`
-          : '在话题中回复了';
-      case 'reply':
-        // reply 类型有两种情况：回复话题 或 回复帖子
-        // 通过检查原始 message 来区分
-        if (notification.message && notification.message.includes('帖子')) {
-          return notification.topicTitle
-            ? `在 "${notification.topicTitle}" 中回复了你的帖子`
-            : '回复了你的帖子';
-        }
-        return notification.topicTitle
-          ? `回复了你的话题 "${notification.topicTitle}"`
-          : '回复了你的话题';
-      case 'like':
-        return notification.topicTitle
-          ? `在 "${notification.topicTitle}" 中赞了你的帖子`
-          : '赞了你的帖子';
-      case 'mention':
-        return notification.topicTitle
-          ? `在 "${notification.topicTitle}" 中提到了你`
-          : '在回复中提到了你';
-      case 'follow':
-        return '关注了你';
-      case 'message':
-        return '给你发送了一条新消息';
-      case 'report_resolved':
-        return '你的举报已处理';
-      case 'report_dismissed':
-        return '你的举报已驳回';
-      case 'badge_earned':
-        return '恭喜！你获得了一枚新勋章';
-      case 'gift_received':
-        // message format: "你收到了一份礼物：ItemName"
-        // We can just return the message as is, or simplify
-        return notification.message;
-      case 'reward':
-        return notification.message || '打赏了你的帖子';
-      default:
-        return notification.message || '发送了一条通知';
-    }
-  };
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
