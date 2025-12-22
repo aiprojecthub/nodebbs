@@ -44,11 +44,11 @@ export default function UsersManagement() {
   const [showUnbanDialog, setShowUnbanDialog] = useState(false);
   const [showRoleDialog, setShowRoleDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [deleteType, setDeleteType] = useState('soft'); // 'soft' or 'hard'
+  const [deleteType, setDeleteType] = useState('soft'); // 'soft' (软删除) or 'hard' (彻底删除)
   const [newRole, setNewRole] = useState('user');
   const [submitting, setSubmitting] = useState(false);
   const [showUserDialog, setShowUserDialog] = useState(false);
-  const [dialogMode, setDialogMode] = useState('create'); // 'create' or 'edit'
+  const [dialogMode, setDialogMode] = useState('create'); // 'create' (创建) or 'edit' (编辑)
   const [userForm, setUserForm] = useState({
     username: '',
     email: '',
@@ -108,7 +108,11 @@ export default function UsersManagement() {
       await moderationApi.banUser(selectedUser.id);
       toast.success(`已封禁用户 ${selectedUser.username}`);
       setShowBanDialog(false);
-      fetchUsers();
+      
+      // 更新本地状态而不是重新获取
+      setUsers(users.map(user => 
+        user.id === selectedUser.id ? { ...user, isBanned: true } : user
+      ));
     } catch (err) {
       console.error('封禁失败:', err);
       toast.error('封禁失败：' + err.message);
@@ -123,7 +127,11 @@ export default function UsersManagement() {
       await moderationApi.unbanUser(selectedUser.id);
       toast.success(`已解封用户 ${selectedUser.username}`);
       setShowUnbanDialog(false);
-      fetchUsers();
+      
+      // 更新本地状态而不是重新获取
+      setUsers(users.map(user => 
+        user.id === selectedUser.id ? { ...user, isBanned: false } : user
+      ));
     } catch (err) {
       console.error('解封失败:', err);
       toast.error('解封失败：' + err.message);
@@ -138,7 +146,11 @@ export default function UsersManagement() {
       await moderationApi.changeUserRole(selectedUser.id, newRole);
       toast.success(`已将 ${selectedUser.username} 的角色更改为 ${getRoleLabel(newRole)}`);
       setShowRoleDialog(false);
-      fetchUsers();
+      
+      // 更新本地状态而不是重新获取
+      setUsers(users.map(user => 
+        user.id === selectedUser.id ? { ...user, role: newRole } : user
+      ));
     } catch (err) {
       console.error('修改角色失败:', err);
       toast.error('修改角色失败：' + err.message);
@@ -203,7 +215,18 @@ export default function UsersManagement() {
       await userApi.deleteUser(selectedUser.id, permanent);
       toast.success(permanent ? `已彻底删除用户 ${selectedUser.username}` : `已软删除用户 ${selectedUser.username}`);
       setShowDeleteDialog(false);
-      fetchUsers();
+      
+      // 更新本地状态而不是重新获取
+      if (permanent) {
+        // 彻底删除：从列表中移除用户
+        setUsers(users.filter(user => user.id !== selectedUser.id));
+        setTotal(prev => prev - 1);
+      } else {
+        // 软删除：更新状态
+        setUsers(users.map(user => 
+          user.id === selectedUser.id ? { ...user, isDeleted: true } : user
+        ));
+      }
     } catch (err) {
       console.error('删除失败:', err);
       toast.error('删除失败：' + err.message);
@@ -236,11 +259,18 @@ export default function UsersManagement() {
         // 创建用户
         await userApi.createUser(userForm);
         toast.success(`用户 ${userForm.username} 创建成功`);
+        // 创建意味着可能有需要排序/分页的新条目，所以我们刷新列表
+        fetchUsers();
       } else {
         // 编辑用户 - 不传递密码字段
         const { password, ...updateData } = userForm;
         await userApi.updateUser(selectedUser.id, updateData);
         toast.success(`用户 ${userForm.username} 更新成功`);
+        
+        // 更新本地状态而不是重新获取
+        setUsers(users.map(user => 
+          user.id === selectedUser.id ? { ...user, ...updateData } : user
+        ));
       }
 
       setShowUserDialog(false);
@@ -253,7 +283,6 @@ export default function UsersManagement() {
         role: 'user',
         isEmailVerified: false
       });
-      fetchUsers();
     } catch (err) {
       console.error(`${dialogMode === 'create' ? '创建' : '更新'}用户失败:`, err);
       toast.error(`${dialogMode === 'create' ? '创建' : '更新'}用户失败：` + err.message);
@@ -289,7 +318,7 @@ export default function UsersManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Page header */}
+      {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold mb-2">用户管理</h2>
@@ -303,7 +332,7 @@ export default function UsersManagement() {
         </Button>
       </div>
 
-      {/* Users table */}
+      {/* 用户列表 */}
       <DataTable
         columns={[
           {
@@ -528,7 +557,7 @@ export default function UsersManagement() {
         loading={submitting}
       />
 
-      {/* 修改角色对话框 - using FormDialog because it has inputs */}
+      {/* 修改角色对话框 - 使用 FormDialog 因为它包含输入控件 */}
       <FormDialog
          open={showRoleDialog}
          onOpenChange={setShowRoleDialog}
