@@ -75,7 +75,7 @@ export function TopicItem({ topic }) {
               url={topic.userAvatar}
               name={topic.userName || topic.username}
               size='md'
-              className='ring-2 ring-transparent group-hover:ring-primary/20 transition-all'
+              className={!topic.userAvatarFrame?.itemMetadata ? 'ring-2 ring-transparent group-hover:ring-primary/20 transition-all' : ''}
               frameMetadata={topic.userAvatarFrame?.itemMetadata}
             />
           </Link>
