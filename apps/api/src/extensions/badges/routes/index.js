@@ -1,6 +1,6 @@
 import { getBadges, getUserBadges } from '../services/badgeService.js';
 import db from '../../../db/index.js';
-import { users } from '../../../db/schema.js';
+import { users, badges, notifications } from '../../../db/schema.js';
 import { eq } from 'drizzle-orm';
 
 export default async function badgeRoutes(fastify, options) {
@@ -144,6 +144,95 @@ export default async function badgeRoutes(fastify, options) {
     const { id } = request.params;
     const badge = await updateBadge(id, request.body);
     return badge;
+  });
+
+  // 管理员：授予徽章给用户
+  fastify.post('/admin/grant', {
+    preHandler: [fastify.requireAdmin],
+    schema: {
+      tags: ['badges'],
+      description: '手动授予用户徽章',
+      body: {
+        type: 'object',
+        required: ['userId', 'badgeId'],
+        properties: {
+          userId: { type: 'integer', description: '用户 ID' },
+          badgeId: { type: 'integer', description: '徽章 ID' },
+          reason: { type: 'string', description: '授予原因（可选）' }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const { grantBadge } = await import('../services/badgeService.js');
+    const { userId, badgeId, reason } = request.body;
+    
+    // 检查用户是否存在（可选，数据库约束也会处理，但提前检查更友好）
+    const [userExists] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    if (!userExists) return reply.code(404).send({ error: '用户不存在' });
+
+    // 检查徽章是否存在
+    const [badgeExists] = await db
+      .select({ 
+        id: badges.id,
+        name: badges.name,
+        iconUrl: badges.iconUrl,
+        slug: badges.slug
+      })
+      .from(badges)
+      .where(eq(badges.id, badgeId))
+      .limit(1);
+    
+    if (!badgeExists) return reply.code(404).send({ error: '徽章不存在' });
+
+    const result = await grantBadge(userId, badgeId, 'admin_manual');
+
+    // 发送通知
+    await db.insert(notifications).values({
+      userId: userId,
+      type: 'badge_earned',
+      triggeredByUserId: request.user.id,
+      message: `恭喜！你获得了 "${badgeExists.name}" 勋章`,
+      metadata: JSON.stringify({
+        badgeId: badgeExists.id,
+        badgeName: badgeExists.name,
+        iconUrl: badgeExists.iconUrl,
+        slug: badgeExists.slug
+      }),
+      createdAt: new Date(),
+      isRead: false
+    });
+
+    return { success: true, badge: result, message: '徽章授予成功' };
+  });
+
+  // 管理员：撤销用户徽章
+  fastify.post('/admin/revoke', {
+    preHandler: [fastify.requireAdmin],
+    schema: {
+      tags: ['badges'],
+      description: '手动撤销用户徽章',
+      body: {
+        type: 'object',
+        required: ['userId', 'badgeId'],
+        properties: {
+          userId: { type: 'integer', description: '用户 ID' },
+          badgeId: { type: 'integer', description: '徽章 ID' }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const { revokeUserBadge } = await import('../services/badgeService.js');
+    const { userId, badgeId } = request.body;
+    
+    const success = await revokeUserBadge(userId, badgeId);
+    if (!success) {
+         return reply.code(404).send({ error: '未找到该用户持有的此徽章，或者撤销失败' });
+    }
+    return { success: true, message: '徽章撤销成功' };
   });
 
   // 管理员：删除勋章

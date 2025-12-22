@@ -7,6 +7,7 @@ import { badgesApi } from '@/extensions/badges/api';
 import { toast } from 'sonner';
 import { BadgeTable } from '../../components/admin/BadgeTable';
 import { BadgeFormDialog } from '../../components/admin/BadgeFormDialog';
+import { BadgeAssignmentDialog } from '../../components/admin/BadgeAssignmentDialog';
 
 import {
   AlertDialog,
@@ -25,6 +26,9 @@ export default function AdminBadgesPage() {
   const [showDialog, setShowDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState('create');
   const [selectedItem, setSelectedItem] = useState(null);
+  
+  // 派遣/撤销对话框状态
+  const [showAssignmentDialog, setShowAssignmentDialog] = useState(false);
   
   // 确认对话框状态
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -114,10 +118,15 @@ export default function AdminBadgesPage() {
           </h1>
           <p className="text-muted-foreground">管理系统中的所有荣誉勋章</p>
         </div>
-        <Button onClick={openCreateDialog}>
-          <Plus className="h-4 w-4" />
-          新建勋章
-        </Button>
+        <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowAssignmentDialog(true)}>
+                授予/撤销
+            </Button>
+            <Button onClick={openCreateDialog}>
+            <Plus className="h-4 w-4" />
+            新建勋章
+            </Button>
+        </div>
       </div>
 
       <BadgeTable
@@ -133,6 +142,12 @@ export default function AdminBadgesPage() {
         mode={dialogMode}
         initialData={selectedItem}
         onSubmit={handleSubmit}
+      />
+      
+      <BadgeAssignmentDialog 
+        open={showAssignmentDialog} 
+        onOpenChange={setShowAssignmentDialog}
+        badgeList={items}
       />
       
       {/* 删除确认警告 */}

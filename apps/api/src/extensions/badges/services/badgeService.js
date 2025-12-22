@@ -37,6 +37,21 @@ export async function grantBadge(userId, badgeId, source = 'system') {
 }
 
 /**
+ * 撤销用户的徽章
+ * @param {string} userId - 用户 ID
+ * @param {string} badgeId - 徽章 ID
+ * @returns {Promise<boolean>} 是否成功撤销
+ */
+export async function revokeUserBadge(userId, badgeId) {
+  const result = await db
+    .delete(userBadges)
+    .where(and(eq(userBadges.userId, userId), eq(userBadges.badgeId, badgeId)))
+    .returning();
+  
+  return result.length > 0;
+}
+
+/**
  * 获取所有徽章（可选按类别筛选）
  * @param {Object} options
  * @param {number} options.page - 页码

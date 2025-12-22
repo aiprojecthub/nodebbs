@@ -28,5 +28,11 @@ export const badgesApi = {
     delete(id) {
       return apiClient.delete(`/badges/admin/${id}`);
     },
+    grant(data) {
+      return apiClient.post('/badges/admin/grant', data);
+    },
+    revoke(data) {
+      return apiClient.post('/badges/admin/revoke', data);
+    },
   },
 };
