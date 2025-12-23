@@ -40,6 +40,10 @@ async function docsPlugin(fastify, opts) {
         { name: 'email', description: '邮件服务' },
         { name: 'invitations', description: '邀请码管理' },
         { name: 'admin', description: '管理员专用接口' },
+        { name: 'ledger', description: '账本系统' },
+        { name: 'rewards', description: '积分奖励' },
+        { name: 'shop', description: '积分商城' },
+        { name: 'badges', description: '勋章系统' },
       ],
       components: {
         securitySchemes: {
@@ -625,6 +629,307 @@ async function docsPlugin(fastify, opts) {
                 format: 'date-time',
                 description: '创建时间',
               },
+              updatedAt: {
+                type: 'string',
+                format: 'date-time',
+                description: '更新时间',
+              },
+            },
+          },
+
+          // ============ 验证码相关 ============
+          // 验证码
+          Verification: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', description: '验证码ID' },
+              identifier: { type: 'string', description: '标识符' },
+              value: { type: 'string', description: '验证值' },
+              type: { type: 'string', description: '验证类型' },
+              userId: {
+                type: 'number',
+                nullable: true,
+                description: '关联用户ID',
+              },
+              expiresAt: {
+                type: 'string',
+                format: 'date-time',
+                description: '过期时间',
+              },
+              createdAt: {
+                type: 'string',
+                format: 'date-time',
+                description: '创建时间',
+              },
+            },
+          },
+
+          // ============ 账本系统 (Ledger) ============
+          // 货币定义
+          SysCurrency: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', description: '货币ID' },
+              code: { type: 'string', description: '货币代码' },
+              name: { type: 'string', description: '货币名称' },
+              symbol: {
+                type: 'string',
+                nullable: true,
+                description: '货币符号',
+              },
+              precision: { type: 'number', description: '精度（小数位）' },
+              isActive: { type: 'boolean', description: '是否启用' },
+              metadata: {
+                type: 'string',
+                nullable: true,
+                description: '元数据',
+              },
+              config: {
+                type: 'string',
+                nullable: true,
+                description: '配置信息',
+              },
+              createdAt: {
+                type: 'string',
+                format: 'date-time',
+                description: '创建时间',
+              },
+            },
+          },
+          // 用户账户
+          SysAccount: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', description: '账户ID' },
+              userId: { type: 'number', description: '用户ID' },
+              currencyCode: { type: 'string', description: '货币代码' },
+              balance: { type: 'number', description: '当前余额' },
+              totalEarned: { type: 'number', description: '累计收入' },
+              totalSpent: { type: 'number', description: '累计支出' },
+              isFrozen: { type: 'boolean', description: '是否冻结' },
+              createdAt: {
+                type: 'string',
+                format: 'date-time',
+                description: '创建时间',
+              },
+              updatedAt: {
+                type: 'string',
+                format: 'date-time',
+                description: '更新时间',
+              },
+            },
+          },
+          // 交易流水
+          SysTransaction: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', description: '交易ID' },
+              userId: { type: 'number', description: '用户ID' },
+              accountId: { type: 'number', description: '账户ID' },
+              currencyCode: { type: 'string', description: '货币代码' },
+              amount: { type: 'number', description: '交易金额' },
+              balanceAfter: { type: 'number', description: '交易后余额' },
+              type: { type: 'string', description: '交易类型' },
+              referenceType: {
+                type: 'string',
+                nullable: true,
+                description: '关联类型',
+              },
+              referenceId: {
+                type: 'string',
+                nullable: true,
+                description: '关联ID',
+              },
+              relatedUserId: {
+                type: 'number',
+                nullable: true,
+                description: '相关用户ID',
+              },
+              description: {
+                type: 'string',
+                nullable: true,
+                description: '描述',
+              },
+              metadata: {
+                type: 'string',
+                nullable: true,
+                description: '元数据',
+              },
+              createdAt: {
+                type: 'string',
+                format: 'date-time',
+                description: '创建时间',
+              },
+            },
+          },
+
+          // ============ 积分/奖励 (Rewards) ============
+          // 用户签到
+          UserCheckIn: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', description: '记录ID' },
+              userId: { type: 'number', description: '用户ID' },
+              lastCheckInDate: {
+                type: 'string',
+                format: 'date-time',
+                nullable: true,
+                description: '最后签到时间',
+              },
+              checkInStreak: { type: 'number', description: '连续签到天数' },
+              createdAt: {
+                type: 'string',
+                format: 'date-time',
+                description: '首次签到时间',
+              },
+              updatedAt: {
+                type: 'string',
+                format: 'date-time',
+                description: '更新时间',
+              },
+            },
+          },
+          // 帖子打赏
+          PostReward: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', description: '打赏ID' },
+              postId: { type: 'number', description: '帖子ID' },
+              fromUserId: { type: 'number', description: '打赏者ID' },
+              toUserId: { type: 'number', description: '受赏者ID' },
+              amount: { type: 'number', description: '金额' },
+              currency: { type: 'string', description: '货币类型' },
+              message: {
+                type: 'string',
+                nullable: true,
+                description: '打赏留言',
+              },
+              createdAt: {
+                type: 'string',
+                format: 'date-time',
+                description: '打赏时间',
+              },
+            },
+          },
+
+          // ============ 商城 (Shop) ============
+          // 商品
+          ShopItem: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', description: '商品ID' },
+              type: { type: 'string', description: '商品类型' },
+              name: { type: 'string', description: '商品名称' },
+              description: {
+                type: 'string',
+                nullable: true,
+                description: '商品描述',
+              },
+              price: { type: 'number', description: '价格' },
+              currencyCode: { type: 'string', description: '货币类型' },
+              imageUrl: {
+                type: 'string',
+                nullable: true,
+                description: '图片URL',
+              },
+              stock: {
+                type: 'number',
+                nullable: true,
+                description: '库存',
+              },
+              isActive: { type: 'boolean', description: '是否上架' },
+              metadata: {
+                type: 'string',
+                nullable: true,
+                description: '元数据',
+              },
+              displayOrder: { type: 'number', description: '排序' },
+              createdAt: {
+                type: 'string',
+                format: 'date-time',
+                description: '创建时间',
+              },
+            },
+          },
+          // 用户物品
+          UserItem: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', description: '记录ID' },
+              userId: { type: 'number', description: '用户ID' },
+              itemId: { type: 'number', description: '商品ID' },
+              isEquipped: { type: 'boolean', description: '是否装备' },
+              expiresAt: {
+                type: 'string',
+                format: 'date-time',
+                nullable: true,
+                description: '过期时间',
+              },
+              metadata: {
+                type: 'string',
+                nullable: true,
+                description: '元数据',
+              },
+              createdAt: {
+                type: 'string',
+                format: 'date-time',
+                description: '获取时间',
+              },
+            },
+          },
+
+          // ============ 勋章 (Badges) ============
+          // 勋章定义
+          Badge: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', description: '勋章ID' },
+              slug: { type: 'string', description: '勋章标识' },
+              name: { type: 'string', description: '勋章名称' },
+              description: {
+                type: 'string',
+                nullable: true,
+                description: '勋章描述',
+              },
+              iconUrl: { type: 'string', description: '图标URL' },
+              category: { type: 'string', description: '分类' },
+              unlockCondition: {
+                type: 'string',
+                nullable: true,
+                description: '解锁条件',
+              },
+              isActive: { type: 'boolean', description: '是否启用' },
+              metadata: {
+                type: 'string',
+                nullable: true,
+                description: '元数据',
+              },
+              createdAt: {
+                type: 'string',
+                format: 'date-time',
+                description: '创建时间',
+              },
+            },
+          },
+          // 用户勋章
+          UserBadge: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', description: '记录ID' },
+              userId: { type: 'number', description: '用户ID' },
+              badgeId: { type: 'number', description: '勋章ID' },
+              earnedAt: {
+                type: 'string',
+                format: 'date-time',
+                description: '获得时间',
+              },
+              source: {
+                type: 'string',
+                nullable: true,
+                description: '来源',
+              },
+              isDisplayed: { type: 'boolean', description: '是否展示' },
+              displayOrder: { type: 'number', description: '展示顺序' },
             },
           },
 
