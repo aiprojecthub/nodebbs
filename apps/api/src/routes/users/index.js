@@ -387,7 +387,7 @@ export default async function userRoutes(fastify, options) {
       security: [{ bearerAuth: [] }],
       body: {
         type: 'object',
-        required: ['currentPassword', 'newPassword'],
+        required: ['newPassword'],
         properties: {
           currentPassword: { type: 'string' },
           newPassword: { type: 'string', minLength: 6 }
@@ -399,9 +399,15 @@ export default async function userRoutes(fastify, options) {
 
     const [user] = await db.select().from(users).where(eq(users.id, request.user.id)).limit(1);
 
-    const isValidPassword = await fastify.verifyPassword(currentPassword, user.passwordHash);
-    if (!isValidPassword) {
-      return reply.code(200).send({ error: '当前密码不正确' });
+    // 如果用户已有密码，则必须验证当前密码
+    if (user.passwordHash) {
+      if (!currentPassword) {
+        return reply.code(400).send({ error: '请提供当前密码' });
+      }
+      const isValidPassword = await fastify.verifyPassword(currentPassword, user.passwordHash);
+      if (!isValidPassword) {
+        return reply.code(200).send({ error: '当前密码不正确' });
+      }
     }
 
     const passwordHash = await fastify.hashPassword(newPassword);

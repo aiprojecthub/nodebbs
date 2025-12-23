@@ -74,23 +74,25 @@ export function SecurityTab({
         <div className='bg-card border border-border rounded-lg overflow-hidden'>
           <div className='px-4 py-3 bg-muted border-b border-border'>
             <h3 className='text-sm font-medium text-card-foreground'>
-              修改密码
+              {user.hasPassword === false ? '设置密码' : '修改密码'}
             </h3>
           </div>
           <div className='p-6 space-y-4'>
-            <div>
-              <Label className='text-sm font-medium text-card-foreground block mb-2'>
-                当前密码 *
-              </Label>
-              <Input
-                type='password'
-                value={passwordData.currentPassword}
-                onChange={(e) =>
-                  onPasswordChange('currentPassword', e.target.value)
-                }
-                placeholder='请输入当前密码'
-              />
-            </div>
+            {user.hasPassword !== false && (
+              <div>
+                <Label className='text-sm font-medium text-card-foreground block mb-2'>
+                  当前密码 *
+                </Label>
+                <Input
+                  type='password'
+                  value={passwordData.currentPassword}
+                  onChange={(e) =>
+                    onPasswordChange('currentPassword', e.target.value)
+                  }
+                  placeholder='请输入当前密码'
+                />
+              </div>
+            )}
 
             <div>
               <Label className='text-sm font-medium text-card-foreground block mb-2'>
@@ -127,12 +129,12 @@ export function SecurityTab({
             {changingPassword ? (
               <>
                 <Loader2 className='h-4 w-4 animate-spin mr-2' />
-                修改中...
+                {user.hasPassword === false ? '设置中...' : '修改中...'}
               </>
             ) : (
               <>
                 <Lock className='h-4 w-4 mr-2' />
-                修改密码
+                {user.hasPassword === false ? '设置密码' : '修改密码'}
               </>
             )}
           </Button>

@@ -379,6 +379,7 @@ export default async function authRoutes(fastify, options) {
               id: { type: 'number' },
               username: { type: 'string' },
               email: { type: 'string' },
+              hasPassword: { type: 'boolean' },
               name: { type: 'string' },
               bio: { type: 'string' },
               avatar: { type: 'string' },
@@ -443,10 +444,12 @@ export default async function authRoutes(fastify, options) {
       // Enrich user object (badges, frames, etc.)
       await userEnricher.enrich(user);
 
+      const hasPassword = !!user.passwordHash;
       delete user.passwordHash;
 
       return {
         ...user,
+        hasPassword,
       };
     }
   );
