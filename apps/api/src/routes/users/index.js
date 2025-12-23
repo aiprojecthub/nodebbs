@@ -1,6 +1,6 @@
 import db from '../../db/index.js';
-import { users, topics, posts, follows, bookmarks, categories } from '../../db/schema.js';
-import { eq, sql, desc, and, ne, like } from 'drizzle-orm';
+import { users, accounts, topics, posts, follows, bookmarks, categories } from '../../db/schema.js';
+import { eq, sql, desc, and, ne, like, inArray } from 'drizzle-orm';
 import { pipeline } from 'stream/promises';
 import fs from 'fs';
 import path from 'path';
@@ -47,6 +47,10 @@ export default async function userRoutes(fastify, options) {
             name: { type: 'string' },
             role: { type: 'string' },
             isEmailVerified: { type: 'boolean' },
+            oauthProviders: { 
+              type: 'array',
+              items: { type: 'string' }
+            },
             createdAt: { type: 'string' }
           }
         }
@@ -181,6 +185,26 @@ export default async function userRoutes(fastify, options) {
     const currentUserId = request.user.id;
     const isCurrentUserFounder = currentUserId === founderId;
 
+    // 批量获取 OAuth 账号信息
+    let accountsMap = {};
+    if (usersList.length > 0) {
+      const userIds = usersList.map(u => u.id);
+      const allAccounts = await db
+        .select({
+          userId: accounts.userId,
+          provider: accounts.provider
+        })
+        .from(accounts)
+        .where(inArray(accounts.userId, userIds));
+      
+      allAccounts.forEach(acc => {
+        if (!accountsMap[acc.userId]) {
+          accountsMap[acc.userId] = [];
+        }
+        accountsMap[acc.userId].push(acc.provider);
+      });
+    }
+
     // 添加权限标识
     const enrichedItems = usersList.map(user => {
       const isFounder = user.id === founderId;
@@ -200,7 +224,8 @@ export default async function userRoutes(fastify, options) {
       return {
         ...user,
         isFounder,
-        canManage
+        canManage,
+        oauthProviders: accountsMap[user.id] || []
       };
     });
 

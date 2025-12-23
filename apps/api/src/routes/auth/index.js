@@ -1,6 +1,6 @@
 import { userEnricher } from '../../services/userEnricher.js';
 import db from '../../db/index.js';
-import { users } from '../../db/schema.js';
+import { users, accounts } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { getSetting } from '../../utils/settings.js';
 import {
@@ -380,6 +380,10 @@ export default async function authRoutes(fastify, options) {
               username: { type: 'string' },
               email: { type: 'string' },
               hasPassword: { type: 'boolean' },
+              oauthProviders: { 
+                type: 'array',
+                items: { type: 'string' }
+              },
               name: { type: 'string' },
               bio: { type: 'string' },
               avatar: { type: 'string' },
@@ -444,12 +448,21 @@ export default async function authRoutes(fastify, options) {
       // Enrich user object (badges, frames, etc.)
       await userEnricher.enrich(user);
 
+      // 获取关联的 OAuth 账号
+      const userAccounts = await db
+        .select()
+        .from(accounts)
+        .where(eq(accounts.userId, user.id));
+      
+      const oauthProviders = userAccounts.map(acc => acc.provider);
+
       const hasPassword = !!user.passwordHash;
       delete user.passwordHash;
 
       return {
         ...user,
         hasPassword,
+        oauthProviders,
       };
     }
   );

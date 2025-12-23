@@ -15,6 +15,7 @@ import {
   Save,
   Loader2,
   Edit,
+  Share2,
 } from 'lucide-react';
 import { userApi } from '@/lib/api';
 import { toast } from 'sonner';
@@ -245,6 +246,23 @@ export function ProfileTab({
                 ? '版主'
                 : '用户'}
             </Badge>
+          </div>
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center space-x-2 text-sm text-muted-foreground'>
+              <Share2 className='h-4 w-4' />
+              <span>关联账号</span>
+            </div>
+            <div className='flex gap-2'>
+              {user.oauthProviders && user.oauthProviders.length > 0 ? (
+                user.oauthProviders.map((provider) => (
+                  <Badge key={provider} variant='secondary' className="capitalize">
+                    {provider}
+                  </Badge>
+                ))
+              ) : (
+                <span className='text-sm text-muted-foreground'>未关联</span>
+              )}
+            </div>
           </div>
         </div>
       </div>

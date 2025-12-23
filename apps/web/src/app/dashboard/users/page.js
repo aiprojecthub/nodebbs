@@ -359,6 +359,23 @@ export default function UsersManagement() {
             ),
           },
           {
+            key: 'oauth',
+            label: '关联账号',
+            render: (_, user) => (
+              <div className="flex gap-1 flex-wrap">
+                {user.oauthProviders && user.oauthProviders.length > 0 ? (
+                  user.oauthProviders.map((provider) => (
+                    <Badge key={provider} variant="secondary" className="text-[10px] px-1 h-5 capitalize">
+                      {provider}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-xs text-muted-foreground">-</span>
+                )}
+              </div>
+            ),
+          },
+          {
             key: 'role',
             label: '角色',
             width: 'w-[100px]',
