@@ -235,28 +235,24 @@ export default async function topicRoutes(fastify, options) {
         .innerJoin(categories, eq(topics.categoryId, categories.id))
         .innerJoin(users, eq(topics.userId, users.id))
         .where(and(...conditions));
+
+      // 优化标签查询逻辑：使用 innerJoin 直接关联查询，避免取出所有 topicId
       if (tag) {
+        // 先获取标签ID
         const [tagRecord] = await db
-          .select()
+          .select({ id: tags.id })
           .from(tags)
           .where(eq(tags.slug, tag))
           .limit(1);
-        if (tagRecord) {
-          const topicIds = await db
-            .select({ topicId: topicTags.topicId })
-            .from(topicTags)
-            .where(eq(topicTags.tagId, tagRecord.id));
 
-          if (topicIds.length > 0) {
-            query = query.where(
-              inArray(
-                topics.id,
-                topicIds.map((t) => t.topicId)
-              )
-            );
-          } else {
-            return { topics: [], page, limit, total: 0 };
-          }
+        if (tagRecord) {
+          // 关联 topicTags 表进行过滤
+          query = query
+            .innerJoin(topicTags, eq(topics.id, topicTags.topicId))
+            .where(eq(topicTags.tagId, tagRecord.id));
+        } else {
+           // 标签不存在，返回空结果
+           return { items: [], page, limit, total: 0 };
         }
       }
 
@@ -350,24 +346,15 @@ export default async function topicRoutes(fastify, options) {
 
       if (tag) {
         const [tagRecord] = await db
-          .select()
+          .select({ id: tags.id })
           .from(tags)
           .where(eq(tags.slug, tag))
           .limit(1);
+          
         if (tagRecord) {
-          const topicIds = await db
-            .select({ topicId: topicTags.topicId })
-            .from(topicTags)
-            .where(eq(topicTags.tagId, tagRecord.id));
-
-          if (topicIds.length > 0) {
-            countQuery = countQuery.where(
-              inArray(
-                topics.id,
-                topicIds.map((t) => t.topicId)
-              )
-            );
-          }
+           countQuery = countQuery
+             .innerJoin(topicTags, eq(topics.id, topicTags.topicId))
+             .where(eq(topicTags.tagId, tagRecord.id));
         }
       }
 
@@ -1013,7 +1000,23 @@ export default async function topicRoutes(fastify, options) {
 
       if (permanent) {
         // 硬删除 - 从数据库中永久删除
-        // 首先删除相关数据
+        
+        // 1. 获取关联的标签并减少话题计数
+        const currentTags = await db
+          .select({ tagId: topicTags.tagId })
+          .from(topicTags)
+          .where(eq(topicTags.topicId, id));
+          
+        if (currentTags.length > 0) {
+           for (const t of currentTags) {
+             await db
+               .update(tags)
+               .set({ topicCount: sql`${tags.topicCount} - 1` })
+               .where(eq(tags.id, t.tagId));
+           }
+        }
+
+        // 2. 删除相关数据
         await db.delete(topicTags).where(eq(topicTags.topicId, id));
         await db.delete(bookmarks).where(eq(bookmarks.topicId, id));
         await db.delete(subscriptions).where(eq(subscriptions.topicId, id));

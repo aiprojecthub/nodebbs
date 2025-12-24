@@ -21,6 +21,7 @@ import {
   User,
   Mail,
   Shield,
+  Tag,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -50,6 +51,7 @@ export default function Header({ settings }) {
     { href: '/', label: '首页', icon: MessageSquare },
     { href: '/trending', label: '热门', icon: TrendingUp },
     { href: '/featured', label: '精华', icon: Sparkles },
+    // { href: '/tags', label: '标签', icon: Tag },
   ];
 
   const handleSearch = (e) => {
@@ -104,7 +106,7 @@ export default function Header({ settings }) {
               <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none' />
               <Input
                 type='text'
-                placeholder='搜索话题、用户、标签...'
+                placeholder='搜索话题、用户...'
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className='pl-9 pr-3 h-9 bg-muted/50 shadow-none'

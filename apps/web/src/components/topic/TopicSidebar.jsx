@@ -168,29 +168,47 @@ export default function TopicSidebar({
         variant="banner"
       />
 
-      {/* 标签 - GitHub 风格 (恢复原样) */}
+      {/* 分类信息 */}
       <div className='border border-border rounded-lg bg-card'>
         <div className='px-3 py-2 border-b border-border'>
-          <h3 className='text-sm font-semibold'>标签</h3>
+          <h3 className='text-sm font-semibold'>分类</h3>
         </div>
         <div className='p-3'>
-          <div className='flex flex-wrap gap-2'>
-            <Badge
-              style={{
-                color: category?.color,
-              }}
-              variant='secondary'
-            >
-              {category?.name}
-            </Badge>
-            {topic.tags.map((tag) => (
-              <Badge key={tag.id} variant='outline' className='text-xs'>
-                {tag.name}
+           <Link href={`/categories/${topic.categorySlug}`} className="block">
+              <Badge
+                style={{
+                  backgroundColor: category?.color + '20', // 10% opacity
+                  color: category?.color,
+                  borderColor: category?.color + '40'
+                }}
+                variant='outline'
+                className="w-full justify-center text-sm py-1.5 hover:opacity-80 transition-opacity"
+              >
+                {category?.name}
               </Badge>
-            ))}
-          </div>
+           </Link>
         </div>
       </div>
+
+      {/* 标签信息 */}
+      {/* {topic.tags && topic.tags.length > 0 && (
+        <div className='border border-border rounded-lg bg-card'>
+          <div className='px-3 py-2 border-b border-border'>
+            <h3 className='text-sm font-semibold'>标签</h3>
+          </div>
+          <div className='p-3'>
+            <div className='flex flex-wrap gap-2'>
+              {topic.tags.map((tag) => (
+                <Link key={tag.id} href={`/tags/${tag.slug}`} prefetch={false}>
+                   <Badge variant='secondary' className='text-xs hover:bg-secondary/80 transition-colors'>
+                    # {tag.name}
+                  </Badge>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )} */}
 
       {/* 统计信息 - GitHub 风格 (恢复原样) */}
       <div className='border border-border rounded-lg bg-card p-3'>

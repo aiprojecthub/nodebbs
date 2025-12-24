@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import MarkdownEditor from '../common/MarkdownEditor';
 import CategorySelector from '@/components/topic/CategorySelector';
 import { toast } from 'sonner';
-import { X, AlertCircle, Loader2 } from 'lucide-react';
+import { X, AlertCircle, Loader2, Tag as TagIcon } from 'lucide-react';
 
 /**
  * 话题表单组件 - 用于创建和编辑话题
@@ -234,18 +234,21 @@ export default function TopicForm({
                 )}
 
                 <div className='space-y-2'>
-                  <Input
-                    id='tag-input'
-                    type='text'
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    disabled={formData.tags.length >= 5}
-                    placeholder='输入标签后按回车...'
-                    className='text-sm'
-                  />
+                  <div className="relative">
+                    <TagIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id='tag-input'
+                      type='text'
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      disabled={formData.tags.length >= 5}
+                      placeholder='输入标签后按回车...'
+                      className='text-sm pl-9'
+                    />
+                  </div>
                   <p className='text-xs text-muted-foreground'>
-                    按回车添加标签（最多5个）
+                    添加有意义的标签，方便他人检索（限5个）
                   </p>
                 </div>
               </div>
