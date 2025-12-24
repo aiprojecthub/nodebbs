@@ -16,7 +16,7 @@ import { UsernameChangeDialog } from './components/UsernameChangeDialog';
 import { EmailChangeDialog } from './components/EmailChangeDialog';
 
 export default function SettingsPage() {
-  const { user, isAuthenticated, loading: authLoading, checkAuth } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, checkAuth, refreshUser } = useAuth();
   const { settings } = useSettings();
 
   const [formData, setFormData] = useState({
@@ -109,11 +109,15 @@ export default function SettingsPage() {
         avatar: result.avatar,
       }));
       toast.success('头像上传成功');
-      await checkAuth(); // Refresh user data in auth context
+      
+      // 局部状态更新完成，立即结束 loading
+      setUploadingAvatar(false);
+      
+      // 后台静默刷新
+      refreshUser();
     } catch (err) {
       console.error('上传头像失败:', err);
       toast.error('上传头像失败：' + err.message);
-    } finally {
       setUploadingAvatar(false);
     }
   };
@@ -137,11 +141,15 @@ export default function SettingsPage() {
       });
 
       toast.success('个人资料更新成功');
-      await checkAuth(); // Refresh user data
+      
+      // 立即结束 loading
+      setLoading(false);
+      
+      // 后台刷新
+      refreshUser(); 
     } catch (err) {
       console.error('更新资料失败:', err);
       toast.error('更新失败：' + err.message);
-    } finally {
       setLoading(false);
     }
   };
@@ -217,11 +225,12 @@ export default function SettingsPage() {
       toast.success(result.message || '用户名修改成功');
       setShowUsernameDialog(false);
       setUsernameData({ newUsername: '', password: '' });
-      await checkAuth(); // 刷新用户数据
+      
+      setChangingUsername(false);
+      refreshUser(); // 刷新用户数据
     } catch (err) {
       console.error('修改用户名失败:', err);
       toast.error(err.message || '修改用户名失败');
-    } finally {
       setChangingUsername(false);
     }
   };
@@ -323,11 +332,12 @@ export default function SettingsPage() {
         oldEmailCodeSent: false,
         newEmailCodeSent: false,
       });
-      await checkAuth(); // 刷新用户数据
+      
+      setChangingEmail(false);
+      refreshUser(); // 刷新用户数据
     } catch (err) {
       console.error('邮箱修改失败:', err);
       toast.error(err.message || '邮箱修改失败');
-    } finally {
       setChangingEmail(false);
     }
   };

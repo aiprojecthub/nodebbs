@@ -44,7 +44,7 @@ export default function ProfileSidebar() {
       fetchUnreadCount();
       fetchCreditStatus(); // Restore Call
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user?.id]);
 
   const fetchUnreadCount = async () => {
     try {

@@ -39,7 +39,7 @@ export default function AutoCheckIn() {
     };
 
     checkIn();
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user?.id]);
 
   return null;
 }
