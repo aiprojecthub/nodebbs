@@ -14,23 +14,31 @@ import {
 export async function getLayoutData() {
   let settings = null;
   let apiInfo = null;
+  let activeCurrencies = [];
   
   try {
-    const [settingsData, apiData] = await Promise.all([
+    const [settingsData, apiData, currenciesData] = await Promise.all([
       request('/settings'),
       request('/'),
+      request('/ledger/active-currencies'),
     ]);
     settings = settingsData;
     apiInfo = apiData;
+    if (currenciesData && Array.isArray(currenciesData)) {
+      activeCurrencies = currenciesData;
+    }
+
   } catch (error) {
     console.error('Error fetching data for layout:', error);
     // 保持 settings 和 apiInfo 为 null，让组件优雅降级
+    // activeCurrencies 默认为空数组
+    activeCurrencies = [];
   }
 
   // 获取当前用户 (SSR)
   const user = await getCurrentUser();
 
-  return { settings, apiInfo, user };
+  return { settings, apiInfo, user, activeCurrencies };
 }
 
 /**

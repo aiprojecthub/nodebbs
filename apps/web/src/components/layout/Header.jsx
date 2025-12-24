@@ -22,6 +22,7 @@ import {
   Mail,
   Shield,
   Tag,
+  Wallet,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -34,11 +35,13 @@ import {
 import NotificationPopover from '@/components/common/NotificationPopover';
 import ThemeSwitcher from '@/components/common/ThemeSwitcher';
 import { useAuth } from '@/contexts/AuthContext';
+import { useExtensions } from '@/contexts/ExtensionContext';
 import { Loading } from '../common/Loading';
 
 export default function Header({ settings }) {
   const router = useRouter();
   const { user, isAuthenticated, loading, logout, openLoginDialog } = useAuth();
+  const { isWalletEnabled } = useExtensions();
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -193,6 +196,19 @@ export default function Header({ settings }) {
                           站内信
                         </Link>
                       </DropdownMenuItem>
+
+                      {isWalletEnabled && (
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href='/profile/wallet'
+                            prefetch={false}
+                            className='cursor-pointer'
+                          >
+                            <Wallet className='h-4 w-4' />
+                            我的钱包
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
 
                       <DropdownMenuItem asChild>
                         <Link

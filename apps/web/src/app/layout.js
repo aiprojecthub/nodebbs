@@ -4,6 +4,7 @@ import { Toaster } from 'sonner';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { ExtensionProvider } from '@/contexts/ExtensionContext';
 
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -38,7 +39,9 @@ async function AppLayout({ children, settings, apiInfo }) {
 
 export default async function RootLayout({ children }) {
   // 获取所有 SSR 数据 (并行)
-  const { settings, apiInfo, user } = await getLayoutData();
+  const { settings, apiInfo, user, activeCurrencies } = await getLayoutData();
+  
+
   
   // 生成初始化脚本
   const initScript = generateThemeScript();
@@ -62,11 +65,13 @@ export default async function RootLayout({ children }) {
 
         <ThemeProvider>
           <AuthProvider initialUser={user}>
-            <SettingsProvider>
-              <AppLayout settings={settings} apiInfo={apiInfo}>{children}</AppLayout>
-              <AutoCheckIn />
-              <Toaster position='top-right' richColors />
-            </SettingsProvider>
+            <ExtensionProvider activeCurrencies={activeCurrencies}>
+              <SettingsProvider>
+                <AppLayout settings={settings} apiInfo={apiInfo}>{children}</AppLayout>
+                <AutoCheckIn />
+                <Toaster position='top-right' richColors />
+              </SettingsProvider>
+            </ExtensionProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

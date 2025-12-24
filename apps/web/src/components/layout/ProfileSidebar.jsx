@@ -23,15 +23,15 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { useExtensions } from '@/contexts/ExtensionContext';
 import { messageApi } from '@/lib/api';
-import { isCurrencyActive } from '@/extensions/ledger/utils/currency';
 import { cn } from '@/lib/utils';
 
 export default function ProfileSidebar() {
   const pathname = usePathname();
   const { user, isAuthenticated } = useAuth();
+  const { isWalletEnabled } = useExtensions();
   const [unreadCount, setUnreadCount] = useState(0);
-  const [rewardEnabled, setRewardEnabled] = useState(false); // Restore State
   const [openMenus, setOpenMenus] = useState({
     'content': true,
     'messages': true,
@@ -42,7 +42,6 @@ export default function ProfileSidebar() {
   useEffect(() => {
     if (isAuthenticated && user) {
       fetchUnreadCount();
-      fetchCreditStatus(); // Restore Call
     }
   }, [isAuthenticated, user?.id]);
 
@@ -55,14 +54,7 @@ export default function ProfileSidebar() {
     }
   };
 
-  const fetchCreditStatus = async () => {
-    try {
-      const enabled = await isCurrencyActive('credits');
-      setRewardEnabled(enabled);
-    } catch (err) {
-      console.error('获取积分系统状态失败:', err);
-    }
-  };
+
 
   const toggleMenu = (key) => {
     setOpenMenus((prev) => ({
@@ -107,7 +99,7 @@ export default function ProfileSidebar() {
         },
       ],
     },
-    ...(rewardEnabled ? [{
+    ...(isWalletEnabled ? [{
       key: 'rewards-shop',
       label: '社区互动',
       icon: Store,
