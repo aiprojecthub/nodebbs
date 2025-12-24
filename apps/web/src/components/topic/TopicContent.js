@@ -225,9 +225,13 @@ export default function TopicContent({ topic, isRewardEnabled, rewardStats, onRe
                   title='打赏'
                 >
                   <Coins className='h-4 w-4' />
-                  {rewardStats.totalAmount > 0 && (
-                    <span className='text-sm'>
+                  {rewardStats.totalAmount > 0 ? (
+                    <span className='text-sm font-medium'>
                       {rewardStats.totalAmount}
+                    </span>
+                  ) : (
+                    <span className='text-sm'>
+                      打赏
                     </span>
                   )}
                 </Button>

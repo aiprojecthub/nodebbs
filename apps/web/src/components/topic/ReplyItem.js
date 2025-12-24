@@ -385,7 +385,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
                 >
                   <Coins className='h-3.5 w-3.5' />
                   {localRewardStats.totalAmount > 0 && (
-                    <span className='text-xs ml-1'>
+                    <span className='text-xs font-medium'>
                       {localRewardStats.totalAmount}
                     </span>
                   )}
