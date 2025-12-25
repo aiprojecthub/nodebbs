@@ -46,20 +46,21 @@ export const getNotificationMessage = (notification) => {
         ? `在 "${notification.topicTitle}" 中回复了`
         : '在话题中回复了';
     case 'reply':
-      // reply 类型有两种情况：回复话题 或 回复帖子
+      // reply 类型有两种情况：回复话题 (Reply to Topic) 或 回复人 (Reply to User)
       // 通过检查原始 message 来区分
-      if (notification.message && notification.message.includes('帖子')) {
+      // 兼容旧数据 ('帖子') 和新数据 ('回复了你')
+      if (notification.message && (notification.message.includes('帖子') || notification.message.includes('回复了你'))) {
         return notification.topicTitle
-          ? `在 "${notification.topicTitle}" 中回复了你的帖子`
-          : '回复了你的帖子';
+          ? `在 "${notification.topicTitle}" 中回复了你`
+          : '回复了你';
       }
       return notification.topicTitle
         ? `回复了你的话题 "${notification.topicTitle}"`
         : '回复了你的话题';
     case 'like':
       return notification.topicTitle
-        ? `在 "${notification.topicTitle}" 中赞了你的帖子`
-        : '赞了你的帖子';
+        ? `在 "${notification.topicTitle}" 中赞了你的回复`
+        : '赞了你的回复';
     case 'mention':
       return notification.topicTitle
         ? `在 "${notification.topicTitle}" 中提到了你`
@@ -81,7 +82,7 @@ export const getNotificationMessage = (notification) => {
     case 'reward_topic':
       return notification.message || '打赏了你的话题';
     case 'reward_reply':
-      return notification.message || '打赏了你的帖子';
+      return notification.message || '打赏了你的回复';
     default:
       return notification.message || '发送了一条通知';
   }

@@ -71,6 +71,11 @@ export default async function rewardsRoutes(fastify, options) {
       const isSystemEnabled = await fastify.ledger.isCurrencyActive('credits');
       if (!isSystemEnabled) return reply.code(403).send({ error: '奖励系统未启用' });
 
+      // 判断是话题还是回复 (postNumber === 1 为话题内容)
+      const isTopic = post.postNumber === 1;
+      const notificationType = isTopic ? 'reward_topic' : 'reward_reply';
+      const defaultMessage = isTopic ? '打赏了你的话题' : '打赏了你的回复';
+      
       // 执行转账
       const { fromTx } = await fastify.ledger.transfer({
         fromUserId: request.user.id,
@@ -80,11 +85,15 @@ export default async function rewardsRoutes(fastify, options) {
         type: 'reward_post',
         referenceType: 'reward_transfer',
         referenceId: `reward_post_${Date.now()}`,
-        description: message || '打赏帖子',
+        description: message || (isTopic ? '打赏话题' : '打赏回复'),
         metadata: { 
             message,
             relatedPostId: postId,
-            source: 'rewards-extension' 
+            source: 'rewards-extension',
+            // Added for history tracking
+            isTopic,
+            topicId: post.topicId,
+            postNumber: post.postNumber 
         },
       });
 
@@ -97,11 +106,6 @@ export default async function rewardsRoutes(fastify, options) {
         amount, // currency default 'credits'
         message,
       });
-
-      // 判断是话题还是回复 (postNumber === 1 为话题内容)
-      const isTopic = post.postNumber === 1;
-      const notificationType = isTopic ? 'reward_topic' : 'reward_reply';
-      const defaultMessage = isTopic ? '打赏了你的话题' : '打赏了你的帖子';
 
       // 发送通知
       await db.insert(notifications).values({

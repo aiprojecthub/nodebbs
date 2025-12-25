@@ -735,7 +735,7 @@ export default async function postRoutes(fastify, options) {
             triggeredByUserId: request.user.id,
             topicId,
             postId: newPost.id,
-            message: `${request.user.username} 回复了你的帖子`
+            message: `${request.user.username} 回复了你`
           });
         }
       }

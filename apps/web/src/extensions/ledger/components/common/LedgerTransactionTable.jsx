@@ -61,7 +61,17 @@ export function LedgerTransactionTable({
     {
       label: '类型',
       key: 'type',
-      render: (value) => <TransactionTypeBadge type={value} />,
+      render: (value, row) => {
+        let meta = row.metadata;
+        if (typeof meta === 'string') {
+          try {
+            meta = JSON.parse(meta);
+          } catch (e) {
+            // ignore error
+          }
+        }
+        return <TransactionTypeBadge type={value} amount={row.amount} meta={meta} />;
+      },
     },
     {
       label: '金额',
@@ -80,9 +90,81 @@ export function LedgerTransactionTable({
     {
       label: '描述',
       key: 'description',
-      render: (value) => (
-        <span className="text-sm text-muted-foreground line-clamp-1">{value || '-'}</span>
-      ),
+    render: (value, row) => {
+        let meta = row.metadata;
+        if (typeof meta === 'string') {
+          try {
+            meta = JSON.parse(meta);
+          } catch (e) {
+            console.error('Failed to parse metadata:', e);
+          }
+        }
+        
+        const hasBonus = meta && meta.effectBonus > 0;
+        
+        // 检查特定交易类型
+        // 1. 帖子打赏
+        if (row.type === 'reward_post') {
+            const isTopic = meta.isTopic;
+            const topicId = meta.topicId;
+            const relatedPostId = meta.relatedPostId; // 这里实际上是 postId
+            const isIncoming = row.amount > 0; // 正数表示收入
+
+            let text = isIncoming
+                ? (isTopic ? '收到话题打赏' : '收到回复打赏')
+                : (isTopic ? '打赏话题' : '打赏回复');
+            
+            // 兼容旧数据（没有 meta.isTopic 的情况）
+            if (meta.isTopic === undefined && !meta.topicId) {
+                 text = meta.message || (isIncoming ? '收到打赏' : '打赏帖子');
+            }
+
+            // 如果存在勋章加成信息（来自之前的任务）
+            const badgeInfo = hasBonus ? (
+                 <span className="ml-2 text-xs text-amber-600 font-medium whitespace-nowrap">
+                   (勋章加成 +{meta.effectBonus})
+                 </span>
+            ) : null;
+
+            if (topicId) {
+                // 使用 relatedPostId (postId) 作为锚点，以满足 TopicPageClient 的要求
+                const anchor = relatedPostId ? `#post-${relatedPostId}` : '';
+                return (
+                     <div className="flex flex-col">
+                        <span className="text-sm">
+                            <a 
+                                href={`/topic/${topicId}${anchor}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:underline text-primary"
+                            >
+                                {text}
+                            </a>
+                            {badgeInfo}
+                        </span>
+                        {meta.message && (
+                            <span className="text-xs text-muted-foreground line-clamp-1">
+                                留言: {meta.message}
+                            </span>
+                        )}
+                    </div>
+                );
+            }
+        }
+
+        return (
+          <div className="flex flex-col">
+            <span className="text-sm text-muted-foreground line-clamp-1">
+              {value || '-'}
+              {hasBonus && (
+                <span className="ml-2 text-xs text-amber-600 font-medium">
+                  (勋章加成 +{meta.effectBonus})
+                </span>
+              )}
+            </span>
+          </div>
+        );
+      },
     },
     {
       label: '时间',
