@@ -1,5 +1,6 @@
 import { getTopicsData } from '@/lib/server/topics';
 import { TopicList } from '@/components/topic/TopicList';
+import { TopicSortTabs } from '@/components/topic/TopicSortTabs';
 
 // 生成页面元数据（SEO优化）
 export async function generateMetadata({ searchParams }) {
@@ -32,10 +33,14 @@ export default async function HomePage({ searchParams }) {
 
   return (
     <>
-      {/* 页面标题 */}
-      <div className='mb-4'>
-        <h1 className='text-2xl font-semibold mb-2'>全部话题</h1>
-        <p className='text-sm text-muted-foreground'>发现社区中的精彩讨论</p>
+      {/* 页面标题 & 排序切换 */}
+      <div className='flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-4'>
+        <div>
+          <h1 className='text-3xl font-bold tracking-tight'>全部话题</h1>
+          <p className='text-muted-foreground mt-1'>发现社区中的精彩讨论</p>
+        </div>
+
+        <TopicSortTabs defaultValue={sort} className='w-full sm:w-auto' />
       </div>
 
       {/* 话题列表（客户端组件） */}

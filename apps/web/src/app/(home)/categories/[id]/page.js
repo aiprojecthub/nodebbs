@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getCategoryBySlug, getTopicsData } from '@/lib/server/topics';
 import { TopicList } from '@/components/topic/TopicList';
+import { TopicSortTabs } from '@/components/topic/TopicSortTabs';
 
 // 生成页面元数据
 export async function generateMetadata({ params }) {
@@ -51,20 +52,24 @@ export default async function CategoryPage({ params, searchParams }) {
 
   return (
     <>
-      {/* 分类标题 */}
-      <div className='mb-4'>
-        <div className='flex items-center gap-2 mb-2'>
-          <div
-            className='w-3 h-3 rounded-sm'
-            style={{ backgroundColor: category.color }}
-          ></div>
-          <h1 className='text-2xl font-semibold'>{category.name}</h1>
+      {/* 分类标题 & 排序切换 */}
+      <div className='flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-4'>
+        <div>
+          <div className='flex items-center gap-2 mb-2'>
+            <div
+              className='w-3 h-3 rounded-sm'
+              style={{ backgroundColor: category.color }}
+            ></div>
+            <h1 className='text-2xl font-semibold'>{category.name}</h1>
+          </div>
+          {category.description && (
+            <p className='text-sm text-muted-foreground'>
+              {category.description}
+            </p>
+          )}
         </div>
-        {category.description && (
-          <p className='text-sm text-muted-foreground'>
-            {category.description}
-          </p>
-        )}
+
+        <TopicSortTabs defaultValue={sort} className='w-full sm:w-auto' />
       </div>
 
       {/* 话题列表 */}

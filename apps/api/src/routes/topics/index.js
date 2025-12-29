@@ -68,7 +68,7 @@ export default async function topicRoutes(fastify, options) {
             },
             sort: {
               type: 'string',
-              enum: ['latest', 'popular', 'trending'],
+              enum: ['latest', 'popular', 'trending', 'newest'],
               default: 'latest',
             },
           },
@@ -260,6 +260,8 @@ export default async function topicRoutes(fastify, options) {
       // 应用排序
       if (sort === 'latest') {
         query = query.orderBy(desc(topics.isPinned), desc(topics.lastPostAt));
+      } else if (sort === 'newest') {
+        query = query.orderBy(desc(topics.isPinned), desc(topics.createdAt));
       } else if (sort === 'popular') {
         // 受欢迎排序：综合浏览量和回复数，不考虑时间衰减
         // 人气分数 = 浏览量 * 0.3 + 回复数 * 5
