@@ -60,13 +60,7 @@ export function CategoryList({ categories, currentPath }) {
                 </Link>
               );
             })}
-            <Link
-              href='/categories'
-              prefetch={false}
-              className='flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-muted/50 transition-colors text-muted-foreground'
-            >
-              <span>查看全部</span>
-            </Link>
+
           </div>
         )}
       </div>

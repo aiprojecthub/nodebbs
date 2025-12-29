@@ -54,9 +54,8 @@ export default function Header() {
 
   const navigationItems = [
     { href: '/', label: '首页', icon: MessageSquare },
-    { href: '/trending', label: '热门', icon: TrendingUp },
-    { href: '/featured', label: '精华', icon: Sparkles },
-    // { href: '/tags', label: '标签', icon: Tag },
+    { href: '/categories', label: '分类', icon: Sparkles },
+    { href: '/tags', label: '标签', icon: Tag },
   ];
 
   const handleSearch = (e) => {

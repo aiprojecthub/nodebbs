@@ -53,6 +53,22 @@ export function useCategories() {
         }
       });
 
+      // 递归计算包含子分类的话题总数
+      const calculateTotalStats = (category) => {
+        let total = category.topicCount || 0;
+        
+        if (category.subcategories && category.subcategories.length > 0) {
+          category.subcategories.forEach(sub => {
+            total += calculateTotalStats(sub);
+          });
+        }
+        
+        category.totalTopics = total;
+        return total;
+      };
+
+      rootCategories.forEach(calculateTotalStats);
+
       setCategories(rootCategories);
     } catch (err) {
       setError(err);

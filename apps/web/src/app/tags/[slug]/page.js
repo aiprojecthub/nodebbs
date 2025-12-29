@@ -3,6 +3,7 @@ import { TopicList } from '@/components/topic/TopicList';
 import { request } from '@/lib/server/api';
 import { Tag } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { TopicSortTabs } from '@/components/topic/TopicSortTabs';
 
 // 服务端获取标签信息
 async function getTagData(slug) {
@@ -92,13 +93,16 @@ export default async function TagTopicListPage({ params, searchParams }) {
         </div>
       </div>
 
+      <div className="flex justify-end mb-4">
+        <TopicSortTabs defaultValue={sort} className='w-full sm:w-auto' />
+      </div>
+
       <TopicList
         initialData={topicsData.items}
         total={topicsData.total}
         currentPage={page}
         totalPages={totalPages}
         limit={LIMIT}
-        showPagination={true}
         showPagination={true}
         useUrlPagination={true}
       />

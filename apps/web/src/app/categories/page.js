@@ -7,5 +7,9 @@ import CategoriesLayout from './components/CategoriesLayout';
  * 使用客户端组件获取和渲染分类数据
  */
 export default function CategoriesPage() {
-  return <CategoriesLayout />;
+  return (
+    <div className='container mx-auto px-4 py-6'>
+      <CategoriesLayout />
+    </div>
+  );
 }
