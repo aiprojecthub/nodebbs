@@ -43,8 +43,8 @@ function TopicLayoutContent({
   limit,
 }) {
   return (
-    <div className='container mx-auto px-4 py-6 flex-1'>
-      <main className='flex flex-col-reverse md:flex-col lg:flex-row gap-6'>
+    <div className='container mx-auto p-2 lg:px-4 lg:py-6'>
+      <main className='flex gap-6'>
         {/* 主要内容区域 */}
         <div className='flex-1 min-w-0'>
           {/* 话题内容 */}
@@ -61,7 +61,7 @@ function TopicLayoutContent({
         </div>
 
         {/* 右侧边栏 */}
-        <div className='w-full lg:w-64 shrink-0'>
+        <div className='fixed z-10 -left-full lg:static lg:w-64 shrink-0'>
           <StickySidebar className='sticky top-[107px]'>
             <TopicSidebar />
           </StickySidebar>

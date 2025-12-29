@@ -60,13 +60,13 @@ export default async function HomePage({ searchParams }) {
   return (
     <>
       {/* 页面标题 & 排序切换 */}
-      <div className='flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-4'>
+      <div className='flex flex-col gap-2 mb-2 lg:flex-row lg:items-end lg:justify-between lg:gap-4 lg:mb-4'>
         <div>
           <h1 className='text-3xl font-bold tracking-tight'>{title}</h1>
           <p className='text-muted-foreground mt-1'>{description}</p>
         </div>
 
-        <TopicSortTabs defaultValue={sort} className='w-full sm:w-auto' />
+        <TopicSortTabs defaultValue={sort} className='w-auto' />
       </div>
 
       {/* 话题列表（客户端组件） */}

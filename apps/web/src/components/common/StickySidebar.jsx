@@ -26,7 +26,7 @@ export default function StickySidebar({ children, className, enabled = true }) {
 
     // 客户端检查屏幕尺寸
     const checkDesktop = () => {
-      setIsDesktop(window.innerWidth >= 768);
+      setIsDesktop(window.innerWidth >= 1024);
     };
 
     checkDesktop();
@@ -47,7 +47,7 @@ export default function StickySidebar({ children, className, enabled = true }) {
   return (
     <Drawer direction='left' open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <Button variant='outline' size='icon'>
+        <Button variant='outline' size='icon' className='w-11 h-11 fixed z-10 top-1/2 -left-2 -translate-y-1/2 rounded-none rounded-tr-full rounded-br-full opacity-65'>
           <ChevronRight className='h-6 w-6' />
         </Button>
       </DrawerTrigger>
