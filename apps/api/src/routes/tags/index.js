@@ -14,7 +14,7 @@ export default async function tagRoutes(fastify, options) {
         properties: {
           search: { type: 'string' },
           page: { type: 'number', default: 1 },
-          limit: { type: 'number', default: 50, maximum: 100 }
+          limit: { type: 'number', default: 50, maximum: 500 }
         }
       }
     }

@@ -8,7 +8,7 @@ export const metadata = {
 
 async function getTags() {
   try {
-    const data = await request('/tags?limit=100');
+    const data = await request('/tags?limit=500');
     return data.items || [];
   } catch (error) {
     console.error('Error fetching tags:', error);
