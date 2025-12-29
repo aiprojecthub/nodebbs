@@ -23,7 +23,7 @@ export const OAUTH_PROVIDERS = [
     isEnabled: false,
     displayName: 'Google',
     displayOrder: 2,
-    scope: JSON.stringify(['profile', 'email']),
+    scope: JSON.stringify(['openid', 'profile', 'email']),
     clientId: null,
     clientSecret: null,
     callbackUrl: null,

@@ -8,7 +8,7 @@ import {
   normalizeOAuthProfile,
 } from '../../utils/oauth-helpers.js';
 import db from '../../db/index.js';
-import { oauthProviders } from '../../db/schema.js';
+import { oauthProviders, users } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { isProd } from '../../utils/env.js';
@@ -359,9 +359,9 @@ export default async function oauthRoutes(fastify, options) {
         // 解析 scope
         let scope;
         try {
-          scope = providerConfig.scope ? JSON.parse(providerConfig.scope) : ['profile', 'email'];
+          scope = providerConfig.scope ? JSON.parse(providerConfig.scope) : ['openid', 'profile', 'email'];
         } catch {
-          scope = ['profile', 'email'];
+          scope = ['openid', 'profile', 'email'];
         }
 
         // 手动构建授权 URL
@@ -747,7 +747,7 @@ export default async function oauthRoutes(fastify, options) {
           normalizeOAuthProfile('google', {
              id: googleUser.sub,
              email: googleUser.email,
-             verified_email: googleUser.email_verified,
+             email_verified: googleUser.email_verified,
              name: googleUser.name,
              picture: googleUser.picture,
           }), 
@@ -1172,6 +1172,16 @@ async function handleOAuthLogin(
       providerAccountId,
       ...tokenData,
     });
+
+    // 用户是通过关联账号找到的
+    // 如果 OAuth 提供商确认邮箱已验证，且当前用户未验证，则同步更新状态
+    if (profile.isEmailVerified && !user.isEmailVerified && user.email === profile.email) {
+          const [updatedUser] = await db.update(users)
+            .set({ isEmailVerified: true, updatedAt: new Date() })
+            .where(eq(users.id, user.id))
+            .returning();
+          user = updatedUser;
+    }
   } else {
     // 2. 如果有邮箱，查找是否已有相同邮箱的用户
     if (profile.email) {
@@ -1183,6 +1193,15 @@ async function handleOAuthLogin(
           providerAccountId,
           ...tokenData,
         });
+
+        // 如果 OAuth 提供商确认邮箱已验证，且当前用户未验证，则更新状态
+        if (profile.isEmailVerified && !user.isEmailVerified) {
+             const [updatedUser] = await db.update(users)
+                .set({ isEmailVerified: true, updatedAt: new Date() })
+                .where(eq(users.id, user.id))
+                .returning();
+             user = updatedUser; // 更新本地 user 对象
+        }
       }
     }
 
@@ -1218,11 +1237,6 @@ async function handleOAuthLogin(
     throw new Error('账号已被封禁');
   }
 
-  // 生成 Token (不再生成，由调用方处理)
-  // const token = fastify.jwt.sign({
-  //   id: user.id,
-  // });
-
   return {
     user: {
       id: user.id,
@@ -1233,6 +1247,5 @@ async function handleOAuthLogin(
       role: user.role,
       isEmailVerified: user.isEmailVerified,
     },
-    // token, // 不再返回 token
   };
 }

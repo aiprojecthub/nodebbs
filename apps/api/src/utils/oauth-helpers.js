@@ -238,6 +238,7 @@ export function normalizeOAuthProfile(provider, rawProfile) {
         name: rawProfile.name || rawProfile.login,
         username: rawProfile.login,
         avatar: rawProfile.avatar_url,
+        isEmailVerified: true, // GitHub 登录且能获取到 Email 通常意味着已验证（或我们在获取时筛选了verified）
       };
 
     case 'google':
@@ -247,6 +248,7 @@ export function normalizeOAuthProfile(provider, rawProfile) {
         name: rawProfile.name,
         username: rawProfile.email?.split('@')[0],
         avatar: rawProfile.picture,
+        isEmailVerified: rawProfile.email_verified === true // Google 字段: email_verified
       };
 
     case 'apple':
@@ -256,6 +258,7 @@ export function normalizeOAuthProfile(provider, rawProfile) {
         name: rawProfile.name || rawProfile.email?.split('@')[0],
         username: rawProfile.email?.split('@')[0],
         avatar: null, // Apple 不提供头像
+        isEmailVerified: true, // Apple 提供的邮箱已验证
       };
 
     default:
@@ -265,6 +268,7 @@ export function normalizeOAuthProfile(provider, rawProfile) {
         name: rawProfile.name,
         username: rawProfile.username || rawProfile.email?.split('@')[0],
         avatar: rawProfile.avatar || rawProfile.picture,
+        isEmailVerified: !!rawProfile.email_verified,
       };
   }
 }
