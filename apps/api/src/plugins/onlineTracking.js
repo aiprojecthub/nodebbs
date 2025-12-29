@@ -2,39 +2,31 @@ import fp from 'fastify-plugin';
 import crypto from 'crypto';
 
 /**
- * 在线用户追踪插件
- * 支持 Redis 或内存存储来追踪在线用户和游客
+ * 在线用户追踪插件 (Refactored)
+ * 强制使用 Redis (Sorted Set) 来高效追踪在线用户和游客
  *
  * 配置选项:
- * - useRedis: 是否使用 Redis (默认: 自动检测 fastify.redis 是否可用)
- * - redisClient: Redis 客户端实例 (默认: 自动使用 fastify.redis)
  * - onlineThreshold: 在线判定阈值，单位毫秒 (默认: 15分钟)
  * - cleanupInterval: 清理间隔，单位毫秒 (默认: 1分钟)
  * - keyPrefix: Redis key 前缀 (默认: 'online:')
- *
- * 注意:
- * - 插件会自动检测 Redis 是否可用，无需手动配置
- * - 如果 Redis 不可用，会使用内存模式
- * - Redis 模式使用 SET 数据结构，避免 KEYS 命令的性能问题
  */
 
 class OnlineTracker {
-  constructor(options = {}) {
-    this.useRedis = options.useRedis ?? false;
-    this.redisClient = options.redisClient;
+  constructor(redisClient, options = {}) {
+    if (!redisClient) {
+      throw new Error('OnlineTracking plugin requires a Redis client instance.');
+    }
+
+    this.redis = redisClient;
     this.onlineThreshold = options.onlineThreshold || 15 * 60 * 1000; // 15分钟
     this.cleanupInterval = options.cleanupInterval || 60 * 1000; // 1分钟
     this.keyPrefix = options.keyPrefix || 'online:';
 
-    // Redis SET 键名
-    this.usersSetKey = `${this.keyPrefix}users`;
-    this.guestsSetKey = `${this.keyPrefix}guests`;
+    // Redis ZSET 键名
+    this.usersKey = `${this.keyPrefix}users`;
+    this.guestsKey = `${this.keyPrefix}guests`;
 
-    // 内存存储
-    this.onlineUsers = new Map(); // userId -> lastSeen
-    this.onlineGuests = new Map(); // sessionId -> lastSeen
-
-    // 缓存的统计数据（减少计算频率）
+    // 缓存的统计数据（减少 Redis 请求）
     this.cachedStats = null;
     this.cacheExpiry = 0;
     this.cacheTimeout = 5000; // 缓存5秒
@@ -49,209 +41,63 @@ class OnlineTracker {
       return request.session.sessionId;
     }
 
-    // 使用 IP + User-Agent 生成更准确的标识
+    // 使用 IP + User-Agent 生成标识
     const ip = request.ip;
     const userAgent = request.headers['user-agent'] || '';
     const fingerprint = `${ip}:${userAgent}`;
 
-    // 生成短哈希作为标识
     return crypto.createHash('md5').update(fingerprint).digest('hex').substring(0, 16);
   }
 
-  // 记录用户活动（内存模式）
-  async trackMemory(userId, guestId) {
+  // 记录用户活动 (使用 ZSET: Score=Timestamp, Member=ID)
+  async track(userId, guestId) {
     const now = Date.now();
+    const pipeline = this.redis.pipeline();
 
+    // 更新用户在线状态
     if (userId) {
-      this.onlineUsers.set(userId, now);
-      // 如果之前是游客，从游客列表中移除
+      pipeline.zadd(this.usersKey, now, userId.toString());
+      // 如果之前是游客，尝试从游客列表移除（可选，为了数据更准确）
       if (guestId) {
-        this.onlineGuests.delete(guestId);
+        pipeline.zrem(this.guestsKey, guestId);
       }
     } else if (guestId) {
-      this.onlineGuests.set(guestId, now);
-    }
-  }
-
-  // 记录用户活动（Redis 模式）
-  async trackRedis(userId, guestId) {
-    if (!this.redisClient) return;
-
-    const ttlSeconds = Math.ceil(this.onlineThreshold / 1000);
-
-    try {
-      if (userId) {
-        // 使用 pipeline 批量执行 Redis 命令，提高性能
-        const pipeline = this.redisClient.pipeline();
-
-        // 设置用户在线状态（带 TTL）
-        pipeline.setex(
-          `${this.keyPrefix}user:${userId}`,
-          ttlSeconds,
-          Date.now().toString()
-        );
-
-        // 添加到在线用户 SET
-        pipeline.sadd(this.usersSetKey, userId.toString());
-
-        // 如果之前是游客，从游客列表中移除
-        if (guestId) {
-          pipeline.del(`${this.keyPrefix}guest:${guestId}`);
-          pipeline.srem(this.guestsSetKey, guestId);
-        }
-
-        await pipeline.exec();
-      } else if (guestId) {
-        const pipeline = this.redisClient.pipeline();
-
-        // 设置游客在线状态（带 TTL）
-        pipeline.setex(
-          `${this.keyPrefix}guest:${guestId}`,
-          ttlSeconds,
-          Date.now().toString()
-        );
-
-        // 添加到在线游客 SET
-        pipeline.sadd(this.guestsSetKey, guestId);
-
-        await pipeline.exec();
-      }
-    } catch (error) {
-      // Redis 错误时记录日志但不降级，保持数据一致性
-      console.error('Redis tracking error:', error);
-    }
-  }
-
-  // 记录用户活动
-  async track(userId, guestId) {
-    if (this.useRedis) {
-      await this.trackRedis(userId, guestId);
-    } else {
-      await this.trackMemory(userId, guestId);
+      pipeline.zadd(this.guestsKey, now, guestId);
     }
 
-    // 不再每次都清除缓存，让缓存自然过期
-    // 这样可以减少高流量下的统计计算次数
+    // 设置过期时间，防止 ZSET 永久存在（虽然主要靠 cleanup，但加个兜底 TTL 也不错）
+    // 这里其实不需要给 ZSET 本身设 TTL，因为里面一直在更新。
+    // 只需要定期 cleanup 移除旧成员即可。
+
+    await pipeline.exec();
   }
 
-  // 清理过期数据（内存模式）
-  cleanupMemory() {
+  // 清理过期数据
+  async cleanup() {
     const now = Date.now();
-    let cleaned = 0;
+    const thresholdTimestamp = now - this.onlineThreshold;
+    
+    // ZREMRANGEBYSCORE key -inf (now - threshold)
+    // 移除所有分数（时间戳）小于 thresholdTimestamp 的成员
+    const pipeline = this.redis.pipeline();
+    pipeline.zremrangebyscore(this.usersKey, '-inf', thresholdTimestamp);
+    pipeline.zremrangebyscore(this.guestsKey, '-inf', thresholdTimestamp);
+    
+    const results = await pipeline.exec();
+    
+    // 统计清理数量 (results[0][1] 是 users 清理数, results[1][1] 是 guests 清理数)
+    const cleanedUsers = results[0]?.[1] || 0;
+    const cleanedGuests = results[1]?.[1] || 0;
+    const totalCleaned = cleanedUsers + cleanedGuests;
 
-    // 清理过期的注册用户
-    for (const [userId, lastSeen] of this.onlineUsers.entries()) {
-      if (now - lastSeen > this.onlineThreshold) {
-        this.onlineUsers.delete(userId);
-        cleaned++;
-      }
+    if (totalCleaned > 0) {
+      this.cachedStats = null; // 清除缓存，强制下次重新计算
     }
 
-    // 清理过期的游客
-    for (const [guestId, lastSeen] of this.onlineGuests.entries()) {
-      if (now - lastSeen > this.onlineThreshold) {
-        this.onlineGuests.delete(guestId);
-        cleaned++;
-      }
-    }
-
-    // 清理后清除缓存，强制重新计算
-    if (cleaned > 0) {
-      this.cachedStats = null;
-    }
-
-    return cleaned;
+    return totalCleaned;
   }
 
-  // 清理 Redis 中过期的 SET 成员
-  async cleanupRedis() {
-    if (!this.redisClient) return 0;
-
-    try {
-      let cleaned = 0;
-      const now = Date.now();
-
-      // 获取所有在线用户 ID
-      const userIds = await this.redisClient.smembers(this.usersSetKey);
-
-      // 检查每个用户是否还在线
-      for (const userId of userIds) {
-        const exists = await this.redisClient.exists(`${this.keyPrefix}user:${userId}`);
-        if (!exists) {
-          // 键已过期，从 SET 中移除
-          await this.redisClient.srem(this.usersSetKey, userId);
-          cleaned++;
-        }
-      }
-
-      // 同样处理游客
-      const guestIds = await this.redisClient.smembers(this.guestsSetKey);
-
-      for (const guestId of guestIds) {
-        const exists = await this.redisClient.exists(`${this.keyPrefix}guest:${guestId}`);
-        if (!exists) {
-          await this.redisClient.srem(this.guestsSetKey, guestId);
-          cleaned++;
-        }
-      }
-
-      // 清理后清除缓存
-      if (cleaned > 0) {
-        this.cachedStats = null;
-      }
-
-      return cleaned;
-    } catch (error) {
-      console.error('Redis cleanup error:', error);
-      return 0;
-    }
-  }
-
-  // 获取统计数据（内存模式）
-  async getStatsMemory() {
-    const now = Date.now();
-
-    // 过滤出仍然在线的用户
-    const activeUsers = Array.from(this.onlineUsers.entries()).filter(
-      ([_, lastSeen]) => now - lastSeen <= this.onlineThreshold
-    );
-
-    const activeGuests = Array.from(this.onlineGuests.entries()).filter(
-      ([_, lastSeen]) => now - lastSeen <= this.onlineThreshold
-    );
-
-    return {
-      members: activeUsers.length,
-      guests: activeGuests.length,
-      total: activeUsers.length + activeGuests.length,
-    };
-  }
-
-  // 获取统计数据（Redis 模式）
-  async getStatsRedis() {
-    if (!this.redisClient) {
-      return { members: 0, guests: 0, total: 0 };
-    }
-
-    try {
-      // 使用 SCARD 命令获取 SET 大小，O(1) 时间复杂度
-      const [members, guests] = await Promise.all([
-        this.redisClient.scard(this.usersSetKey),
-        this.redisClient.scard(this.guestsSetKey),
-      ]);
-
-      return {
-        members,
-        guests,
-        total: members + guests,
-      };
-    } catch (error) {
-      console.error('Error getting Redis stats:', error);
-      return { members: 0, guests: 0, total: 0 };
-    }
-  }
-
-  // 获取统计数据（带缓存）
+  // 获取统计数据
   async getStats() {
     const now = Date.now();
 
@@ -260,10 +106,23 @@ class OnlineTracker {
       return this.cachedStats;
     }
 
-    // 获取新数据
-    const stats = this.useRedis
-      ? await this.getStatsRedis()
-      : await this.getStatsMemory();
+    const validStartTimestamp = now - this.onlineThreshold;
+
+    // ZCOUNT key (now - threshold) +inf
+    // 统计有效时间范围内的成员数量
+    const pipeline = this.redis.pipeline();
+    pipeline.zcount(this.usersKey, validStartTimestamp, '+inf');
+    pipeline.zcount(this.guestsKey, validStartTimestamp, '+inf');
+
+    const results = await pipeline.exec();
+    const members = results[0]?.[1] || 0;
+    const guests = results[1]?.[1] || 0;
+
+    const stats = {
+      members,
+      guests,
+      total: members + guests,
+    };
 
     // 更新缓存
     this.cachedStats = stats;
@@ -274,27 +133,19 @@ class OnlineTracker {
 
   // 启动定期清理
   startCleanup(logger) {
+    // 每次启动时立即执行一次清理（可选）
+    // this.cleanup().catch(...)
+
     this.cleanupTimer = setInterval(() => {
-      try {
-        if (this.useRedis) {
-          // Redis 模式也需要清理 SET 中的过期成员
-          this.cleanupRedis().then(cleaned => {
-            if (cleaned > 0) {
-              logger.debug(`Cleaned ${cleaned} expired Redis SET members`);
-            }
-          }).catch(error => {
-            logger.error('Error during Redis cleanup:', error);
-          });
-        } else {
-          // 内存模式清理
-          const cleaned = this.cleanupMemory();
+      this.cleanup()
+        .then(cleaned => {
           if (cleaned > 0) {
-            logger.debug(`Cleaned ${cleaned} expired online tracking entries`);
+            logger.debug(`[OnlineTracking] Cleaned ${cleaned} expired users/guests`);
           }
-        }
-      } catch (error) {
-        logger.error('Error during online tracking cleanup:', error);
-      }
+        })
+        .catch(error => {
+          logger.error('Error during online tracking cleanup:', error);
+        });
     }, this.cleanupInterval);
   }
 
@@ -308,81 +159,73 @@ class OnlineTracker {
 }
 
 export default fp(async function (fastify, opts) {
-  // 自动检测 Redis 可用性
-  const hasRedis = !!fastify.redis;
-  const useRedis = opts.useRedis !== undefined ? opts.useRedis : hasRedis;
-  const redisClient = opts.redisClient || (hasRedis ? fastify.redis : null);
+  // 1. 强制依赖 Redis
+  // 即使 `dependencies` 声明了，这里最好也检查一下，或者直接取 fastify.redis
+  if (!fastify.redis) {
+    throw new Error('fastify-redis plugin must be registered before online-tracking.');
+  }
 
-  // 初始化追踪器
-  const tracker = new OnlineTracker({
-    useRedis,
-    redisClient,
+  // 2. 初始化追踪器
+  const tracker = new OnlineTracker(fastify.redis, {
     onlineThreshold: opts.onlineThreshold,
     cleanupInterval: opts.cleanupInterval,
     keyPrefix: opts.keyPrefix,
   });
 
-  // 启动定期清理
+  // 3. 启动定期清理
   tracker.startCleanup(fastify.log);
 
-  // 在服务器关闭时清理
+  // 4. 服务器关闭钩子
   fastify.addHook('onClose', async () => {
     tracker.stopCleanup();
     fastify.log.info('Online tracking plugin closed');
   });
 
-  // 添加请求钩子，仅追踪 API 请求
-  // 排除静态资源请求，避免数据失真
-  fastify.addHook('onRequest', async (request, reply) => {
+  // 5. 核心逻辑: 记录请求
+  // 使用 'onResponse' 确保在请求处理完成后执行
+  // 此时路由级别的身份验证(preHandler)已执行，request.user 已被正确填充
+  fastify.addHook('onResponse', async (request, reply) => {
     try {
-      // 只追踪 API 请求路径
-      // 排除: /uploads/*, /favicon.ico, /robots.txt 等静态资源
-      const url = request.url;
-      const isApiRequest = url.startsWith('/api/');
-
-      // 如果不是 API 请求，跳过追踪
-      if (!isApiRequest) {
-        return;
+      // 仅追踪 API 请求
+      const url = request.raw.url || request.url;
+      if (!url.startsWith('/api/')) {
+         return; 
       }
 
       const userId = request.user?.id || null;
+      
+      // 如果没有登录，生成 guestId
+      // 注意：如果 request.user 存在，我们传 null 给 guestId
       const guestId = userId ? null : tracker.generateGuestId(request);
 
-      // 异步追踪，不阻塞请求
-      tracker.track(userId, guestId).catch(error => {
-        fastify.log.error('Error tracking online user:', error);
+      // 异步执行 (onResponse 本身就是在响应发送后调用的，所以这里的异步其实是 "fire and forget")
+      tracker.track(userId, guestId).catch(err => {
+        request.log.warn({ err }, 'Error tracking online user');
       });
+
     } catch (error) {
-      // 追踪失败不应影响正常请求
-      fastify.log.error('Error in online tracking hook:', error);
+      request.log.warn({ error }, 'Error in online tracking hook');
     }
   });
 
-  // 提供获取在线统计的方法
+  // 6. 装饰器: 获取统计
   fastify.decorate('getOnlineStats', async () => {
     try {
       return await tracker.getStats();
     } catch (error) {
       fastify.log.error('Error getting online stats:', error);
-      return {
-        members: 0,
-        guests: 0,
-        total: 0,
-      };
+      return { members: 0, guests: 0, total: 0 };
     }
   });
 
-  // 提供手动清理方法（用于测试或管理）
+  // 7. 装饰器: 手动清理
   fastify.decorate('cleanupOnlineTracking', async () => {
-    if (tracker.useRedis) {
-      return await tracker.cleanupRedis();
-    } else {
-      return tracker.cleanupMemory();
-    }
+    return await tracker.cleanup();
   });
 
-  fastify.log.info(`Online tracking plugin registered (mode: ${tracker.useRedis ? 'Redis' : 'Memory'})`);
+  fastify.log.info('Online tracking plugin registered (Redis ZSET mode)');
+
 }, {
   name: 'online-tracking',
-  dependencies: ['redis'],
+  dependencies: ['redis'], // 声明依赖
 });
