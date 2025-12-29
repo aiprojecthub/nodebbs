@@ -1,142 +1,49 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Bell,
-  CheckCheck,
-  Trash2,
-  Loader2,
-} from 'lucide-react';
+import { Bell, CheckCheck, Trash2, Loader2 } from 'lucide-react';
 import { getNotificationIcon, getNotificationMessage } from '@/lib/notification';
-import { useAuth } from '@/contexts/AuthContext';
-import { notificationApi } from '@/lib/api';
-import { toast } from 'sonner';
 import UserAvatar from '@/components/user/UserAvatar';
 import Time from '@/components/common/Time';
 import { Loading } from '@/components/common/Loading';
 import { Pager } from '@/components/common/Pagination';
 
+// 导入 Hook
+import { useNotifications } from '@/hooks/profile/useNotifications';
+
+/**
+ * 通知页面
+ * 纯 UI 组件，消费 useNotifications Hook
+ */
 export default function NotificationsPage() {
-  const { user } = useAuth();
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
-  const [total, setTotal] = useState(0);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [filter, setFilter] = useState('all'); // 'all', 'unread', 'read'
-  const [actionLoading, setActionLoading] = useState(null); // Track which action is loading
-
-  useEffect(() => {
-    if (user) {
-      fetchNotifications();
-    }
-  }, [user, page, pageSize, filter]);
-
-  const fetchNotifications = async () => {
-    if (!user?.id) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const unreadOnly = filter === 'unread';
-      const response = await notificationApi.getList(page, pageSize, unreadOnly);
-
-      let items = response.items || [];
-
-      // If filter is 'read', filter on client side
-      if (filter === 'read') {
-        items = items.filter((n) => n.isRead);
-      }
-
-      setNotifications(items);
-      setTotal(response.total || 0);
-      setUnreadCount(response.unreadCount || 0);
-    } catch (err) {
-      console.error('获取通知失败:', err);
-      setError(err.message);
-      toast.error('获取通知失败：' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-
-  const markAsRead = async (id) => {
-    setActionLoading(`read-${id}`);
-    try {
-      await notificationApi.markAsRead(id);
-      // Update local state
-      setNotifications(
-        notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-      );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
-      toast.success('已标记为已读');
-    } catch (err) {
-      console.error('标记已读失败:', err);
-      toast.error('操作失败：' + err.message);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const markAllAsRead = async () => {
-    setActionLoading('read-all');
-    try {
-      const result = await notificationApi.markAllAsRead();
-      toast.success(`已标记 ${result.count} 条通知为已读`);
-      // Refresh notifications
-      await fetchNotifications();
-    } catch (err) {
-      console.error('批量标记已读失败:', err);
-      toast.error('操作失败：' + err.message);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const deleteNotification = async (id) => {
-    setActionLoading(`delete-${id}`);
-    try {
-      await notificationApi.delete(id);
-      // Update local state
-      setNotifications(notifications.filter((n) => n.id !== id));
-      setTotal((prev) => prev - 1);
-      toast.success('通知已删除');
-    } catch (err) {
-      console.error('删除通知失败:', err);
-      toast.error('删除失败：' + err.message);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const deleteAllRead = async () => {
-    setActionLoading('delete-all-read');
-    try {
-      const result = await notificationApi.deleteAllRead();
-      toast.success(`已删除 ${result.count} 条已读通知`);
-      // Refresh notifications
-      await fetchNotifications();
-    } catch (err) {
-      console.error('批量删除失败:', err);
-      toast.error('操作失败：' + err.message);
-    } finally {
-      setActionLoading(null);
-    }
-  };
+  const {
+    // 列表数据
+    notifications,
+    loading,
+    error,
+    page,
+    pageSize,
+    total,
+    unreadCount,
+    readCount,
+    filter,
+    setPage,
+    // 操作函数
+    fetchNotifications,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    deleteAllRead,
+    handleFilterChange,
+    // 加载状态
+    isActionLoading,
+  } = useNotifications();
 
   // 加载状态
   if (loading && notifications.length === 0) {
-    return (
-      <Loading text='加载中...' className='py-12' />
-    );
+    return <Loading text='加载中...' className='py-12' />;
   }
 
   // 错误状态
@@ -153,8 +60,6 @@ export default function NotificationsPage() {
     );
   }
 
-  const readCount = total - unreadCount;
-
   return (
     <div>
       <div className='mb-6'>
@@ -167,10 +72,7 @@ export default function NotificationsPage() {
           </div>
           <div className='flex items-center space-x-2'>
             {unreadCount > 0 && (
-              <Badge
-                variant='destructive'
-                className='flex items-center space-x-1'
-              >
+              <Badge variant='destructive' className='flex items-center space-x-1'>
                 <Bell className='h-3 w-3' />
                 <span>{unreadCount} 条未读</span>
               </Badge>
@@ -184,30 +86,21 @@ export default function NotificationsPage() {
             <Badge
               variant={filter === 'all' ? 'default' : 'outline'}
               className='cursor-pointer'
-              onClick={() => {
-                setFilter('all');
-                setPage(1);
-              }}
+              onClick={() => handleFilterChange('all')}
             >
               全部 ({total})
             </Badge>
             <Badge
               variant={filter === 'unread' ? 'default' : 'outline'}
               className='cursor-pointer'
-              onClick={() => {
-                setFilter('unread');
-                setPage(1);
-              }}
+              onClick={() => handleFilterChange('unread')}
             >
               未读 ({unreadCount})
             </Badge>
             <Badge
               variant={filter === 'read' ? 'default' : 'outline'}
               className='cursor-pointer'
-              onClick={() => {
-                setFilter('read');
-                setPage(1);
-              }}
+              onClick={() => handleFilterChange('read')}
             >
               已读 ({readCount})
             </Badge>
@@ -219,9 +112,9 @@ export default function NotificationsPage() {
                 variant='ghost'
                 size='sm'
                 onClick={markAllAsRead}
-                disabled={actionLoading === 'read-all'}
+                disabled={isActionLoading('read-all')}
               >
-                {actionLoading === 'read-all' ? (
+                {isActionLoading('read-all') ? (
                   <Loader2 className='h-4 w-4 animate-spin' />
                 ) : (
                   <CheckCheck className='h-4 w-4' />
@@ -234,10 +127,10 @@ export default function NotificationsPage() {
                 variant='ghost'
                 size='sm'
                 onClick={deleteAllRead}
-                disabled={actionLoading === 'delete-all-read'}
+                disabled={isActionLoading('delete-all-read')}
                 className='text-red-500 hover:text-red-600'
               >
-                {actionLoading === 'delete-all-read' ? (
+                {isActionLoading('delete-all-read') ? (
                   <Loader2 className='h-4 w-4 animate-spin' />
                 ) : (
                   <Trash2 className='h-4 w-4' />
@@ -293,9 +186,7 @@ export default function NotificationsPage() {
                     {notification.topicTitle && (
                       <Link
                         href={`/topic/${notification.topicId}${
-                          notification.postId
-                            ? `#post-${notification.postId}`
-                            : ''
+                          notification.postId ? `#post-${notification.postId}` : ''
                         }`}
                         className='text-sm text-primary hover:underline block mb-2'
                       >
@@ -309,10 +200,10 @@ export default function NotificationsPage() {
                           variant='ghost'
                           size='sm'
                           onClick={() => markAsRead(notification.id)}
-                          disabled={actionLoading === `read-${notification.id}`}
+                          disabled={isActionLoading(`read-${notification.id}`)}
                           className='h-7 text-xs'
                         >
-                          {actionLoading === `read-${notification.id}` ? (
+                          {isActionLoading(`read-${notification.id}`) ? (
                             <Loader2 className='h-3 w-3 mr-1 animate-spin' />
                           ) : (
                             <CheckCheck className='h-3 w-3 mr-1' />
@@ -324,10 +215,10 @@ export default function NotificationsPage() {
                         variant='ghost'
                         size='sm'
                         onClick={() => deleteNotification(notification.id)}
-                        disabled={actionLoading === `delete-${notification.id}`}
+                        disabled={isActionLoading(`delete-${notification.id}`)}
                         className='h-7 text-xs text-red-500 hover:text-red-600 hover:bg-red-50'
                       >
-                        {actionLoading === `delete-${notification.id}` ? (
+                        {isActionLoading(`delete-${notification.id}`) ? (
                           <Loader2 className='h-3 w-3 mr-1 animate-spin' />
                         ) : (
                           <Trash2 className='h-3 w-3 mr-1' />
@@ -348,10 +239,6 @@ export default function NotificationsPage() {
               page={page}
               pageSize={pageSize}
               onPageChange={(newPage) => setPage(newPage)}
-              // onPageSizeChange={(newSize) => {
-              //   setPageSize(newSize);
-              //   setPage(1);
-              // }}
             />
           )}
         </div>

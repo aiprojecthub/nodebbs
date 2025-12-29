@@ -4,19 +4,26 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FormDialog } from '@/components/common/FormDialog';
-import { Loader2 } from 'lucide-react';
 
+/**
+ * 用户名修改对话框
+ * 接收 usernameChange Hook 实例
+ */
 export function UsernameChangeDialog({
   open,
   onOpenChange,
-  user,
-  settings,
-  usernameData,
-  onUsernameDataChange,
-  onSubmit,
-  loading,
-  usernameInfo,
+  usernameChange,
 }) {
+  const {
+    user,
+    settings,
+    formData,
+    setFormData,
+    handleSubmit,
+    loading,
+    usernameInfo,
+  } = usernameChange;
+
   return (
     <FormDialog
       open={open}
@@ -31,11 +38,11 @@ export function UsernameChangeDialog({
         </span>
       }
       submitText={loading ? '修改中...' : '确认修改'}
-      onSubmit={onSubmit}
+      onSubmit={handleSubmit}
       loading={loading}
       onCancel={() => {
           onOpenChange(false);
-          onUsernameDataChange({ newUsername: '', password: '' });
+          setFormData({ newUsername: '', password: '' });
       }}
       maxWidth="sm:max-w-[500px]"
     >
@@ -51,9 +58,9 @@ export function UsernameChangeDialog({
               新用户名 *
             </Label>
             <Input
-              value={usernameData.newUsername}
+              value={formData.newUsername}
               onChange={(e) =>
-                onUsernameDataChange({ ...usernameData, newUsername: e.target.value })
+                setFormData({ ...formData, newUsername: e.target.value })
               }
               placeholder='输入新用户名'
               disabled={loading}
@@ -66,9 +73,9 @@ export function UsernameChangeDialog({
               </Label>
               <Input
                 type='password'
-                value={usernameData.password}
+                value={formData.password}
                 onChange={(e) =>
-                  onUsernameDataChange({ ...usernameData, password: e.target.value })
+                  setFormData({ ...formData, password: e.target.value })
                 }
                 placeholder='输入当前密码'
                 disabled={loading}

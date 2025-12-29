@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,139 +12,54 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { FormDialog } from '@/components/common/FormDialog';
-import { invitationsApi } from '@/lib/api';
-import { toast } from 'sonner';
 import { Plus, X, Clock, Ticket } from 'lucide-react';
 import CopyButton from '@/components/common/CopyButton';
 import { Loading } from '@/components/common/Loading';
 import { Pager } from '@/components/common/Pagination';
+import { toast } from 'sonner';
 
+// 导入 Hook
+import { useInvitations } from '@/hooks/profile/useInvitations';
+
+/**
+ * 邀请码页面
+ * 纯 UI 组件，消费 useInvitations Hook
+ */
 export default function InvitationsPage() {
-  const [codes, setCodes] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [quota, setQuota] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
-  const [total, setTotal] = useState(0);
-  const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
-  const [generating, setGenerating] = useState(false);
-  const [statusFilter, setStatusFilter] = useState('all');
+  const {
+    // 列表数据
+    codes,
+    stats,
+    quota,
+    loading,
+    page,
+    pageSize,
+    total,
+    statusFilter,
+    setPage,
+    setStatusFilter,
+    // 生成对话框
+    isGenerateDialogOpen,
+    setIsGenerateDialogOpen,
+    generating,
+    generateForm,
+    updateGenerateForm,
+    handleGenerate,
+    // 工具函数
+    getStatusBadgeProps,
+    formatDate,
+    // 派生状态
+    canGenerate,
+  } = useInvitations();
 
-  const [generateForm, setGenerateForm] = useState({
-    note: '',
-    count: 1,
-  });
-
-  // 加载邀请码列表
-  const loadCodes = async () => {
-    try {
-      setLoading(true);
-      const params = {
-        page,
-        limit: pageSize,
-        ...(statusFilter !== 'all' ? { status: statusFilter } : {}),
-      };
-      const data = await invitationsApi.getMyCodes(params);
-      setCodes(data.items || []);
-      setTotal(data.total || 0);
-    } catch (error) {
-      console.error('Failed to load invitation codes:', error);
-      toast.error('加载邀请码失败');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 加载配额信息（包含统计信息）
-  const loadQuota = async () => {
-    try {
-      const data = await invitationsApi.getMyQuota();
-      setQuota(data.quota); // 使用 data.quota
-      setStats(data.stats); // 使用 data.stats
-    } catch (error) {
-      console.error('Failed to load quota:', error);
-      // 如果是权限相关错误，显示提示
-      if (error.message && error.message.includes('禁用')) {
-        toast.error(error.message);
-      }
-    }
-  };
-
-  // 初始加载配额信息（只加载一次）
-  useEffect(() => {
-    loadQuota();
-  }, []);
-
-  // 加载邀请码列表（根据筛选和分页变化）
-  useEffect(() => {
-    loadCodes();
-  }, [statusFilter, page, pageSize]);
-
-  // 生成邀请码
-  const handleGenerate = async () => {
-    try {
-      setGenerating(true);
-      
-      // 验证生成数量
-      if (generateForm.count < 1) {
-        toast.error('生成数量至少为 1');
-        return;
-      }
-      
-      if (quota && generateForm.count > quota.todayRemaining) {
-        toast.error(`生成数量不能超过今日剩余次数（${quota.todayRemaining}）`);
-        return;
-      }
-      
-      // 发送生成请求
-      const result = await invitationsApi.generate(generateForm);
-      
-      const count = result.count || result.codes?.length || 1;
-      toast.success(`成功生成 ${count} 个邀请码！`);
-      setIsGenerateDialogOpen(false);
-      setGenerateForm({ note: '', count: 1 });
-      setPage(1); // 重置到第一页
-      loadCodes();
-      loadQuota();
-    } catch (error) {
-      console.error('Failed to generate invitation code:', error);
-      toast.error(error.message || '生成邀请码失败');
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-
-
-  // 获取状态标签
-  const getStatusBadge = (status) => {
-    const badges = {
-      active: { label: '活跃', className: 'bg-green-100 text-green-800' },
-      used: { label: '已使用', className: 'bg-gray-100 text-gray-800' },
-      expired: { label: '已过期', className: 'bg-red-100 text-red-800' },
-      disabled: { label: '已禁用', className: 'bg-yellow-100 text-yellow-800' },
-    };
-    const badge = badges[status] || badges.active;
+  // 渲染状态标签
+  const renderStatusBadge = (status) => {
+    const { label, className } = getStatusBadgeProps(status);
     return (
-      <span
-        className={`px-2 py-1 text-xs font-medium rounded-full ${badge.className}`}
-      >
-        {badge.label}
+      <span className={`px-2 py-1 text-xs font-medium rounded-full ${className}`}>
+        {label}
       </span>
     );
-  };
-
-  // 格式化日期
-  const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
   };
 
   if (loading && !codes.length) {
@@ -220,7 +134,7 @@ export default function InvitationsPage() {
 
         <Button
           onClick={() => setIsGenerateDialogOpen(true)}
-          disabled={!quota || (quota && quota.todayRemaining <= 0)}
+          disabled={!canGenerate}
         >
           <Plus className="h-4 w-4" />
           生成邀请码
@@ -236,7 +150,7 @@ export default function InvitationsPage() {
             <Button
               className="mt-4"
               onClick={() => setIsGenerateDialogOpen(true)}
-              disabled={!quota || (quota && quota.todayRemaining <= 0)}
+              disabled={!canGenerate}
             >
               生成第一个邀请码
             </Button>
@@ -252,14 +166,14 @@ export default function InvitationsPage() {
                     <code className="text-lg font-mono font-bold bg-muted px-3 py-1 rounded">
                       {code.code}
                     </code>
-                    {getStatusBadge(code.status)}
+                    {renderStatusBadge(code.status)}
                     <CopyButton
                       value={code.code}
                       variant="ghost"
                       size="sm"
                       className="h-8 w-8 p-0"
                       iconSize="h-4 w-4"
-                      onCopy={() => toast.success('邀请码已复制到剪贴板')} 
+                      onCopy={() => toast.success('邀请码已复制到剪贴板')}
                     />
                   </div>
 
@@ -305,83 +219,72 @@ export default function InvitationsPage() {
           page={page}
           pageSize={pageSize}
           onPageChange={(newPage) => setPage(newPage)}
-          // onPageSizeChange={(newSize) => {
-          //   setPageSize(newSize);
-          //   setPage(1);
-          // }}
         />
       )}
 
       {/* 生成邀请码对话框 */}
       <FormDialog
-          open={isGenerateDialogOpen}
-          onOpenChange={setIsGenerateDialogOpen}
-          title="生成邀请码"
-          description="创建一个新的邀请码，邀请好友加入社区"
-          submitText={generating ? '生成中...' : '生成'}
-          onSubmit={handleGenerate}
-          loading={generating}
+        open={isGenerateDialogOpen}
+        onOpenChange={setIsGenerateDialogOpen}
+        title="生成邀请码"
+        description="创建一个新的邀请码，邀请好友加入社区"
+        submitText={generating ? '生成中...' : '生成'}
+        onSubmit={handleGenerate}
+        loading={generating}
       >
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="count">生成数量</Label>
-              <Input
-                id="count"
-                type="number"
-                min="1"
-                max={quota?.todayRemaining || 1}
-                value={generateForm.count}
-                onChange={(e) =>
-                  setGenerateForm({
-                    ...generateForm,
-                    count: parseInt(e.target.value) || 1,
-                  })
-                }
-              />
-              {quota && (
-                <p className="text-xs text-muted-foreground">
-                  今日剩余 {quota.todayRemaining} 个，最多可生成 {quota.todayRemaining} 个
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="note">备注（可选）</Label>
-              <Input
-                id="note"
-                placeholder="例如：给朋友的邀请码"
-                value={generateForm.note}
-                onChange={(e) =>
-                  setGenerateForm({ ...generateForm, note: e.target.value })
-                }
-              />
-              {generateForm.count > 1 && (
-                <p className="text-xs text-muted-foreground">
-                  批量生成时，备注会自动添加序号（如：备注 #1, 备注 #2）
-                </p>
-              )}
-            </div>
-
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="count">生成数量</Label>
+            <Input
+              id="count"
+              type="number"
+              min="1"
+              max={quota?.todayRemaining || 1}
+              value={generateForm.count}
+              onChange={(e) => updateGenerateForm('count', parseInt(e.target.value) || 1)}
+            />
             {quota && (
-              <div className="bg-muted p-3 rounded-lg space-y-2 text-sm">
-                <p className="font-medium">邀请码规则</p>
-                <div className="grid grid-cols-2 gap-2 text-muted-foreground">
-                  <div>
-                    <span className="font-medium">每日限制:</span> {quota.dailyLimit} 个
-                  </div>
-                  <div>
-                    <span className="font-medium">今日剩余:</span> {quota.todayRemaining} 个
-                  </div>
-                  <div>
-                    <span className="font-medium">使用次数:</span> {quota.maxUsesPerCode} 次
-                  </div>
-                  <div>
-                    <span className="font-medium">有效期:</span> {quota.expireDays} 天
-                  </div>
-                </div>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                今日剩余 {quota.todayRemaining} 个，最多可生成 {quota.todayRemaining} 个
+              </p>
             )}
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="note">备注（可选）</Label>
+            <Input
+              id="note"
+              placeholder="例如：给朋友的邀请码"
+              value={generateForm.note}
+              onChange={(e) => updateGenerateForm('note', e.target.value)}
+            />
+            {generateForm.count > 1 && (
+              <p className="text-xs text-muted-foreground">
+                批量生成时，备注会自动添加序号（如：备注 #1, 备注 #2）
+              </p>
+            )}
+          </div>
+
+          {quota && (
+            <div className="bg-muted p-3 rounded-lg space-y-2 text-sm">
+              <p className="font-medium">邀请码规则</p>
+              <div className="grid grid-cols-2 gap-2 text-muted-foreground">
+                <div>
+                  <span className="font-medium">每日限制:</span> {quota.dailyLimit} 个
+                </div>
+                <div>
+                  <span className="font-medium">今日剩余:</span> {quota.todayRemaining} 个
+                </div>
+                <div>
+                  <span className="font-medium">使用次数:</span> {quota.maxUsesPerCode} 次
+                </div>
+                <div>
+                  <span className="font-medium">有效期:</span> {quota.expireDays} 天
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </FormDialog>
     </div>
   );

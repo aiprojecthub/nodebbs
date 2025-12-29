@@ -10,15 +10,22 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Save, Loader2, MessageSquare, Eye } from 'lucide-react';
+import { usePrivacySettings } from '@/hooks/profile/usePrivacySettings';
 
-export function PrivacyTab({
-  formData,
-  onInputChange,
-  onSubmit,
-  loading,
-}) {
+/**
+ * 隐私设置 Tab
+ * 内部使用 usePrivacySettings Hook 管理状态
+ */
+export function PrivacyTab() {
+  const {
+    formData,
+    updateField,
+    handleSubmit,
+    loading,
+  } = usePrivacySettings();
+
   return (
-    <form onSubmit={onSubmit} className='space-y-6'>
+    <form onSubmit={handleSubmit} className='space-y-6'>
       <div className='bg-card border border-border rounded-lg overflow-hidden'>
         <div className='px-4 py-3 bg-muted border-b border-border'>
           <h3 className='text-sm font-medium text-card-foreground'>
@@ -40,12 +47,10 @@ export function PrivacyTab({
             </div>
             <Select
               value={formData.messagePermission}
-              onValueChange={(value) =>
-                onInputChange('messagePermission', value)
-              }
+              onValueChange={(value) => updateField('messagePermission', value)}
             >
               <SelectTrigger>
-                <SelectValue>
+                <SelectValue placeholder="请选择">
                   {formData.messagePermission === 'everyone' && '所有已登录用户'}
                   {formData.messagePermission === 'followers' && '关注我的用户'}
                   {formData.messagePermission === 'disabled' && '禁用'}
@@ -94,12 +99,10 @@ export function PrivacyTab({
             </div>
             <Select
               value={formData.contentVisibility}
-              onValueChange={(value) =>
-                onInputChange('contentVisibility', value)
-              }
+              onValueChange={(value) => updateField('contentVisibility', value)}
             >
               <SelectTrigger>
-                <SelectValue>
+                <SelectValue placeholder="请选择">
                   {formData.contentVisibility === 'everyone' && '所有人'}
                   {formData.contentVisibility === 'authenticated' && '登录用户'}
                   {formData.contentVisibility === 'private' && '仅自己'}

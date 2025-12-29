@@ -1,23 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import MarkdownEditor from '../common/MarkdownEditor';
 import CategorySelector from '@/components/topic/CategorySelector';
-import { toast } from 'sonner';
 import { X, AlertCircle, Loader2, Tag as TagIcon } from 'lucide-react';
+import { useTopicForm } from '@/hooks/topic/useTopicForm';
 
 /**
  * 话题表单组件 - 用于创建和编辑话题
- * @param {Object} props
- * @param {Object} props.initialData - 初始数据（编辑模式）
- * @param {Function} props.onSubmit - 提交回调
- * @param {Function} props.onCancel - 取消回调
- * @param {boolean} props.isSubmitting - 是否正在提交
- * @param {string} props.submitButtonText - 提交按钮文本
- * @param {boolean} props.isEditMode - 是否为编辑模式
+ * 纯 UI 组件，消费 useTopicForm Hook
  */
 export default function TopicForm({
   initialData = {},
@@ -27,92 +20,20 @@ export default function TopicForm({
   submitButtonText = '发布话题',
   isEditMode = false,
 }) {
-  const [formData, setFormData] = useState({
-    title: initialData.title || '',
-    content: initialData.content || '',
-    categoryId: initialData.categoryId || '',
-    tags: initialData.tags || [],
-  });
-  const [tagInput, setTagInput] = useState('');
-  const [errors, setErrors] = useState({});
-
-  // 当初始数据变化时更新表单
-  useEffect(() => {
-    if (initialData) {
-      setFormData({
-        title: initialData.title || '',
-        content: initialData.content || '',
-        categoryId: initialData.categoryId || '',
-        tags: initialData.tags || [],
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    initialData?.title,
-    initialData?.content,
-    initialData?.categoryId,
-    initialData?.tags?.length,
-  ]);
-
-
-
-  const validateForm = () => {
-    const newErrors = {};
-    if (!formData.title.trim()) {
-      newErrors.title = '请输入话题标题';
-    } else if (formData.title.length < 5) {
-      newErrors.title = '标题至少需要5个字符';
-    }
-    if (!formData.content.trim()) {
-      newErrors.content = '请输入话题内容';
-    } else if (formData.content.length < 10) {
-      newErrors.content = '内容至少需要10个字符';
-    }
-    if (!formData.categoryId) {
-      newErrors.category = '请选择一个分类';
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) {
-      return;
-    }
-    await onSubmit(formData);
-  };
-
-  const addTag = () => {
-    if (
-      tagInput.trim() &&
-      !formData.tags.includes(tagInput.trim()) &&
-      formData.tags.length < 5
-    ) {
-      setFormData({
-        ...formData,
-        tags: [...formData.tags, tagInput.trim()],
-      });
-      setTagInput('');
-    }
-  };
-
-  const removeTag = (tagToRemove) => {
-    setFormData({
-      ...formData,
-      tags: formData.tags.filter((tag) => tag !== tagToRemove),
-    });
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addTag();
-    }
-  };
-
-  const isFormValid =
-    formData.title.trim() && formData.content.trim() && formData.categoryId;
+  // 使用 Hook 管理表单逻辑
+  const {
+    formData,
+    tagInput,
+    setTagInput,
+    errors,
+    handleSubmit,
+    updateField,
+    addTag,
+    removeTag,
+    handleTagInputKeyDown,
+    isFormValid,
+    canAddMoreTags,
+  } = useTopicForm({ initialData, onSubmit });
 
   return (
     <form onSubmit={handleSubmit}>
@@ -128,10 +49,7 @@ export default function TopicForm({
               id='title'
               type='text'
               value={formData.title}
-              onChange={(e) => {
-                setFormData({ ...formData, title: e.target.value });
-                if (errors.title) setErrors({ ...errors, title: '' });
-              }}
+              onChange={(e) => updateField('title', e.target.value)}
               className='text-base'
               placeholder='输入一个清晰、简洁的标题...'
               maxLength={100}
@@ -156,10 +74,7 @@ export default function TopicForm({
 
             <MarkdownEditor
               value={formData.content}
-              onChange={(value) => {
-                setFormData({ ...formData, content: value });
-                if (errors.content) setErrors({ ...errors, content: '' });
-              }}
+              onChange={(value) => updateField('content', value)}
               placeholder='详细描述你的话题内容，支持 Markdown 格式...'
               className={errors.content ? 'border-destructive' : ''}
             />
@@ -174,7 +89,7 @@ export default function TopicForm({
           </div>
         </div>
 
-        {/* 右侧边栏 - Sticky定位 */}
+        {/* 右侧边栏 */}
         <div className='w-full lg:w-80 shrink-0'>
           <aside className='lg:sticky lg:top-[157px] space-y-4'>
             {/* 分类选择 */}
@@ -185,10 +100,7 @@ export default function TopicForm({
               <div className='p-3'>
                 <CategorySelector
                   value={formData.categoryId}
-                  onChange={(value) => {
-                    setFormData({ ...formData, categoryId: value });
-                    if (errors.category) setErrors({ ...errors, category: '' });
-                  }}
+                  onChange={(value) => updateField('categoryId', value)}
                   placeholder='选择一个分类'
                   className='w-full'
                 />
@@ -241,8 +153,8 @@ export default function TopicForm({
                       type='text'
                       value={tagInput}
                       onChange={(e) => setTagInput(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      disabled={formData.tags.length >= 5}
+                      onKeyDown={handleTagInputKeyDown}
+                      disabled={!canAddMoreTags}
                       placeholder='输入标签后按回车...'
                       className='text-sm pl-9'
                     />

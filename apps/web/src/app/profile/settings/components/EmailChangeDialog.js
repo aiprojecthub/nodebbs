@@ -8,37 +8,30 @@ import { FormDialog } from '@/components/common/FormDialog';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 
 /**
- * 邮箱修改对话框 - 优化的 3 步流程
- *
- * 步骤 1：发送并输入旧邮箱验证码
- * 步骤 2：输入新邮箱并发送验证码，输入新邮箱验证码
- * 步骤 3：输入密码（可选）并提交
+ * 邮箱修改对话框
+ * 接收 emailChange Hook 实例
  */
 export function EmailChangeDialog({
   open,
   onOpenChange,
-  user,
-  settings,
-  emailStep,
-  emailData,
-  onEmailDataChange,
-  onSendOldEmailCode,
-  onSendNewEmailCode,
-  onSubmitEmailChange,
-  loading,
-  onStepChange,
+  emailChange,
 }) {
+  const {
+    user,
+    settings,
+    step: emailStep,
+    setStep: onStepChange,
+    formData: emailData,
+    setFormData: onEmailDataChange,
+    sendOldEmailCode: onSendOldEmailCode,
+    sendNewEmailCode: onSendNewEmailCode,
+    handleSubmit: onSubmitEmailChange,
+    loading,
+    closeDialog,
+  } = emailChange;
+
   const handleClose = () => {
-    onOpenChange(false);
-    onStepChange(1);
-    onEmailDataChange({
-      oldEmailCode: '',
-      newEmail: '',
-      newEmailCode: '',
-      password: '',
-      oldEmailCodeSent: false,
-      newEmailCodeSent: false,
-    });
+    closeDialog();
   };
 
   const getStepDescription = () => {
@@ -146,7 +139,6 @@ export function EmailChangeDialog({
               if (emailStep === 1) {
                 handleClose();
               } else if (emailStep === 2 && emailData.newEmailCodeSent) {
-                // 在步骤2且已发送验证码，点击返回重新输入邮箱
                 onEmailDataChange({
                   ...emailData,
                   newEmailCodeSent: false,

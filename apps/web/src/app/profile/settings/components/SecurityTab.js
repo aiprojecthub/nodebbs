@@ -7,16 +7,26 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 import { EmailVerificationDialog } from '@/components/auth/EmailVerificationDialog';
+import { usePasswordChange } from '@/hooks/profile/usePasswordChange';
 
-export function SecurityTab({
-  user,
-  passwordData,
-  onPasswordChange,
-  onPasswordSubmit,
-  changingPassword,
-  onEmailVerified, // 邮箱验证成功后的回调
-}) {
+/**
+ * 安全设置 Tab
+ * 内部管理密码修改状态，消费 usePasswordChange Hook
+ */
+export function SecurityTab() {
   const [showEmailVerifyDialog, setShowEmailVerifyDialog] = useState(false);
+
+  // 使用独立 Hook
+  const {
+    user,
+    passwordData,
+    updateField,
+    handleSubmit,
+    onEmailVerified,
+    changingPassword,
+  } = usePasswordChange();
+
+  if (!user) return null;
 
   return (
     <div className='space-y-6'>
@@ -70,7 +80,7 @@ export function SecurityTab({
       />
 
       {/* 修改密码 */}
-      <form onSubmit={onPasswordSubmit} className='space-y-6'>
+      <form onSubmit={handleSubmit} className='space-y-6'>
         <div className='bg-card border border-border rounded-lg overflow-hidden'>
           <div className='px-4 py-3 bg-muted border-b border-border'>
             <h3 className='text-sm font-medium text-card-foreground'>
@@ -86,9 +96,7 @@ export function SecurityTab({
                 <Input
                   type='password'
                   value={passwordData.currentPassword}
-                  onChange={(e) =>
-                    onPasswordChange('currentPassword', e.target.value)
-                  }
+                  onChange={(e) => updateField('currentPassword', e.target.value)}
                   placeholder='请输入当前密码'
                 />
               </div>
@@ -101,9 +109,7 @@ export function SecurityTab({
               <Input
                 type='password'
                 value={passwordData.newPassword}
-                onChange={(e) =>
-                  onPasswordChange('newPassword', e.target.value)
-                }
+                onChange={(e) => updateField('newPassword', e.target.value)}
                 placeholder='请输入新密码（至少6位）'
               />
             </div>
@@ -115,9 +121,7 @@ export function SecurityTab({
               <Input
                 type='password'
                 value={passwordData.confirmPassword}
-                onChange={(e) =>
-                  onPasswordChange('confirmPassword', e.target.value)
-                }
+                onChange={(e) => updateField('confirmPassword', e.target.value)}
                 placeholder='请再次输入新密码'
               />
             </div>
