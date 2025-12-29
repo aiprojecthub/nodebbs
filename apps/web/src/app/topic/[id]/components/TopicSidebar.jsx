@@ -193,6 +193,24 @@ export default function TopicSidebar() {
         </div>
       </div>
 
+      {/* 标签信息 */}
+      {topic.tags && topic.tags.length > 0 && (
+        <div className='border border-border rounded-lg bg-card'>
+          <div className='px-3 py-2 border-b border-border'>
+            <h3 className='text-sm font-semibold'>标签</h3>
+          </div>
+          <div className='p-3 flex flex-wrap gap-2'>
+            {topic.tags.map((tag) => (
+              <Link key={tag.id} href={`/tags/${tag.slug}`} prefetch={false}>
+                <Badge variant="secondary" className="hover:bg-secondary/80 transition-colors cursor-pointer">
+                  {tag.name}
+                </Badge>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 统计信息 - GitHub 风格 (恢复原样) */}
       <div className='border border-border rounded-lg bg-card p-3'>
         <div className='space-y-2 text-sm'>
