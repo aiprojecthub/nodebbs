@@ -9,7 +9,7 @@ import {
   sysCurrencies
 } from '../../ledger/schema.js';
 import { users, userItems, shopItems } from '../../../db/schema.js';
-import { eq, sql, desc, ilike, and, inArray } from 'drizzle-orm';
+import { eq, sql, desc, ilike, and, inArray, ne } from 'drizzle-orm';
 import { getPassiveEffects } from '../../badges/services/badgeService.js';
 
 
@@ -267,7 +267,8 @@ export async function getCreditRanking(options = {}) {
       .innerJoin(users, eq(sysAccounts.userId, users.id))
       .where(and(
         eq(sysAccounts.currencyCode, 'credits'),
-        eq(users.isDeleted, false)
+        eq(users.isDeleted, false),
+        ne(users.role, 'admin')
       ))
       .orderBy(desc(orderField))
       .limit(limit);
