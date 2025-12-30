@@ -366,14 +366,14 @@
   --muted: #434C5E; /* nord2 */
   --muted-foreground: #D8DEE9; /* nord4 */
 
-  --accent: #434C5E; /* nord2 */
+  --accent: #4C566A; /* nord3 */
   --accent-foreground: #ECEFF4; /* nord6 */
 
   --destructive: #BF616A; /* nord11 */
   --destructive-foreground: #ECEFF4; /* nord6 */
 
   --border: #434C5E; /* nord2 */
-  --input: #434C5E; /* nord2 */
+  --input: #D8DEE940; /* nord4 at 25% opacity */
   --ring: #88C0D0; /* nord8 */
 
   --chart-1: #88C0D0; /* nord8 */
