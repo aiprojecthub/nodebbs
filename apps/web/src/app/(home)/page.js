@@ -29,7 +29,7 @@ export async function generateMetadata({ searchParams }) {
   const { description, title } = PAGE_OPTS[sort] || PAGE_OPTS.latest;
 
   return {
-    title,
+    // title,
     description,
     openGraph: {
       title,

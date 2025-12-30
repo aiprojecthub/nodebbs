@@ -9,6 +9,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Suspense } from 'react';
 
+export const metadata = {
+  title: '排行榜',
+  description: '查看社区活跃用户、财富榜单和积分排行。',
+};
+
+
 // 领奖台组件，用于展示前三名
 function Podium({ top3, rankType }) {
   // 规范化数组，确保始终有3个位置（不足3人时用 null 填充）

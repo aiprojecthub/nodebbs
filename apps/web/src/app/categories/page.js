@@ -1,11 +1,10 @@
-'use client';
-
 import CategoriesLayout from './components/CategoriesLayout';
 
-/**
- * 分类列表页面入口
- * 使用客户端组件获取和渲染分类数据
- */
+export const metadata = {
+  title: '分类',
+  description: '浏览所有话题分类，发现感兴趣的内容。',
+};
+
 export default function CategoriesPage() {
   return (
     <div className='container mx-auto px-4 py-6'>
