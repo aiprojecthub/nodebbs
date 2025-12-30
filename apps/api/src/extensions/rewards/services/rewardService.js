@@ -14,28 +14,31 @@ import { getPassiveEffects } from '../../badges/services/badgeService.js';
 
 
 /**
- * 获取或创建用户签到数据
+ * 获取用户签到状态 (只读，不存在则返回默认值)
  */
-export async function getOrCreateUserCheckIn(userId) {
+export async function getUserCheckInStatus(fastify, userId) {
   try {
-    let [data] = await db
-      .select()
-      .from(userCheckIns)
-      .where(eq(userCheckIns.userId, userId))
-      .limit(1);
+    const cacheKey = `checkin:status:${userId}`;
+    // 缓存 1 小时 (签到动作会清除此缓存)
+    return await fastify.cache.remember(cacheKey, 3600, async () => {
+      const [data] = await db
+        .select()
+        .from(userCheckIns)
+        .where(eq(userCheckIns.userId, userId))
+        .limit(1);
 
-    if (!data) {
-      [data] = await db
-        .insert(userCheckIns)
-        .values({
+      if (!data) {
+        // 如果没有记录，返回默认状态，不写入数据库
+        return {
           userId,
           checkInStreak: 0,
-        })
-        .returning();
-    }
-    return data;
+          lastCheckInDate: null
+        };
+      }
+      return data;
+    });
   } catch (error) {
-    // console.error('[签到数据] 获取或创建失败:', error);
+    // console.error('[签到数据] 获取失败:', error);
     throw error;
   }
 }
@@ -46,76 +49,71 @@ export async function getOrCreateUserCheckIn(userId) {
  * 每日签到
  */
 export async function checkIn(fastify, userId) {
-  // console.log('Starting CheckIn for user:', userId);
   const systemEnabled = await fastify.ledger.isCurrencyActive('credits');
   if (!systemEnabled) throw new Error('奖励系统未启用');
 
-  // 需要单独的事务处理签到逻辑还是合并？
-  // 由于 Ledger 处理自己的事务，如果我们拆分 checkIn 更新和发放，会有原子性风险。
-  // 理想情况下我们应该传递 `tx` 给 Ledger。由于我们不能在不更改 Ledger API（我们决定现在不碰它）的情况下正确做到这一点，
-  // 我们将首先执行签到跟踪。如果成功，我们调用 Ledger。
-  // 如果 Ledger 失败，我们应该回滚签到。
-  // 但签到已经提交了。
-  // 所以我们必须使用嵌套事务逻辑或简单的序列。
-  // 最好的办法：计算所有内容，开始事务，更新 checkIn，然后调用 Ledger。
-  // 但 Ledger 启动它自己的事务。
-  // 安全的方法：首先在事务内更新 checkIn。然后在事务外调用 Ledger。
-  // 如果 Ledger 失败，用户得到了连胜更新但没有钱。
-  // 重试？
-  // 目前可以接受。
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-  const effects = await getPassiveEffects(userId);
+  // 快速检查：从缓存判断今天是否已签到
+  const cachedStatus = await getUserCheckInStatus(fastify, userId);
+  if (cachedStatus.lastCheckInDate) {
+    const lastDate = new Date(cachedStatus.lastCheckInDate);
+    lastDate.setHours(0, 0, 0, 0);
+    if (lastDate.getTime() === today.getTime()) {
+      return { message: 'done' };
+    }
+  }
 
-  // 1. 更新签到数据 (事务性)
-  const result = await db.transaction(async (tx) => {
-      let [checkInData] = await tx
-        .select()
-        .from(userCheckIns)
-        .where(eq(userCheckIns.userId, userId))
-        .limit(1);
+  // 1. 更新签到数据
+  let result;
 
-      if (!checkInData) {
-        [checkInData] = await tx.insert(userCheckIns).values({ userId }).returning();
-      }
+  // 如果缓存有记录（老用户），直接用缓存数据计算连胜并更新
+  if (cachedStatus.lastCheckInDate) {
+    const lastCheckIn = new Date(cachedStatus.lastCheckInDate);
+    lastCheckIn.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+    const newStreak = lastCheckIn.getTime() === yesterday.getTime()
+      ? cachedStatus.checkInStreak + 1
+      : 1;
 
-      if (checkInData.lastCheckInDate) {
-        const lastCheckIn = new Date(checkInData.lastCheckInDate);
-        lastCheckIn.setHours(0, 0, 0, 0);
-        if (lastCheckIn.getTime() === today.getTime()) {
-          return { status: 'already_done' };
-        }
-      }
+    await db.update(userCheckIns)
+      .set({
+        lastCheckInDate: new Date(),
+        checkInStreak: newStreak,
+      })
+      .where(eq(userCheckIns.userId, userId));
 
-      let newStreak = 1;
-      if (checkInData.lastCheckInDate) {
-        const lastCheckIn = new Date(checkInData.lastCheckInDate);
-        lastCheckIn.setHours(0, 0, 0, 0);
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-
-        if (lastCheckIn.getTime() === yesterday.getTime()) {
-          newStreak = checkInData.checkInStreak + 1;
-        }
-      }
-
-      await tx.update(userCheckIns)
-        .set({
+    result = { status: 'updated', newStreak };
+  } else {
+    // 新用户首次签到
+    try {
+      await db.insert(userCheckIns)
+        .values({
+          userId,
           lastCheckInDate: new Date(),
-          checkInStreak: newStreak,
-        })
-        .where(eq(userCheckIns.userId, userId));
-      
-      return { status: 'updated', newStreak };
-  });
+          checkInStreak: 1
+        });
+      result = { status: 'updated', newStreak: 1 };
+    } catch (err) {
+      // 唯一键冲突意味着并发请求刚刚插入了记录，今天已签到
+      if (err.code === '23505') {
+        return { message: 'done' };
+      }
+      throw err;
+    }
+  }
 
   if (result.status === 'already_done') {
     return { message: 'done' };
   }
 
-  // 2. 发放奖励 (Ledger)
+  // 2. 获取被动效果
+  const effects = await getPassiveEffects(userId);
+
+  // 3. 发放奖励 (Ledger)
   try {
     const baseAmount = await fastify.ledger.getCurrencyConfig('credits', 'check_in_base_amount', 10);
     const streakBonus = await fastify.ledger.getCurrencyConfig('credits', 'check_in_streak_bonus', 5);
@@ -161,17 +159,14 @@ export async function checkIn(fastify, userId) {
 
   } catch (error) {
     console.error('CheckIn Grant Failed after Streak Update:', error);
-    // TODO: 回滚连胜？或者只是让用户保留连胜？保留连胜比失去连胜且没有积分的用户体验更安全。
-    // 他们明天可以再试一次？不，连胜追踪的是 "lastCheckInDate"。
-    // 如果我们在这里失败，用户“签到了”但没有拿到钱。
-    // 理想情况下我们应该手动修复这个问题。
     throw new Error('签到成功但发放积分失败，请联系管理员');
+  } finally {
+    await fastify.cache.invalidate(`checkin:status:${userId}`);
   }
 }
 
 /**
- * 获取帖子的打赏列表 (使用 postRewards 表 + 通过逻辑关联 sysTransactions？)
- * 实际上 postRewards 表存储了打赏记录。
+ * 获取帖子的打赏列表
  */
 export async function getPostRewards(postId, options = {}) {
   const { page = 1, limit = 20 } = options;
@@ -261,7 +256,6 @@ export async function getCreditRanking(options = {}) {
         avatar: users.avatar,
         balance: sysAccounts.balance,
         totalEarned: sysAccounts.totalEarned,
-        // checkInStreak: userCheckIns.checkInStreak // 如果我们想要连胜数据，我们需要关联 userCheckIns 表
       })
       .from(sysAccounts)
       .innerJoin(users, eq(sysAccounts.userId, users.id))

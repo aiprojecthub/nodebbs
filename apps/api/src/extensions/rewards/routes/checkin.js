@@ -53,8 +53,8 @@ export default async function checkInRoutes(fastify, options) {
       }
     }
   }, async (request, reply) => {
-      const { getOrCreateUserCheckIn } = await import('../services/rewardService.js');
-      const data = await getOrCreateUserCheckIn(request.user.id);
+      const { getUserCheckInStatus } = await import('../services/rewardService.js');
+      const data = await getUserCheckInStatus(fastify, request.user.id);
       
       let isCheckedIn = false;
       if (data.lastCheckInDate) {
