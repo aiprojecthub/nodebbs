@@ -26,8 +26,7 @@ export default async function authRoutes(fastify, options) {
   // 注册扫码登录路由
   fastify.register(qrLoginRoutes, { prefix: '/qr-login' });
 
-  // 注册 OAuth 路由
-  // Register
+  // 注册新用户
   fastify.post(
     '/register',
     {
@@ -173,7 +172,7 @@ export default async function authRoutes(fastify, options) {
       }
       // ============ StopForumSpam 检查结束 ============
 
-      // Check if user exists
+      // 检查用户是否存在
       const existingUser = await db
         .select()
         .from(users)
@@ -192,14 +191,14 @@ export default async function authRoutes(fastify, options) {
         return reply.code(400).send({ error: '用户名已被占用' });
       }
 
-      // Hash password
+      // 密码哈希加密
       const passwordHash = await fastify.hashPassword(password);
 
       // 检查是否是第一个用户
       const userCount = await db.select({ count: users.id }).from(users);
       const isFirstUser = userCount.length === 0;
 
-      // Create user
+      // 创建用户
       const [newUser] = await db
         .insert(users)
         .values({
@@ -226,7 +225,7 @@ export default async function authRoutes(fastify, options) {
         
         if (usedInvitation && usedInvitation.createdBy) {
           try {
-            // Check if rewards are active
+            // 检查奖励功能是否开启
             const isRewardsActive = await fastify.ledger.isCurrencyActive('credits');
             
             if (isRewardsActive) {
@@ -262,14 +261,14 @@ export default async function authRoutes(fastify, options) {
         id: newUser.id,
       });
 
-      // Remove sensitive data
+      // 移除敏感数据
       delete newUser.passwordHash;
 
       return { user: newUser, token };
     }
   );
 
-  // Login
+  // 用户登录
   fastify.post(
     '/login',
     {
@@ -315,7 +314,7 @@ export default async function authRoutes(fastify, options) {
       // 判断 identifier 是邮箱还是用户名
       const isEmail = identifier.includes('@');
       
-      // Find user by email or username
+      // 使用邮箱或用户名查找用户
       const [user] = await db
         .select()
         .from(users)
@@ -326,17 +325,17 @@ export default async function authRoutes(fastify, options) {
         return reply.code(401).send({ error: '用户名/邮箱或密码错误' });
       }
 
-      // Check if deleted
+      // 检查账号是否被删除
       if (user.isDeleted) {
         return reply.code(403).send({ error: '该账号已被删除' });
       }
 
-      // Check if banned
+      // 检查账号是否被封禁
       if (user.isBanned) {
         return reply.code(403).send({ error: '账号已被封禁' });
       }
 
-      // Verify password
+      // 验证密码
       const isValidPassword = await fastify.verifyPassword(
         password,
         user.passwordHash
@@ -345,7 +344,7 @@ export default async function authRoutes(fastify, options) {
         return reply.code(401).send({ error: '用户名/邮箱或密码错误' });
       }
 
-      // Update last seen
+      // 更新最后在线时间
       await db
         .update(users)
         .set({ lastSeenAt: new Date() })
@@ -356,14 +355,14 @@ export default async function authRoutes(fastify, options) {
         id: user.id,
       });
 
-      // Remove sensitive data
+      // 移除敏感数据
       delete user.passwordHash;
 
       return { user, token };
     }
   );
 
-  // Get current user
+  // 获取当前登录用户
   fastify.get(
     '/me',
     {
@@ -445,7 +444,7 @@ export default async function authRoutes(fastify, options) {
         return reply.code(404).send({ error: '用户不存在' });
       }
 
-      // Enrich user object (badges, frames, etc.)
+      // 丰富用户信息（徽章、头像框等）
       await userEnricher.enrich(user);
 
       // 获取关联的 OAuth 账号
@@ -467,7 +466,7 @@ export default async function authRoutes(fastify, options) {
     }
   );
 
-  // Logout
+  // 用户登出
   fastify.post(
     '/logout',
     {
@@ -491,7 +490,7 @@ export default async function authRoutes(fastify, options) {
     }
   );
 
-  // Reset password with verification code
+  // 使用验证码重置密码
   fastify.post(
     '/reset-password',
     {
@@ -567,7 +566,7 @@ export default async function authRoutes(fastify, options) {
     }
   );
 
-  // Verify email with verification code
+  // 使用验证码验证邮箱
   fastify.post(
     '/verify-email',
     {
@@ -664,7 +663,7 @@ export default async function authRoutes(fastify, options) {
 
   // ============ 验证码相关接口 ============
 
-  // Send verification code
+  // 发送验证码
   fastify.post(
     '/send-code',
     {
@@ -908,7 +907,7 @@ export default async function authRoutes(fastify, options) {
     }
   );
 
-  // Verify code 仅校验，不参与业务逻辑
+  // 校验验证码路由（仅校验，不参与业务逻辑）
   // 业务逻辑: 校验验证码 -> 处理业务逻辑 -> 删除验证码
   fastify.post(
     '/verify-code',
