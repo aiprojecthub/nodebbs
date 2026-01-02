@@ -105,8 +105,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
                 <UserAvatar
                   url={localReply.userAvatar}
                   name={localReply.userName}
-                  size='sm'
-                  className='h-9 w-9 ring-1 ring-border/50 group-hover:ring-primary/20 transition-all'
+                  size='md'
                   frameMetadata={localReply.userAvatarFrame?.itemMetadata}
                 />
               </Link>

@@ -193,7 +193,7 @@ export function PurchaseDialog({ open, item, accounts = [], onConfirm, onCancel,
                                 setSearchResults([]);
                               }}
                             >
-                              <UserAvatar user={user} size="sm" />
+                              <UserAvatar url={user.avatar} name={user.name || user.username} size="sm" />
                               <div className="text-sm font-medium">{user.username || user.name}</div>
                             </div>
                           ))}
@@ -212,7 +212,7 @@ export function PurchaseDialog({ open, item, accounts = [], onConfirm, onCancel,
                      <Label>接收者</Label>
                      <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
                        <div className="flex items-center gap-3">
-                         <UserAvatar user={receiver} size="sm" />
+                         <UserAvatar url={receiver.avatar} name={receiver.name || receiver.username} size="sm" />
                          <span className="font-medium text-sm">{receiver.username || receiver.name}</span>
                        </div>
                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReceiver(null)}>

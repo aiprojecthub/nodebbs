@@ -162,6 +162,7 @@ export default function NotificationsPage() {
                   {/* 用户头像 */}
                   <UserAvatar
                     name={notification.triggeredByName || notification.triggeredByUsername}
+                    url={notification.triggeredByAvatar}
                     size='md'
                   />
 

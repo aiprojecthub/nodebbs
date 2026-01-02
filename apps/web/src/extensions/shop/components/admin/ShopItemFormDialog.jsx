@@ -19,6 +19,25 @@ import UserAvatar from '@/components/user/UserAvatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { FormDialog } from '@/components/common/FormDialog';
 import { ImageUpload } from '@/components/common/ImageUpload';
+import CopyButton from '@/components/common/CopyButton';
+
+// 头像框元数据示例
+const CSS_FRAME_EXAMPLE = JSON.stringify({
+  border: "2px solid gold",
+  shadow: "0 0 10px gold",
+  animation: "glow"
+}, null, 2);
+
+const IMAGE_FRAME_EXAMPLE = JSON.stringify({
+  type: "image",
+  imageUrl: "/uploads/frames/xxx.png",
+  scale: 1.35,
+  xOffset: "0px",
+  yOffset: "0px",
+  rotation: 0,
+  opacity: 1,
+  blendMode: "normal"
+}, null, 2);
 
 /**
  * 创建/编辑商品的表单对话框
@@ -182,13 +201,7 @@ export function ShopItemFormDialog({ open, onOpenChange, mode, initialData, onSu
                       name={user?.name || user?.username || 'Preview'} 
                       size="lg" 
                       url={user?.avatar}
-                      frameMetadata={(() => {
-                        try {
-                          return formData.metadata ? JSON.parse(formData.metadata) : null;
-                        } catch (e) {
-                          return null;
-                        }
-                      })()} 
+                      frameMetadata={formData.metadata || null} 
                    />
                    <span className="text-xs text-muted-foreground">大图</span>
                 </div>
@@ -197,13 +210,7 @@ export function ShopItemFormDialog({ open, onOpenChange, mode, initialData, onSu
                       name={user?.name || user?.username || 'Preview'} 
                       size="md" 
                       url={user?.avatar}
-                      frameMetadata={(() => {
-                        try {
-                          return formData.metadata ? JSON.parse(formData.metadata) : null;
-                        } catch (e) {
-                          return null;
-                        }
-                      })()} 
+                      frameMetadata={formData.metadata || null} 
                    />
                    <span className="text-xs text-muted-foreground">中图</span>
                 </div>
@@ -391,14 +398,31 @@ export function ShopItemFormDialog({ open, onOpenChange, mode, initialData, onSu
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, metadata: e.target.value }))
               }
-              placeholder='{"border": "2px solid gold", "animation": "glow"}'
+              placeholder="输入 JSON 格式的元数据..."
               rows={4}
-              className="font-mono text-xs resize-none break-all"
+              className="font-mono text-xs resize-none"
             />
-            <p className="text-xs text-muted-foreground">
-              用于存储头像框样式、勋章图标等。
-              {formData.type === ITEM_TYPES.AVATAR_FRAME && ' 修改此处可实时预览上方效果。'}
-            </p>
+            {formData.type === ITEM_TYPES.AVATAR_FRAME && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <CopyButton
+                  value={CSS_FRAME_EXAMPLE}
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs gap-1.5"
+                >
+                  {({ copied }) => copied ? '已复制' : '复制 CSS 样式示例'}
+                </CopyButton>
+                <CopyButton
+                  value={IMAGE_FRAME_EXAMPLE}
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs gap-1.5"
+                >
+                  {({ copied }) => copied ? '已复制' : '复制图片头像框示例'}
+                </CopyButton>
+                <span className="text-xs text-muted-foreground">修改此处可实时预览上方效果</span>
+              </div>
+            )}
           </div>
 
           {/* 是否上架 */}

@@ -153,7 +153,6 @@ export default function Header() {
                           url={user?.avatar}
                           name={user?.username || user?.name}
                           size='xs'
-                          className='border border-border/50'
                           frameMetadata={user?.avatarFrame?.itemMetadata}
                         />
                         <ChevronDown className='h-3.5 w-3.5 text-muted-foreground hidden md:block' />

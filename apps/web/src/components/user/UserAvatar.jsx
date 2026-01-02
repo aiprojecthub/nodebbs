@@ -1,6 +1,23 @@
+import { useMemo } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// 预定义动画类名映射
+const ANIMATION_CLASSES = {
+  pulse: 'animate-pulse',
+  spin: 'animate-spin',
+  glow: 'animate-[glow_2s_ease-in-out_infinite]',
+};
+
+// 尺寸映射（提升到模块级别，避免每次渲染重新创建）
+const SIZE_CLASSES = {
+  xs: 'h-6 w-6 text-xs',
+  sm: 'h-8 w-8 text-sm',
+  md: 'h-10 w-10 text-base',
+  lg: 'h-12 w-12 text-lg',
+  xl: 'h-16 w-16 text-xl',
+};
 
 /**
  * 用户头像组件（支持头像框）
@@ -9,6 +26,7 @@ import { cn } from '@/lib/utils';
  * @param {string} size - 尺寸大小，可选值：'xs', 'sm', 'md', 'lg', 'xl'
  * @param {string} className - 额外的 CSS 类名
  * @param {object} frameMetadata - 头像框元数据（来自装备的头像框商品）
+ * @param {string} modifiers - 图片处理参数
  */
 export default function UserAvatar({
   url,
@@ -16,80 +34,58 @@ export default function UserAvatar({
   size = 'md',
   className = '',
   frameMetadata = null,
-  modifiers='embed,f_webp,s_200x200',
+  modifiers = 'embed,f_webp,s_200x200',
 }) {
   // 处理头像 URL
-  const getAvatarUrl = () => {
+  const avatarUrl = useMemo(() => {
     if (!url) return null;
-
-    // 如果是完整 URL（http 或 https 开头），直接使用
+    // 完整 URL 直接使用
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
+    // 拼接图片处理参数
+    return url.replace('/uploads/', `/uploads/${modifiers}/`);
+  }, [url, modifiers]);
 
-    // 否则拼接 API 基础 URL
-    const pathname = url.replace('/uploads/', `/uploads/${modifiers}/`);
-    return `${pathname}`;
-  };
-
-  // 生成 fallback 文字（取名字的首字母）
-  const getFallbackText = () => {
-    if (!name) return <User className="h-1/2 w-1/2" />;
-    return name.charAt(0).toUpperCase();
-  };
-
-  // 尺寸映射
-  const sizeClasses = {
-    xs: 'h-6 w-6 text-xs',
-    sm: 'h-8 w-8 text-sm',
-    md: 'h-10 w-10 text-base',
-    lg: 'h-12 w-12 text-lg',
-    xl: 'h-16 w-16 text-xl',
-  };
-
-  // 解析头像框元数据
-  const parseFrameMetadata = () => {
+  // 缓存解析后的头像框元数据
+  const frame = useMemo(() => {
     if (!frameMetadata) return null;
-
     try {
-      // 如果是字符串，解析为对象
-      const metadata = typeof frameMetadata === 'string'
+      return typeof frameMetadata === 'string'
         ? JSON.parse(frameMetadata)
         : frameMetadata;
-
-      return metadata;
     } catch (error) {
       console.error('解析头像框元数据失败:', error);
       return null;
     }
-  };
+  }, [frameMetadata]);
 
-  // 生成头像框样式
-  const getFrameStyle = () => {
-    const frame = parseFrameMetadata();
-    if (!frame) return {};
+  // 判断头像框类型
+  const isImageFrame = frame?.type === 'image' || !!frame?.imageUrl;
+
+  // 生成头像框样式（仅在有 frame 时计算）
+  const frameStyle = useMemo(() => {
+    if (!frame || isImageFrame) return {};
 
     const style = {};
 
-    // 1. 处理边框
-    // 如果提供了完整的 border 简写属性 (e.g., "3px solid gold")
+    // 处理边框
     if (frame.border) {
       style.border = frame.border;
     } else {
-      // 分别处理各个属性
       if (frame.borderWidth) {
-        style.borderWidth = typeof frame.borderWidth === 'number' ? `${frame.borderWidth}px` : frame.borderWidth;
+        style.borderWidth = typeof frame.borderWidth === 'number'
+          ? `${frame.borderWidth}px`
+          : frame.borderWidth;
       }
-      
       if (frame.borderStyle) {
-        // 如果 borderStyle 包含空格，假设它是简写属性误用，尝试作为 border 处理
+        // borderStyle 包含空格时作为 border 简写处理
         if (frame.borderStyle.includes(' ')) {
           style.border = frame.borderStyle;
         } else {
           style.borderStyle = frame.borderStyle;
         }
       }
-
       if (frame.borderColor) {
         if (frame.borderColor.includes('gradient')) {
           style.borderImage = frame.borderColor;
@@ -100,89 +96,86 @@ export default function UserAvatar({
       }
     }
 
-    // 2. 处理阴影
+    // 处理阴影
     if (frame.shadow) {
       style.boxShadow = frame.shadow;
     }
 
-    // 3. 处理自定义动画 (如果不是预定义类名)
-    if (frame.animation && !['pulse', 'spin', 'glow'].includes(frame.animation)) {
+    // 处理自定义动画（非预定义类名）
+    if (frame.animation && !ANIMATION_CLASSES[frame.animation]) {
       style.animation = frame.animation;
     }
 
     return style;
-  };
+  }, [frame, isImageFrame]);
 
   // 生成头像框类名
-  const getFrameClassName = () => {
-    const frame = parseFrameMetadata();
+  const frameClassName = useMemo(() => {
     if (!frame) return '';
-
     const classes = [];
-
+    
     // 预定义动画效果
-    if (frame.animation === 'pulse') {
-      classes.push('animate-pulse');
-    } else if (frame.animation === 'spin') {
-      classes.push('animate-spin');
-    } else if (frame.animation === 'glow') {
-      classes.push('animate-[glow_2s_ease-in-out_infinite]');
+    if (ANIMATION_CLASSES[frame.animation]) {
+      classes.push(ANIMATION_CLASSES[frame.animation]);
     }
-
-    // 圆角（默认圆形，除非显式设置为 false）
+    
+    // 圆角（默认圆形）
     if (frame.rounded !== false) {
       classes.push('rounded-full');
     }
-
+    
     return classes.join(' ');
-  };
+  }, [frame]);
 
-  // 检查是否是图片类型的头像框
-  const isImageFrame = () => {
-    const frame = parseFrameMetadata();
-    return frame && (frame.type === 'image' || frame.imageUrl);
-  };
+  const sizeClass = SIZE_CLASSES[size] || SIZE_CLASSES.md;
+  const hasCssFrame = frame && !isImageFrame && Object.keys(frameStyle).length > 0;
 
-  const frame = parseFrameMetadata();
-  const avatarUrl = getAvatarUrl();
-  const sizeClass = sizeClasses[size] || sizeClasses.md;
-  const frameStyle = getFrameStyle();
-  const frameClassName = getFrameClassName();
-  const hasCssFrame = frame && !isImageFrame() && Object.keys(frameStyle).length > 0;
-  
-  // 图片头像框处理
-  if (isImageFrame()) {
-    const scale = frame.scale || 1.35; // 默认放大 1.35 倍以包围头像
+  // 生成 fallback 内容
+  const fallbackContent = name
+    ? name.charAt(0).toUpperCase()
+    : <User className="h-1/2 w-1/2" />;
+
+  const altText = name || '用户头像';
+
+  // 抽取的头像渲染函数，消除重复代码
+  const renderAvatar = (avatarClassName = '') => (
+    <Avatar className={cn('w-full h-full', avatarClassName)}>
+      {avatarUrl && (
+        <AvatarImage
+          src={avatarUrl}
+          alt={altText}
+          className="object-cover"
+        />
+      )}
+      <AvatarFallback className="bg-muted text-muted-foreground">
+        {fallbackContent}
+      </AvatarFallback>
+    </Avatar>
+  );
+
+  // 图片头像框
+  if (isImageFrame) {
+    const scale = frame.scale || 1.35;
+    const xOffset = frame.xOffset || '0px';
     const yOffset = frame.yOffset || '0px';
+    const rotation = frame.rotation || 0;
+    const opacity = frame.opacity ?? 1;
     
     return (
       <div className={cn('relative inline-flex items-center justify-center', sizeClass, className)}>
-        {/* 头像本体 */}
-        <Avatar className="w-full h-full">
-          {avatarUrl && (
-            <AvatarImage
-              src={avatarUrl}
-              alt={name || '用户头像'}
-              className="object-cover"
-            />
-          )}
-          <AvatarFallback className="bg-muted text-muted-foreground">
-            {getFallbackText()}
-          </AvatarFallback>
-        </Avatar>
-
-        {/* 图片头像框 (绝对定位覆盖在上方) */}
+        {renderAvatar()}
         <img 
           src={frame.imageUrl} 
-          alt="Avatar Frame"
+          alt="头像框"
           className="absolute pointer-events-none select-none z-10 max-w-none"
           style={{
             width: `${scale * 100}%`,
             height: `${scale * 100}%`,
             top: '50%',
             left: '50%',
-            transform: `translate(-50%, calc(-50% + ${yOffset}))`,
+            transform: `translate(calc(-50% + ${xOffset}), calc(-50% + ${yOffset})) rotate(${rotation}deg)`,
             mixBlendMode: frame.blendMode || 'normal',
+            opacity,
           }}
         />
       </div>
@@ -196,35 +189,11 @@ export default function UserAvatar({
         className={cn('inline-block p-0.5', sizeClass, frameClassName, className)}
         style={frameStyle}
       >
-        <Avatar className="w-full h-full border-2 border-background">
-          {avatarUrl && (
-            <AvatarImage
-              src={avatarUrl}
-              alt={name || '用户头像'}
-              className="object-cover"
-            />
-          )}
-          <AvatarFallback className="bg-muted text-muted-foreground">
-            {getFallbackText()}
-          </AvatarFallback>
-        </Avatar>
+        {renderAvatar('border-2 border-background')}
       </div>
     );
   }
 
   // 无头像框的默认渲染
-  return (
-    <Avatar className={cn(sizeClass, className)}>
-      {avatarUrl && (
-        <AvatarImage
-          src={avatarUrl}
-          alt={name || '用户头像'}
-          className="object-cover"
-        />
-      )}
-      <AvatarFallback className="bg-muted text-muted-foreground">
-        {getFallbackText()}
-      </AvatarFallback>
-    </Avatar>
-  );
+  return renderAvatar(cn(sizeClass, className));
 }
