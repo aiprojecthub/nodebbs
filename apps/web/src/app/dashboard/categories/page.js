@@ -445,25 +445,6 @@ export default function CategoriesManagement() {
               </p>
             </div>
             <div className='space-y-2'>
-              <Label htmlFor='position'>排序位置</Label>
-              <Input
-                id='position'
-                type='number'
-                min='0'
-                value={formData.position}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    position: parseInt(e.target.value) || 0,
-                  })
-                }
-                placeholder='0'
-              />
-              <p className='text-xs text-muted-foreground mt-1'>
-                数字越小越靠前，相同时按名称排序
-              </p>
-            </div>
-            <div className='space-y-2'>
               <Label htmlFor='description'>描述</Label>
               <Textarea
                 id='description'
