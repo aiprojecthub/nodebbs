@@ -400,7 +400,7 @@ export function ShopItemFormDialog({ open, onOpenChange, mode, initialData, onSu
               }
               placeholder="输入 JSON 格式的元数据..."
               rows={4}
-              className="font-mono text-xs resize-none"
+              className="font-mono text-xs resize-none field-sizing-fixed"
             />
             {formData.type === ITEM_TYPES.AVATAR_FRAME && (
               <div className="flex items-center gap-2 flex-wrap">
