@@ -124,6 +124,7 @@ export default async function ledgerRoutes(fastify, options) {
            userId: sysTransactions.userId,
            username: users.username,
            currencyCode: sysTransactions.currencyCode,
+           currencyName: sysCurrencies.name,
            amount: sysTransactions.amount,
            balance: sysTransactions.balanceAfter, // 前端使用的别名
            type: sysTransactions.type,
@@ -135,6 +136,7 @@ export default async function ledgerRoutes(fastify, options) {
        })
          .from(sysTransactions)
          .leftJoin(users, eq(sysTransactions.userId, users.id))
+         .leftJoin(sysCurrencies, eq(sysTransactions.currencyCode, sysCurrencies.code))
          .where(whereClause)
          .orderBy(desc(sysTransactions.createdAt))
          .limit(limit)

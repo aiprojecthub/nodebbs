@@ -55,8 +55,12 @@ export function LedgerTransactionTable({
     }] : []),
     {
       label: '应用货币',
-      key: 'currencyCode',
-      render: (value) => <span className="font-mono text-xs">{value}</span>
+      key: 'currencyName',
+      render: (value, row) => (
+        <span className="text-sm" title={row.currencyCode}>
+          {value || row.currencyCode}
+        </span>
+      )
     },
     {
       label: '类型',
