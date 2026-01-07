@@ -20,7 +20,7 @@ export async function grantBadge(userId, badgeId, source = 'system') {
     .limit(1);
 
   if (existing) {
-    return existing;
+    return { ...existing, isNew: false }; // 已拥有，标记为非新获取
   }
 
   const [granted] = await db
@@ -33,7 +33,7 @@ export async function grantBadge(userId, badgeId, source = 'system') {
     })
     .returning();
 
-  return granted;
+  return { ...granted, isNew: true }; // 新授予，标记为新获取
 }
 
 /**
@@ -262,8 +262,8 @@ export async function checkBadgeConditions(userId) {
       if (qualified) {
         // 尝试授予徽章 (幂等)
         const result = await grantBadge(userId, badge.id, 'system_rule');
-        if (result && result.earnedAt > new Date(Date.now() - 1000)) { 
-           // 如果 earnedAt 非常接近，说明是刚刚插入的
+        if (result && result.isNew) {
+           // 使用明确的 isNew 标记判断是否为新获取的徽章
            newBadges.push(badge);
         }
       }
