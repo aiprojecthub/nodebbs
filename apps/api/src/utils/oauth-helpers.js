@@ -261,6 +261,16 @@ export function normalizeOAuthProfile(provider, rawProfile) {
         isEmailVerified: true, // Apple 提供的邮箱已验证
       };
 
+    case 'wechat':
+      return {
+        id: rawProfile.unionid || rawProfile.openid, // 优先使用 unionid 实现跨端统一
+        email: null, // 微信不提供邮箱
+        name: rawProfile.nickname,
+        username: null, // 需要自动生成
+        avatar: rawProfile.headimgurl,
+        isEmailVerified: false, // 微信用户需要后续绑定邮箱
+      };
+
     default:
       return {
         id: rawProfile.id?.toString(),

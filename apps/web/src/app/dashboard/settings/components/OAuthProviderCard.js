@@ -76,24 +76,27 @@ function OAuthProviderCard({
   testingProvider, 
   setTestingProvider 
 }) {
-  const [formData, setFormData] = useState({
-    isEnabled: provider.isEnabled,
-    clientId: provider.clientId || '',
-    clientSecret: provider.clientSecret || '',
-    callbackUrl: provider.callbackUrl || '',
-    scope: provider.scope || '',
-    // 解析 additionalConfig
-    ...(() => {
-      try {
-        const additional = provider.additionalConfig ? JSON.parse(provider.additionalConfig) : {};
-        return {
-          teamId: additional.teamId || '',
-          keyId: additional.keyId || '',
-        };
-      } catch {
-        return { teamId: '', keyId: '' };
-      }
-    })(),
+  // 解析 additionalConfig
+  const parseAdditionalConfig = (config) => {
+    try {
+      return config ? JSON.parse(config) : {};
+    } catch {
+      return {};
+    }
+  };
+
+  const [formData, setFormData] = useState(() => {
+    const additional = parseAdditionalConfig(provider.additionalConfig);
+    return {
+      isEnabled: provider.isEnabled,
+      clientId: provider.clientId || '',
+      clientSecret: provider.clientSecret || '',
+      callbackUrl: provider.callbackUrl || '',
+      scope: provider.scope || '',
+      // Apple 特有配置
+      teamId: additional.teamId || '',
+      keyId: additional.keyId || '',
+    };
   });
   const [saving, setSaving] = useState(false);
 
@@ -185,23 +188,16 @@ function OAuthProviderCard({
                 size='sm'
                 onClick={() => {
                   setEditingProvider(provider.provider);
+                  const additional = parseAdditionalConfig(provider.additionalConfig);
                   setFormData({
                     isEnabled: provider.isEnabled,
                     clientId: provider.clientId || '',
                     clientSecret: provider.clientSecret || '',
                     callbackUrl: provider.callbackUrl || '',
                     scope: provider.scope || '',
-                    ...(() => {
-                      try {
-                        const additional = provider.additionalConfig ? JSON.parse(provider.additionalConfig) : {};
-                        return {
-                          teamId: additional.teamId || '',
-                          keyId: additional.keyId || '',
-                        };
-                      } catch {
-                        return { teamId: '', keyId: '' };
-                      }
-                    })(),
+                    // Apple 配置
+                    teamId: additional.teamId || '',
+                    keyId: additional.keyId || '',
                   });
                 }}
               >
@@ -281,33 +277,38 @@ function OAuthProviderCard({
               </div>
             )}
 
-            <div className='space-y-2'>
-              <Label htmlFor={`${provider.provider}-callbackUrl`}>回调 URL</Label>
-              <Input
-                id={`${provider.provider}-callbackUrl`}
-                value={formData.callbackUrl}
-                onChange={(e) => setFormData({ ...formData, callbackUrl: e.target.value })}
-                placeholder={
-                  provider.provider === 'apple' 
-                    ? `${typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com'}/api/oauth/apple/callback`
-                    : `${typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com'}/auth/${provider.provider}/callback`
-                }
-              />
-              <p className='text-xs text-muted-foreground'>
-                在 OAuth 提供商后台配置此回调地址
-              </p>
-            </div>
+            {/* 微信小程序不需要回调 URL 和权限范围 */}
+            {provider.provider !== 'wechat_miniprogram' && (
+              <>
+                <div className='space-y-2'>
+                  <Label htmlFor={`${provider.provider}-callbackUrl`}>回调 URL</Label>
+                  <Input
+                    id={`${provider.provider}-callbackUrl`}
+                    value={formData.callbackUrl}
+                    onChange={(e) => setFormData({ ...formData, callbackUrl: e.target.value })}
+                    placeholder={
+                      provider.provider === 'apple' 
+                        ? `${typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com'}/api/oauth/apple/callback`
+                        : `${typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com'}/auth/${provider.provider}/callback`
+                    }
+                  />
+                  <p className='text-xs text-muted-foreground'>
+                    在 OAuth 提供商后台配置此回调地址
+                  </p>
+                </div>
 
-            <div className='space-y-2'>
-              <Label htmlFor={`${provider.provider}-scope`}>权限范围 (Scope)</Label>
-              <Textarea
-                id={`${provider.provider}-scope`}
-                value={formData.scope}
-                onChange={(e) => setFormData({ ...formData, scope: e.target.value })}
-                placeholder='JSON 数组格式，例如: ["user:email", "read:user"]'
-                rows={2}
-              />
-            </div>
+                <div className='space-y-2'>
+                  <Label htmlFor={`${provider.provider}-scope`}>权限范围 (Scope)</Label>
+                  <Textarea
+                    id={`${provider.provider}-scope`}
+                    value={formData.scope}
+                    onChange={(e) => setFormData({ ...formData, scope: e.target.value })}
+                    placeholder='JSON 数组格式，例如: ["user:email", "read:user"]'
+                    rows={2}
+                  />
+                </div>
+              </>
+            )}
 
             <div className='flex items-center gap-2 pt-2'>
               <Button

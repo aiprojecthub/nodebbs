@@ -29,7 +29,7 @@ export default function OAuthCallback() {
       const token = searchParams.get('token'); // Apple 后端直连返回的 token
 
       // 验证 provider
-      const validProviders = ['github', 'google', 'apple'];
+      const validProviders = ['github', 'google', 'apple', 'wechat_open', 'wechat_mp'];
       if (!validProviders.includes(provider)) {
         console.error('Invalid provider:', provider);
         setStatus('error');
@@ -110,6 +110,12 @@ export default function OAuthCallback() {
             break;
           case 'apple':
             result = await authApi.appleCallback(code, state);
+            break;
+          case 'wechat_open':
+            result = await authApi.wechatOpenCallback(code, state);
+            break;
+          case 'wechat_mp':
+            result = await authApi.wechatMpCallback(code, state);
             break;
           default:
             throw new Error(`未知的 OAuth 提供商: ${provider}`);
@@ -219,6 +225,9 @@ function getProviderName(provider) {
     github: 'GitHub',
     google: 'Google',
     apple: 'Apple',
+    wechat_open: '微信',
+    wechat_mp: '微信公众号',
+    wechat_miniprogram: '微信小程序',
   };
   return names[provider] || provider;
 }

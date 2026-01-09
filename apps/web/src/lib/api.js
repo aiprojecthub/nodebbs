@@ -185,6 +185,32 @@ export const authApi = {
     return apiClient.post('/oauth/apple/callback', { code, state });
   },
 
+  // ============= 微信登录 API =============
+  // 获取微信开放平台授权链接（Web 扫码登录）
+  async getWechatOpenAuthUrl() {
+    return apiClient.get('/oauth/wechat_open/connect');
+  },
+
+  // 微信开放平台回调处理
+  async wechatOpenCallback(code, state) {
+    return apiClient.post('/oauth/wechat_open/callback', { code, state });
+  },
+
+  // 获取微信公众号授权链接（H5 网页授权）
+  async getWechatMpAuthUrl() {
+    return apiClient.get('/oauth/wechat_mp/connect');
+  },
+
+  // 微信公众号回调处理
+  async wechatMpCallback(code, state) {
+    return apiClient.post('/oauth/wechat_mp/callback', { code, state });
+  },
+
+  // 微信小程序登录
+  async wechatMiniprogramLogin(code, userInfo = null) {
+    return apiClient.post('/oauth/wechat_miniprogram/login', { code, userInfo });
+  },
+
   // 获取关联的 OAuth 账号
   async getOAuthAccounts() {
     return apiClient.get('/oauth/accounts');

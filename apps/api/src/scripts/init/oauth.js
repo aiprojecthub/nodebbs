@@ -40,6 +40,42 @@ export const OAUTH_PROVIDERS = [
     callbackUrl: null,
     additionalConfig: JSON.stringify({ teamId: null, keyId: null }),
   },
+  // 微信开放平台（Web 扫码登录）
+  {
+    provider: 'wechat_open',
+    isEnabled: false,
+    displayName: '微信扫码',
+    displayOrder: 4,
+    scope: JSON.stringify(['snsapi_login']),
+    clientId: null, // AppID
+    clientSecret: null, // AppSecret
+    callbackUrl: null,
+    additionalConfig: null,
+  },
+  // 微信公众号（H5 网页授权）
+  {
+    provider: 'wechat_mp',
+    isEnabled: false,
+    displayName: '微信公众号',
+    displayOrder: 5,
+    scope: JSON.stringify(['snsapi_userinfo']),
+    clientId: null, // AppID
+    clientSecret: null, // AppSecret
+    callbackUrl: null,
+    additionalConfig: null,
+  },
+  // 微信小程序
+  {
+    provider: 'wechat_miniprogram',
+    isEnabled: false,
+    displayName: '微信小程序',
+    displayOrder: 6,
+    scope: null,
+    clientId: null, // AppID
+    clientSecret: null, // AppSecret
+    callbackUrl: null,
+    additionalConfig: null,
+  },
 ];
 
 /**
