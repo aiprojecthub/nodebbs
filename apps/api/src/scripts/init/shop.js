@@ -10,113 +10,113 @@ import { eq, and } from 'drizzle-orm';
  */
 export const DEFAULT_SHOP_ITEMS = [
   // --- 基础系列 (Basic Tier) - 100-500 积分 ---
-  {
-    type: 'avatar_frame',
-    name: '深海之蓝',
-    description: '如深海般静谧的蓝色边框',
-    price: 100,
-    imageUrl: 'https://placehold.co/150x150/0000ff/ffffff?text=Blue',
-    stock: null,
-    isActive: true,
-    displayOrder: 1,
-    metadata: JSON.stringify({
-      border: '3px solid #0066cc',
-    })
-  },
-  {
-    type: 'avatar_frame',
-    name: '森林之语',
-    description: '充满生机的绿色简约边框',
-    price: 150,
-    imageUrl: 'https://placehold.co/150x150/008000/ffffff?text=Green',
-    stock: null,
-    isActive: true,
-    displayOrder: 2,
-    metadata: JSON.stringify({
-      border: '3px solid #4caf50',
-    })
-  },
-  {
-    type: 'avatar_frame',
-    name: '经典黑金',
-    description: '低调奢华的黑金配色',
-    price: 500,
-    imageUrl: 'https://placehold.co/150x150/000000/ffd700?text=BlackGold',
-    stock: null,
-    isActive: true,
-    displayOrder: 3,
-    metadata: JSON.stringify({
-      border: '4px double #ffd700',
-      shadow: '0 0 5px rgba(0,0,0,0.8)'
-    })
-  },
+  // {
+  //   type: 'avatar_frame',
+  //   name: '深海之蓝',
+  //   description: '如深海般静谧的蓝色边框',
+  //   price: 100,
+  //   imageUrl: 'https://placehold.co/150x150/0000ff/ffffff?text=Blue',
+  //   stock: null,
+  //   isActive: true,
+  //   displayOrder: 1,
+  //   metadata: JSON.stringify({
+  //     border: '3px solid #0066cc',
+  //   })
+  // },
+  // {
+  //   type: 'avatar_frame',
+  //   name: '森林之语',
+  //   description: '充满生机的绿色简约边框',
+  //   price: 150,
+  //   imageUrl: 'https://placehold.co/150x150/008000/ffffff?text=Green',
+  //   stock: null,
+  //   isActive: true,
+  //   displayOrder: 2,
+  //   metadata: JSON.stringify({
+  //     border: '3px solid #4caf50',
+  //   })
+  // },
+  // {
+  //   type: 'avatar_frame',
+  //   name: '经典黑金',
+  //   description: '低调奢华的黑金配色',
+  //   price: 500,
+  //   imageUrl: 'https://placehold.co/150x150/000000/ffd700?text=BlackGold',
+  //   stock: null,
+  //   isActive: true,
+  //   displayOrder: 3,
+  //   metadata: JSON.stringify({
+  //     border: '4px double #ffd700',
+  //     shadow: '0 0 5px rgba(0,0,0,0.8)'
+  //   })
+  // },
 
   // --- 特效系列 (Effect Tier) - 800-1500 积分 ---
-  {
-    type: 'avatar_frame',
-    name: '赛博霓虹',
-    description: '赛博朋克风格的呼吸灯效',
-    price: 800,
-    imageUrl: 'https://placehold.co/150x150/0ff/000?text=Neon',
-    stock: null,
-    isActive: true,
-    displayOrder: 10,
-    metadata: JSON.stringify({
-      border: '2px solid #00ffea',
-      shadow: '0 0 10px #00ffea, inset 0 0 5px #00ffea',
-      animation: 'pulse'
-    })
-  },
-  {
-    type: 'avatar_frame',
-    name: '熔岩脉动',
-    description: '如同流动的岩浆，散发炽热光芒',
-    price: 1000,
-    imageUrl: 'https://placehold.co/150x150/ff4500/fff?text=Magma',
-    stock: null,
-    isActive: true,
-    displayOrder: 11,
-    metadata: JSON.stringify({
-      borderWidth: 3,
-      borderStyle: 'solid',
-      borderColor: 'linear-gradient(45deg, #ff3300, #ff9900)',
-      shadow: '0 0 15px #ff4500',
-      animation: 'glow'
-    })
-  },
-  {
-    type: 'avatar_frame',
-    name: '虚空行者',
-    description: '神秘的紫色虚空能量',
-    price: 1200,
-    imageUrl: 'https://placehold.co/150x150/800080/fff?text=Void',
-    stock: null,
-    isActive: true,
-    displayOrder: 12,
-    metadata: JSON.stringify({
-      border: '3px dashed #9c27b0',
-      shadow: '0 0 10px #ba68c8',
-      animation: 'spin'
-    })
-  },
+  // {
+  //   type: 'avatar_frame',
+  //   name: '赛博霓虹',
+  //   description: '赛博朋克风格的呼吸灯效',
+  //   price: 800,
+  //   imageUrl: 'https://placehold.co/150x150/0ff/000?text=Neon',
+  //   stock: null,
+  //   isActive: true,
+  //   displayOrder: 10,
+  //   metadata: JSON.stringify({
+  //     border: '2px solid #00ffea',
+  //     shadow: '0 0 10px #00ffea, inset 0 0 5px #00ffea',
+  //     animation: 'pulse'
+  //   })
+  // },
+  // {
+  //   type: 'avatar_frame',
+  //   name: '熔岩脉动',
+  //   description: '如同流动的岩浆，散发炽热光芒',
+  //   price: 1000,
+  //   imageUrl: 'https://placehold.co/150x150/ff4500/fff?text=Magma',
+  //   stock: null,
+  //   isActive: true,
+  //   displayOrder: 11,
+  //   metadata: JSON.stringify({
+  //     borderWidth: 3,
+  //     borderStyle: 'solid',
+  //     borderColor: 'linear-gradient(45deg, #ff3300, #ff9900)',
+  //     shadow: '0 0 15px #ff4500',
+  //     animation: 'glow'
+  //   })
+  // },
+  // {
+  //   type: 'avatar_frame',
+  //   name: '虚空行者',
+  //   description: '神秘的紫色虚空能量',
+  //   price: 1200,
+  //   imageUrl: 'https://placehold.co/150x150/800080/fff?text=Void',
+  //   stock: null,
+  //   isActive: true,
+  //   displayOrder: 12,
+  //   metadata: JSON.stringify({
+  //     border: '3px dashed #9c27b0',
+  //     shadow: '0 0 10px #ba68c8',
+  //     animation: 'spin'
+  //   })
+  // },
 
   // --- 尊贵系列 (Premium Tier) - 2000+ 积分 ---
-  {
-    type: 'avatar_frame',
-    name: '彩虹流光',
-    description: '绚丽多彩的动态渐变光环',
-    price: 2888,
-    imageUrl: 'https://placehold.co/150x150/ff00ff/fff?text=Rainbow',
-    stock: null,
-    isActive: true,
-    displayOrder: 20,
-    metadata: JSON.stringify({
-      borderWidth: 4,
-      borderStyle: 'solid',
-      borderColor: 'linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8)',
-      animation: 'spin'
-    })
-  },
+  // {
+  //   type: 'avatar_frame',
+  //   name: '彩虹流光',
+  //   description: '绚丽多彩的动态渐变光环',
+  //   price: 2888,
+  //   imageUrl: 'https://placehold.co/150x150/ff00ff/fff?text=Rainbow',
+  //   stock: null,
+  //   isActive: true,
+  //   displayOrder: 20,
+  //   metadata: JSON.stringify({
+  //     borderWidth: 4,
+  //     borderStyle: 'solid',
+  //     borderColor: 'linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8)',
+  //     animation: 'spin'
+  //   })
+  // },
   {
     type: 'avatar_frame',
     name: '神龙降世',
