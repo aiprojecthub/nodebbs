@@ -17,7 +17,7 @@ export default async function uploadRoutes(fastify) {
         properties: {
           type: { 
             type: 'string', 
-            enum: ['common', 'avatar', 'badge', 'topic', 'item', 'frame'],
+            enum: ['common', 'avatar', 'badge', 'topic', 'item', 'frame', 'site'],
             default: 'common'
           }
         }
@@ -51,9 +51,17 @@ export default async function uploadRoutes(fastify) {
     }
 
     // Validate mime type (images only)
-    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedMimeTypes = [
+      'image/jpeg', 
+      'image/png', 
+      'image/gif', 
+      'image/webp',
+      'image/svg+xml',           // SVG 格式（站点 Logo）
+      'image/x-icon',            // ICO 格式（Favicon）
+      'image/vnd.microsoft.icon' // ICO 的另一种 MIME 类型
+    ];
     if (!allowedMimeTypes.includes(data.mimetype)) {
-      return reply.code(400).send({ error: '仅支持上传图片格式 (jpg, png, gif, webp)' });
+      return reply.code(400).send({ error: '仅支持上传图片格式 (jpg, png, gif, webp, svg, ico)' });
     }
 
     // Generate unique filename

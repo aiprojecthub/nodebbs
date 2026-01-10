@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { User } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, getImageUrl } from '@/lib/utils';
 
 // 预定义动画类名映射
 const ANIMATION_CLASSES = {
@@ -36,15 +36,9 @@ export default function UserAvatar({
   frameMetadata = null,
   modifiers = 'embed,f_webp,s_200x200',
 }) {
-  // 处理头像 URL
+  // 处理头像 URL（使用 getImageUrl 工具函数）
   const avatarUrl = useMemo(() => {
-    if (!url) return null;
-    // 完整 URL 直接使用
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-    // 拼接图片处理参数
-    return url.replace('/uploads/', `/uploads/${modifiers}/`);
+    return getImageUrl(url, modifiers);
   }, [url, modifiers]);
 
   // 缓存解析后的头像框元数据

@@ -6,6 +6,7 @@ import {
   DEFAULT_FONT_SIZE,
   STORAGE_KEYS,
 } from '@/config/theme.config';
+import { getImageUrl, IMAGE_PRESETS } from '@/lib/utils';
 
 /**
  * 获取 RootLayout 所需的数据
@@ -91,6 +92,10 @@ const $description = '一个基于 Node.js 和 React 的现代化论坛系统';
 export async function getLayoutMetadata() {
   let name = $title;
   let description = $description;
+  // 站点图标：优先使用配置值，为空时使用硬编码兜底
+  let logo = '/logo.svg';
+  let favicon = '/favicon.ico';
+  let appleTouchIcon = '/apple-touch-icon.png';
 
   try {
     const settings = await request('/settings');
@@ -100,9 +105,27 @@ export async function getLayoutMetadata() {
     if (settings?.site_description?.value) {
       description = settings.site_description.value;
     }
+    // 读取站点图标配置
+    if (settings?.site_logo?.value) {
+      logo = settings.site_logo.value;
+    }
+    if (settings?.site_favicon?.value) {
+      favicon = settings.site_favicon.value;
+    }
+    if (settings?.site_apple_touch_icon?.value) {
+      appleTouchIcon = settings.site_apple_touch_icon.value;
+    }
   } catch (error) {
     console.error('Error fetching settings for metadata:', error);
   }
+
+  // 动态确定 logo 的 MIME 类型
+  const logoType = logo.endsWith('.svg') ? 'image/svg+xml' : 'image/png';
+
+  // 使用 getImageUrl 处理图片 URL（内置 SVG 跳过逻辑）
+  const processedLogo = getImageUrl(logo, IMAGE_PRESETS.icon.logo);
+  const processedFavicon = favicon; // ICO 格式不处理
+  const processedAppleTouchIcon = getImageUrl(appleTouchIcon, IMAGE_PRESETS.icon.apple);
 
   return {
     title: {
@@ -116,10 +139,10 @@ export async function getLayoutMetadata() {
     },
     icons: {
       icon: [
-        { url: '/logo.svg', type: 'image/svg+xml' },
-        { url: '/favicon.ico', type: 'image/x-icon', sizes: 'any' },
+        { url: processedLogo || '/logo.svg', type: logoType },
+        { url: processedFavicon || '/favicon.ico', type: 'image/x-icon', sizes: 'any' },
       ],
-      apple: '/apple-touch-icon.png',
+      apple: processedAppleTouchIcon || '/apple-touch-icon.png',
     },
     openGraph: {
       title: {

@@ -61,6 +61,30 @@ export const SETTING_KEYS = {
     category: 'general',
     accessLevel: ACCESS_LEVEL.PUBLIC,
   },
+  SITE_LOGO: {
+    key: 'site_logo',
+    defaultValue: '',
+    valueType: 'string',
+    description: '站点 Logo（SVG/PNG 格式，建议尺寸 128x128 或更高）',
+    category: 'general',
+    accessLevel: ACCESS_LEVEL.PUBLIC,
+  },
+  SITE_FAVICON: {
+    key: 'site_favicon',
+    defaultValue: '',
+    valueType: 'string',
+    description: '站点 Favicon（ICO/PNG 格式，建议尺寸 48x48 或更高）',
+    category: 'general',
+    accessLevel: ACCESS_LEVEL.PUBLIC,
+  },
+  SITE_APPLE_TOUCH_ICON: {
+    key: 'site_apple_touch_icon',
+    defaultValue: '',
+    valueType: 'string',
+    description: 'Apple Touch Icon（PNG 格式，建议尺寸 180x180）',
+    category: 'general',
+    accessLevel: ACCESS_LEVEL.PUBLIC,
+  },
 
   // ============ 功能开关 ============
   REGISTRATION_MODE: {

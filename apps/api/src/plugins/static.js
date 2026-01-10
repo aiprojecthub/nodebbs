@@ -18,26 +18,31 @@ const ipx = createIPX({
 const ipxHandler = createIPXNodeServer(ipx);
 
 export default fp(async function (fastify, opts) {
-  // 仅处理头像
-  fastify.get(
-    '/uploads/:modifiers/avatars/*',
-    {
-      schema: {
-        hide: true,
+  // 支持的上传目录类型
+  const uploadTypes = ['avatars', 'site', 'common', 'badge', 'topic', 'item', 'frame'];
+  
+  // 为每种上传类型注册 IPX 图片处理路由
+  for (const type of uploadTypes) {
+    fastify.get(
+      `/uploads/:modifiers/${type}/*`,
+      {
+        schema: {
+          hide: true,
+        },
       },
-    },
-    async (request, reply) => {
-      // 关键：剥离 /uploads 前缀
-      const originalUrl = request.raw.url;
-      const cleanPath = originalUrl.replace(/^\/uploads/, '');
+      async (request, reply) => {
+        // 关键：剥离 /uploads 前缀
+        const originalUrl = request.raw.url;
+        const cleanPath = originalUrl.replace(/^\/uploads/, '');
 
-      // 修改请求的原始 URL，让 IPX 看到正确的路径
-      request.raw.url = cleanPath;
+        // 修改请求的原始 URL，让 IPX 看到正确的路径
+        request.raw.url = cleanPath;
 
-      ipxHandler(request.raw, reply.raw);
-      return reply.hijack();
-    }
-  );
+        ipxHandler(request.raw, reply.raw);
+        return reply.hijack();
+      }
+    );
+  }
 
   // 保留原始静态文件服务（可选）
   fastify.register(fastifyStatic, {

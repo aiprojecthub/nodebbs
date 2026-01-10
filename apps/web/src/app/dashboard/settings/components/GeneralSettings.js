@@ -4,6 +4,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { IconUpload } from '@/components/common/IconUpload';
 
 export function GeneralSettings({
   settings,
@@ -63,6 +64,56 @@ export function GeneralSettings({
           </div>
         </div>
       )}
+
+      {/* 站点图标 */}
+      <div className='border border-border rounded-lg bg-card'>
+        <div className='px-4 py-4 space-y-4'>
+          <div className='space-y-1'>
+            <Label className='text-sm font-semibold'>站点图标</Label>
+            <p className='text-sm text-muted-foreground'>
+              自定义站点 Logo、Favicon 和 Apple Touch Icon，留空则使用默认图标
+            </p>
+          </div>
+          
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
+            {/* 站点 Logo */}
+            <div className='space-y-2'>
+              <Label className='text-xs text-muted-foreground'>Logo</Label>
+              <IconUpload
+                value={settings.site_logo?.value || ''}
+                onChange={(url) => handleStringChange('site_logo', url)}
+                placeholder='/logo.svg'
+                accept='image/svg+xml,image/png,image/jpeg,image/webp'
+                hint='SVG/PNG, 建议 128x128'
+              />
+            </div>
+
+            {/* Favicon */}
+            <div className='space-y-2'>
+              <Label className='text-xs text-muted-foreground'>Favicon</Label>
+              <IconUpload
+                value={settings.site_favicon?.value || ''}
+                onChange={(url) => handleStringChange('site_favicon', url)}
+                placeholder='/favicon.ico'
+                accept='image/x-icon,image/png,image/vnd.microsoft.icon'
+                hint='ICO/PNG, 建议 48x48+'
+              />
+            </div>
+
+            {/* Apple Touch Icon */}
+            <div className='space-y-2'>
+              <Label className='text-xs text-muted-foreground'>Apple Touch Icon</Label>
+              <IconUpload
+                value={settings.site_apple_touch_icon?.value || ''}
+                onChange={(url) => handleStringChange('site_apple_touch_icon', url)}
+                placeholder='/apple-touch-icon.png'
+                accept='image/png'
+                hint='PNG, 建议 180x180'
+              />
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* 站点统计脚本 */}
       {settings.site_analytics_scripts && (
@@ -125,3 +176,4 @@ export function GeneralSettings({
     </div>
   );
 }
+

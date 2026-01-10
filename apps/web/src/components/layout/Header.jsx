@@ -38,6 +38,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useExtensions } from '@/contexts/ExtensionContext';
 import { Loading } from '../common/Loading';
+import { getImageUrl, IMAGE_PRESETS } from '@/lib/utils';
 
 export default function Header() {
   const router = useRouter();
@@ -79,9 +80,9 @@ export default function Header() {
             {/* Logo */}
             <Link href='/' prefetch={false} className='flex items-center space-x-2.5 group'>
               <img
-                src='/logo.svg'
+                src={getImageUrl(settings?.site_logo?.value, IMAGE_PRESETS.icon.logo) || '/logo.svg'}
                 alt='logo'
-                className='w-7 h-7 transition-transform group-hover:scale-105'
+                className='h-7 w-auto max-w-[120px] transition-transform group-hover:scale-105'
               />
               <span className='text-base font-semibold text-foreground hidden sm:inline'>
                 {settings?.site_name?.value || 'NodeBBS'}
