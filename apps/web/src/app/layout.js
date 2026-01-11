@@ -9,6 +9,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import EmailVerificationBanner from '@/components/auth/EmailVerificationBanner';
 import AutoCheckIn from '@/extensions/rewards/components/AutoCheckIn';
+import ProgressBar from '@/components/common/ProgressBar';
 import { getLayoutData, generateThemeScript, getLayoutMetadata } from '@/lib/server/layout';
 import { Toaster } from '@/components/common/Toaster';
 
@@ -67,9 +68,11 @@ export default async function RootLayout({ children }) {
           <SettingsProvider initialSettings={settings}>
             <AuthProvider initialUser={user}>
               <ExtensionProvider activeCurrencies={activeCurrencies}>
-                <AppLayout apiInfo={apiInfo}>{children}</AppLayout>
-                <AutoCheckIn />
-                <Toaster/>
+                <ProgressBar>
+                  <AppLayout apiInfo={apiInfo}>{children}</AppLayout>
+                  <AutoCheckIn />
+                  <Toaster/>
+                </ProgressBar>
               </ExtensionProvider>
             </AuthProvider>
           </SettingsProvider>
