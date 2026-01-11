@@ -19,7 +19,7 @@ import {
   Bookmark,
   Loader2,
 } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import ReportDialog from '@/components/common/ReportDialog';
 import TopicForm from '@/components/topic/TopicForm';
 import Time from '@/components/common/Time';
@@ -177,7 +177,7 @@ export default function TopicSidebar() {
           <h3 className='text-sm font-semibold'>分类</h3>
         </div>
         <div className='p-3'>
-           <Link href={`/categories/${topic.categorySlug}`} className="block" prefetch={false}>
+           <Link href={`/categories/${topic.categorySlug}`} className="block">
               <Badge
                 style={{
                   backgroundColor: category?.color + '20', // 10% opacity
@@ -201,7 +201,7 @@ export default function TopicSidebar() {
           </div>
           <div className='p-3 flex flex-wrap gap-2'>
             {topic.tags.map((tag) => (
-              <Link key={tag.id} href={`/tags/${tag.slug}`} prefetch={false}>
+              <Link key={tag.id} href={`/tags/${tag.slug}`}>
                 <Badge variant="secondary" className="hover:bg-secondary/80 transition-colors cursor-pointer">
                   {tag.name}
                 </Badge>

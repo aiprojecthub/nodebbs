@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import { Button } from '@/components/ui/button';
 import { User } from 'lucide-react';
 import UserAvatar from '@/components/user/UserAvatar';

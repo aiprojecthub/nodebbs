@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import { Tag, BarChart3, Users, MessageSquare } from 'lucide-react';
 
 // 格式化数字显示
@@ -40,7 +40,7 @@ export function CategoryList({ categories, currentPath }) {
                 <Link
                   key={category.id}
                   href={`/categories/${category.slug}`}
-                  prefetch={false}
+                 
                   className={`flex items-center justify-between px-3 py-2 rounded-md transition-colors group ${
                     isActive
                       ? 'bg-muted font-medium text-foreground'

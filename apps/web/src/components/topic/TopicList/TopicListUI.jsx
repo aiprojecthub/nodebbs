@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,7 +22,7 @@ export function EmptyState() {
       <p className='text-sm text-muted-foreground mb-4 max-w-md mx-auto'>
         还没有人发布话题，成为第一个吧！
       </p>
-      <Link href='/create' prefetch={false}>
+      <Link href='/create'>
         <Button size='sm'>
           <Plus className='h-4 w-4' />
           发布第一个话题
@@ -42,7 +42,7 @@ export function TopicItem({ topic }) {
       <div className='flex items-start gap-4 w-full'>
         {/* 左侧：作者头像 */}
         <div className='shrink-0'>
-          <Link href={`/users/${topic.username}`} prefetch={false}>
+          <Link href={`/users/${topic.username}`}>
             <UserAvatar
               url={topic.userAvatar}
               name={topic.userName || topic.username}
@@ -66,7 +66,7 @@ export function TopicItem({ topic }) {
               )}
               <Link
                 href={`/topic/${topic.id}`}
-                prefetch={false}
+               
                 className='text-lg font-medium text-foreground group-hover:text-primary visited:text-muted-foreground transition-colors align-middle break-all'
               >
                 {topic.title}
@@ -94,7 +94,7 @@ export function TopicItem({ topic }) {
             {/* 作者名 */}
             <Link
               href={`/users/${topic.username}`}
-              prefetch={false}
+             
               className='font-medium text-muted-foreground hover:text-primary transition-colors'
             >
               {topic.userName || topic.username}

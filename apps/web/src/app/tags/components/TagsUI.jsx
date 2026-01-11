@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import { Badge } from '@/components/ui/badge';
 import { Tag, Search, Hash } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -75,7 +75,7 @@ function TagCard({ tag }) {
     <Link
       href={`/tags/${tag.slug}`}
       className='group flex flex-col h-full bg-card border border-border rounded-lg p-5 hover:border-primary/50 transition-all duration-200'
-      prefetch={false}
+     
     >
       <div className='flex items-start justify-between mb-3'>
         <div className='flex items-center gap-2'>

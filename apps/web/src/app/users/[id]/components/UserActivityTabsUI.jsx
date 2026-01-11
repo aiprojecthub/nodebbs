@@ -1,6 +1,6 @@
 import { MessageSquare, Eye, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import Time from '@/components/common/Time';
 import { Loading } from '@/components/common/Loading';
 import { Pager } from '@/components/common/Pagination';
@@ -52,7 +52,7 @@ export function TopicItem({ topic }) {
             {/* Title */}
             <Link
               href={`/topic/${topic.id}`}
-              prefetch={false}
+             
               className='text-base font-semibold hover:text-primary transition-colors line-clamp-2 block mb-2 break-all'
             >
               {topic.title}
@@ -110,7 +110,7 @@ export function PostItem({ post }) {
           <div className='mb-3'>
             <Link
               href={`/topic/${post.topicId}`}
-              prefetch={false}
+             
               className='text-sm text-muted-foreground hover:text-primary transition-colors'
             >
               <span className='font-medium'>回复于:</span> {post.topicTitle}

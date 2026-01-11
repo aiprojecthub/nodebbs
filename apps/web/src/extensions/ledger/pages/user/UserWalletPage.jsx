@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Wallet, Loader2, Trophy, TrendingUp } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import { ledgerApi } from '../../api';
 import { rewardsApi } from '@/lib/api';
 import { CheckInStatus } from '../../components/user/CheckInStatus';

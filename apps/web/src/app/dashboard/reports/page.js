@@ -28,7 +28,7 @@ import {
   CheckSquare,
   XSquare,
 } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import Time from '@/components/common/Time';
 
 export default function ReportsManagement() {
@@ -212,7 +212,7 @@ export default function ReportsManagement() {
                 href={getTargetLink(row)}
                 className='text-primary hover:underline line-clamp-2 text-sm'
                 target='_blank'
-                prefetch={false}
+               
               >
                 {row.targetInfo.title}
               </Link>
@@ -222,7 +222,7 @@ export default function ReportsManagement() {
                 href={getTargetLink(row)}
                 className='text-primary hover:underline line-clamp-2 text-sm'
                 target='_blank'
-                prefetch={false}
+               
               >
                 {row.targetInfo.content}
               </Link>
@@ -232,7 +232,7 @@ export default function ReportsManagement() {
                 href={getTargetLink(row)}
                 className='text-primary hover:underline text-sm'
                 target='_blank'
-                prefetch={false}
+               
               >
                 {row.targetInfo.username}
               </Link>

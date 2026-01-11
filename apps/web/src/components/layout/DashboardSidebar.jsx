@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import { useRouter, usePathname } from 'next/navigation';
 import {
   Loader2,
@@ -153,7 +153,7 @@ export default function DashboardSidebar() {
       <Link
         key={item.href}
         href={item.href}
-        prefetch={false}
+       
         className={cn(
           "flex items-center justify-between gap-3 px-3 py-2 text-sm rounded-md transition-colors",
           active

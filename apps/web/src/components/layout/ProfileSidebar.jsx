@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import {
   Settings,
   MessageSquare,
@@ -201,7 +201,7 @@ export default function ProfileSidebar() {
       <Link
         key={item.href}
         href={item.href}
-        prefetch={false}
+       
         className={cn(
           "flex items-center justify-between gap-3 px-3 py-2 text-sm rounded-md transition-colors",
           active

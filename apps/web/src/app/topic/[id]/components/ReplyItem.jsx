@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import MarkdownEditor from '@/components/common/MarkdownEditor';
@@ -101,7 +101,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
           <div className='flex items-start justify-between gap-4 mb-4'>
             <div className='flex items-start gap-3'>
               {/* 头像 */}
-              <Link href={`/users/${localReply.username}`} prefetch={false} className="shrink-0 mt-0.5">
+              <Link href={`/users/${localReply.username}`} className="shrink-0 mt-0.5">
                 <UserAvatar
                   url={localReply.userAvatar}
                   name={localReply.userName}
@@ -115,7 +115,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
                 <div className='flex items-center gap-2 text-sm'>
                   <Link
                     href={`/users/${localReply.username}`}
-                    prefetch={false}
+                   
                     className='font-medium text-foreground hover:underline decoration-primary/50 underline-offset-4 truncate'
                   >
                     {localReply.userName || localReply.userUsername}
@@ -187,7 +187,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
                 <span className="shrink-0">回复</span>
                 <Link
                   href={`/topic/${topicId}#post-${localReply.replyToPost.id}`}
-                  prefetch={false}
+                 
                   className="hover:text-primary transition-colors font-mono"
                 >
                   #{localReply.replyToPost.postNumber}

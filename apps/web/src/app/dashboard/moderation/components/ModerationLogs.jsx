@@ -20,7 +20,7 @@ import {
   User,
   MessageSquare,
 } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import { Loading } from '@/components/common/Loading';
 import { Pager } from '@/components/common/Pagination';
 import Time from '@/components/common/Time';

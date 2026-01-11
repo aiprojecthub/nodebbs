@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function TopicSortTabs({ defaultValue = 'latest', className }) {

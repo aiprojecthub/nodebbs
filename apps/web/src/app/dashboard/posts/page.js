@@ -24,7 +24,7 @@ import {
   AlertCircle,
   CheckCircle,
 } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import Time from '@/components/common/Time';
 
 export default function AdminPostsPage() {
@@ -154,7 +154,7 @@ export default function AdminPostsPage() {
               href={`/topic/${row.topicId}#post-${row.id}`}
               className='hover:text-primary hover:underline'
               target='_blank'
-              prefetch={false}
+             
             >
               {row.topicTitle}
             </Link>
@@ -172,7 +172,7 @@ export default function AdminPostsPage() {
             href={`/users/${value}`}
             className='text-sm hover:text-primary hover:underline'
             target='_blank'
-            prefetch={false}
+           
           >
             {value}
           </Link>

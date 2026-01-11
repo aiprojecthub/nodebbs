@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Trophy, Coins, TrendingUp, Medal, Crown } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import UserAvatar from '@/components/user/UserAvatar';
 import { request, getCurrentUser } from '@/lib/server/api';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -57,7 +57,7 @@ function Podium({ top3, rankType }) {
             </div>
          </div>
          
-         <Link href={`/users/${user.username}`} className="text-center group p-2 rounded-lg hover:bg-muted/50 transition-colors w-full max-w-[140px]" prefetch={false}>
+         <Link href={`/users/${user.username}`} className="text-center group p-2 rounded-lg hover:bg-muted/50 transition-colors w-full max-w-[140px]">
             <div className="font-bold text-sm sm:text-base truncate w-full group-hover:text-primary transition-colors">
                 {user.name}
             </div>
@@ -103,7 +103,7 @@ function RankItem({ user, index, rankType, currentUserId }) {
     <Link
       href={`/users/${user.username}`}
       className="block group"
-      prefetch={false}
+     
     >
       <div className={cn(
           "flex items-center gap-3 sm:gap-6 p-4 rounded-xl transition-all hover:bg-muted/50",

@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import { Button } from '@/components/ui/button';
 import { Hash } from 'lucide-react';
 import { Loading } from '@/components/common/Loading';

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { moderationApi } from '@/lib/api';
 import { toast } from 'sonner';
 import { CheckCircle, XCircle, Clock } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import { Loading } from '@/components/common/Loading';
 import { Pager } from '@/components/common/Pagination';
 
@@ -125,7 +125,7 @@ export function PendingContent({ type = 'all', onModerationComplete }) {
                           <Link
                             href={`/topic/${item.id}`}
                             className='text-sm text-primary hover:underline'
-                            prefetch={false}
+                           
                           >
                             查看详情 →
                           </Link>
@@ -137,7 +137,7 @@ export function PendingContent({ type = 'all', onModerationComplete }) {
                             <Link
                               href={`/topic/${item.topicId}`}
                               className='text-primary hover:underline'
-                              prefetch={false}
+                             
                             >
                               {item.topicTitle}
                             </Link>

@@ -1,5 +1,5 @@
 import React from 'react';
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import UserAvatar from '@/components/user/UserAvatar';
 import UserBadge from '@/extensions/badges/components/Badge';
 import { cn } from '@/lib/utils';
@@ -73,7 +73,7 @@ export default function UserCard({
             {isBanner ? (
               <Link
                 href={`/users/${user.username}`}
-                prefetch={false}
+               
                 className='font-bold hover:text-primary hover:underline block truncate'
               >
                 {user.name || user.username}

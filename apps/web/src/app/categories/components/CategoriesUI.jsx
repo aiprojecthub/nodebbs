@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import { Badge } from '@/components/ui/badge';
 import { Tag, MessageSquare, Eye } from 'lucide-react';
 import Time from '@/components/common/Time';
@@ -66,7 +66,7 @@ function CategoryCard({ category }) {
           <Link
             href={`/categories/${category.slug}`}
             className='text-base font-semibold text-foreground hover:text-primary transition-colors flex items-center gap-2'
-            prefetch={false}
+           
           >
             {category.name}
             {/* 统计 - 显示包含子分类的总话题数 */}
@@ -90,7 +90,7 @@ function CategoryCard({ category }) {
       {category.subcategories && category.subcategories.length > 0 && (
         <div className='mb-4 flex flex-wrap gap-2 pl-11'>
             {category.subcategories.map((sub) => (
-            <Link key={sub.id} href={`/categories/${sub.slug}`} prefetch={false}>
+            <Link key={sub.id} href={`/categories/${sub.slug}`}>
                 <Badge 
                     variant="secondary" 
                     className='text-xs font-normal border-0 rounded-full px-2.5 bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors'
@@ -109,7 +109,7 @@ function CategoryCard({ category }) {
                 <Link
                     href={`/topic/${category.latestTopic.id}`}
                     className='truncate text-foreground/80 hover:text-primary'
-                    prefetch={false}
+                   
                 >
                      {category.latestTopic.title}
                 </Link>

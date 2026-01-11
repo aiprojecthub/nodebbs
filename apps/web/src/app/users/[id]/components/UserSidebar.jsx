@@ -1,7 +1,7 @@
 'use client';
 
 import { Calendar, Users } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import StickySidebar from '@/components/common/StickySidebar';
 import Time from '@/components/common/Time';
 import FollowButton from '@/components/user/FollowButton';

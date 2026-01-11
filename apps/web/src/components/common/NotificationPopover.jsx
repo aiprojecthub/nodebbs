@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Bell, Check, Trash2 } from 'lucide-react';
 import { getNotificationIcon, getNotificationMessage } from '@/lib/notification';
 import { notificationApi } from '@/lib/api';
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import { Loading } from '../common/Loading';
 import UserAvatar from '../user/UserAvatar';
 import Time from '../common/Time';
@@ -292,7 +292,7 @@ export default function NotificationPopover() {
 
         {/* 底部操作 */}
         <div className='border-t border-border px-4 py-2'>
-          <Link href='/profile/notifications' prefetch={false} onClick={() => setIsOpen(false)}>
+          <Link href='/profile/notifications' onClick={() => setIsOpen(false)}>
             <Button variant='ghost' className='w-full text-sm hover:bg-accent'>
               查看全部通知
             </Button>

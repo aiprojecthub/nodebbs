@@ -7,7 +7,7 @@ import UserAvatar from '@/components/user/UserAvatar';
 import { rewardsApi } from '@/lib/api';
 import { Coins, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import Time from '@/components/common/Time';
 
 const PAGE_LIMIT = 10;

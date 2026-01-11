@@ -1,7 +1,7 @@
 'use client';
 
 
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import { useSettings } from '@/contexts/SettingsContext';
 import { Github } from 'lucide-react';
 
@@ -33,7 +33,7 @@ export default function Footer({ version }) {
                     <span>•</span>
                     <Link
                       href={link.href}
-                      prefetch={false}
+                     
                       className="hover:text-foreground transition-colors"
                     >
                       {link.label}

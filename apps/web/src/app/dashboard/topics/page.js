@@ -27,7 +27,7 @@ import {
   Clock,
   AlertCircle,
 } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import Time from '@/components/common/Time';
 
 export default function AdminTopicsPage() {
@@ -209,7 +209,7 @@ export default function AdminTopicsPage() {
             href={`/topic/${row.id}`}
             className='hover:text-primary hover:underline font-medium line-clamp-2 whitespace-normal text-ellipsis'
             target='_blank'
-            prefetch={false}
+           
           >
             {value}
           </Link>

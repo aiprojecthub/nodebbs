@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import Link from '@/components/common/Link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -126,7 +126,7 @@ export default function TopicContent() {
               <span className='opacity-50'>•</span>
               <Link
                 href={`/users/${topic.username}`}
-                prefetch={false}
+               
                 className='hover:text-foreground transition-colors'
               >
                 {topic.userName || topic.username}
