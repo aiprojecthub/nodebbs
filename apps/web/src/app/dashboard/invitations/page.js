@@ -225,7 +225,7 @@ export default function AdminInvitationsPage() {
       {/* 统计卡片 */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="p-4">
+          <Card className="p-4 shadow-none">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Ticket className="h-5 w-5 text-primary" />
@@ -237,7 +237,7 @@ export default function AdminInvitationsPage() {
             </div>
           </Card>
 
-          <Card className="p-4">
+          <Card className="p-4 shadow-none">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-500/10 rounded-lg">
                 <TrendingUp className="h-5 w-5 text-green-600" />
@@ -251,7 +251,7 @@ export default function AdminInvitationsPage() {
             </div>
           </Card>
 
-          <Card className="p-4">
+          <Card className="p-4 shadow-none">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-500/10 rounded-lg">
                 <Check className="h-5 w-5 text-blue-600" />

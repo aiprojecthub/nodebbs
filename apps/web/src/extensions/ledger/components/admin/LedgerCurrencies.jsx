@@ -200,38 +200,31 @@ export function LedgerCurrencies() {
                 mode={operationMode}
                 currencies={currencies}
             />
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>货币列表</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <DataTable
-                        columns={[
-                            { key: 'name', label: '名称' },
-                            { key: 'code', label: '代码', render: (val) => <span className="font-mono">{val}</span> },
-                            { key: 'symbol', label: '符号' },
-                            { 
-                                key: 'isActive', 
-                                label: '状态', 
-                                render: (isActive) => isActive ? 
-                                    <span className="text-green-600">已启用</span> : 
-                                    <span className="text-muted-foreground">已禁用</span> 
-                            },
-                            {
-                                key: 'actions',
-                                label: '操作',
-                                align: 'right',
-                                render: (_, currency) => (
-                                    <Button variant="ghost" size="sm" onClick={() => handleEditClick(currency)}>编辑</Button>
-                                )
-                            }
-                        ]}
-                        data={currencies}
-                        loading={loading}
-                    />
-                </CardContent>
-            </Card>
+            <DataTable
+                columns={[
+                    { key: 'name', label: '名称' },
+                    { key: 'code', label: '代码', render: (val) => <span className="font-mono">{val}</span> },
+                    { key: 'symbol', label: '符号' },
+                    { 
+                        key: 'isActive', 
+                        label: '状态', 
+                        render: (isActive) => isActive ? 
+                            <span className="text-green-600">已启用</span> : 
+                            <span className="text-muted-foreground">已禁用</span> 
+                    },
+                    {
+                        key: 'actions',
+                        label: '操作',
+                        align: 'right',
+                        render: (_, currency) => (
+                            <Button variant="ghost" size="sm" onClick={() => handleEditClick(currency)}>编辑</Button>
+                        )
+                    }
+                ]}
+                data={currencies}
+                loading={loading}
+            />
+                
 
             <FormDialog 
                 open={isDialogOpen} 
@@ -242,7 +235,7 @@ export function LedgerCurrencies() {
                 loading={submitting}
                 maxWidth="sm:max-w-[680px]"
             >
-                <div className="space-y-4 py-2 overflow-y-auto pr-2 max-h-[70vh]">
+                <div className="space-y-4 px-1 py-2 overflow-y-auto pr-2 max-h-[70vh]">
                     <div className="grid gap-2">
                         <Label htmlFor="code">代码 (Code)</Label>
                         <Input 

@@ -78,7 +78,7 @@ export default function InvitationsPage() {
 
       {/* 配额信息卡片 */}
       {quota ? (
-        <Card className="p-6">
+        <Card className="p-6 shadow-none">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">今日剩余</p>
@@ -144,7 +144,7 @@ export default function InvitationsPage() {
       {/* 邀请码列表 */}
       <div className="space-y-4">
         {codes.length === 0 && !loading ? (
-          <Card className="p-12 text-center">
+          <Card className="p-12 text-center shadow-none">
             <Ticket className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">还没有邀请码</p>
             <Button
@@ -159,7 +159,7 @@ export default function InvitationsPage() {
           <Loading text="加载中..." className="min-h-[200px]" />
         ) : (
           codes.map((code) => (
-            <Card key={code.id} className="p-4">
+            <Card key={code.id} className="p-4 shadow-none">
               <div className="flex items-start justify-between">
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-3">

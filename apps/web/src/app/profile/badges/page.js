@@ -42,7 +42,7 @@ export default function MyBadgesPage() {
 
   return (
     <>
-      <Card>
+      <Card className="shadow-none">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Medal className="h-5 w-5 text-amber-500" />

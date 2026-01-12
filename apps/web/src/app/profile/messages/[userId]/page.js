@@ -215,7 +215,7 @@ export default function MessageDetailPage() {
   return (
     <div className='flex flex-col h-[calc(100vh-12rem)]'>
       {/* 聊天容器 */}
-      <div className='bg-card border border-border rounded-lg overflow-hidden flex flex-col h-full shadow-sm'>
+      <div className='bg-card border border-border rounded-lg overflow-hidden flex flex-col h-full'>
         {/* 会话对象信息头部 */}
         <div className='border-b border-border px-4 py-3 bg-muted/20 shrink-0'>
           <div className='flex items-center justify-between'>
@@ -397,7 +397,7 @@ export default function MessageDetailPage() {
           <div className='flex items-end space-x-2'>
             <Textarea
               ref={textareaRef}
-              className='flex-1 min-h-[40px] max-h-[120px] resize-none text-sm bg-background'
+              className='flex-1 min-h-[40px] max-h-[120px] resize-none text-sm bg-background shadow-none'
               placeholder={`发送消息给 ${
                 otherUser.name || otherUser.username
               }...`}

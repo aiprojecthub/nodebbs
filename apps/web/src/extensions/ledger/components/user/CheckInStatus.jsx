@@ -10,7 +10,7 @@ import Time from '@/components/common/Time';
  */
 export function CheckInStatus({ checkInStreak, lastCheckInDate }) {
   return (
-    <Card>
+    <Card className="shadow-none">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Calendar className="h-5 w-5" />

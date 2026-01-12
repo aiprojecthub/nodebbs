@@ -81,9 +81,9 @@ export default function BadgeCard({
         <TooltipTrigger asChild>
           <div 
             className={`
-              group relative flex flex-col items-center p-3 rounded-xl border transition-all duration-300 cursor-default h-full
+              group relative flex flex-col items-center p-3 rounded-xl border border-border/50 transition-all duration-300 cursor-default h-full
               ${isUnlocked 
-                ? 'bg-card border-primary/20 shadow-sm hover:border-primary/50' 
+                ? 'bg-card border-primary/20 hover:border-primary/30' 
                 : 'bg-muted/40 border-transparent hover:bg-muted/60'
               }
             `}

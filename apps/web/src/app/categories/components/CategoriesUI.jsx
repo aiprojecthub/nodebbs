@@ -19,7 +19,7 @@ export function CategoriesUI({ categories, loading, error }) {
 
   return (
     <>
-      <div className='flex flex-col sm:flex-row sm:items-end justify-between mb-6 gap-4 border-b border-border pb-4'>
+      <div className='flex flex-col sm:flex-row sm:items-end justify-between mb-4 sm:mb-6 gap-4 border-b border-border pb-4 px-3 sm:px-0'>
         <div>
           <h1 className='text-2xl font-semibold text-foreground mb-1'>
             版块导航
@@ -31,7 +31,7 @@ export function CategoriesUI({ categories, loading, error }) {
       {loading ? (
         <Loading text='加载中...' className='flex-row py-20' />
       ) : categories.length === 0 ? (
-        <div className='text-center py-24 border border-border rounded-md bg-muted/20'>
+        <div className='text-center py-24 border-y sm:border border-border sm:rounded-md bg-muted/20'>
           <Tag className='h-12 w-12 text-muted-foreground/40 mx-auto mb-4' />
           <h3 className='text-base font-semibold text-foreground mb-1'>
             暂无分类
@@ -39,7 +39,7 @@ export function CategoriesUI({ categories, loading, error }) {
           <p className='text-sm text-muted-foreground'>还没有创建任何分类</p>
         </div>
       ) : (
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-0 sm:gap-4'>
           {categories.map((category) => (
             <CategoryCard key={category.id} category={category} />
           ))}
@@ -51,7 +51,7 @@ export function CategoriesUI({ categories, loading, error }) {
 
 function CategoryCard({ category }) {
   return (
-    <div className='flex flex-col bg-card border border-border rounded-md p-4 hover:border-primary/50 transition-colors'>
+    <div className='flex flex-col bg-card border-b border-x-0 sm:border border-border sm:rounded-md px-3 py-4 sm:p-4 hover:bg-accent/50 sm:hover:border-primary/50 transition-colors'>
       <div className='flex items-start gap-3 mb-3'>
         {/* 图标 */}
         <div

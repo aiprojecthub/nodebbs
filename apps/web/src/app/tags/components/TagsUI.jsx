@@ -27,7 +27,7 @@ export default function TagsUI({ tags = [] }) {
   return (
     <>
       {/* 头部区域：标题与搜索 */}
-      <div className='flex flex-col md:flex-row md:items-end justify-between gap-6 mb-6 border-b border-border pb-4'>
+      <div className='flex flex-col md:flex-row md:items-end justify-between gap-6 mb-6 border-b border-border pb-4 px-3 sm:px-0'>
         <div>
           <h1 className='text-2xl font-semibold text-foreground mb-1'>
             标签广场
@@ -50,13 +50,13 @@ export default function TagsUI({ tags = [] }) {
 
       {/* 标签列表 */}
       {filteredTags.length > 0 ? (
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0 sm:gap-4'>
           {filteredTags.map((tag) => (
             <TagCard key={tag.id} tag={tag} />
           ))}
         </div>
       ) : (
-        <div className='text-center py-20 border border-border rounded-lg bg-muted/20'>
+        <div className='text-center py-20 border-y sm:border border-border sm:rounded-lg bg-muted/20'>
           <Search className='h-12 w-12 text-muted-foreground/30 mx-auto mb-4' />
           <h3 className='text-lg font-medium text-foreground mb-1'>
             没有找到相关标签
@@ -74,7 +74,7 @@ function TagCard({ tag }) {
   return (
     <Link
       href={`/tags/${tag.slug}`}
-      className='group flex flex-col h-full bg-card border border-border rounded-lg p-5 hover:border-primary/50 transition-all duration-200'
+      className='group flex flex-col h-full bg-card border-b border-x-0 sm:border border-border sm:rounded-lg px-3 py-4 sm:p-5 hover:bg-accent/50 sm:hover:border-primary/50 transition-all duration-200'
      
     >
       <div className='flex items-start justify-between mb-3'>

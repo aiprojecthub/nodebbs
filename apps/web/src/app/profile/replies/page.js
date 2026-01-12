@@ -92,7 +92,7 @@ export default function RepliesPage() {
             return (
               <div
                 key={reply.id}
-                className='bg-card border border-border rounded-lg overflow-hidden hover:shadow-sm transition-shadow'
+                className='bg-card border border-border rounded-lg overflow-hidden hover:border-primary/30'
               >
                 {/* 话题信息 */}
                 <div className='px-4 py-2 bg-muted border-b border-border'>

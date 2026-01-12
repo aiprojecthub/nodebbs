@@ -20,7 +20,7 @@ export default async function TagsPage() {
   const tags = await getTags();
 
   return (
-    <div className='container mx-auto px-4 py-6'>
+    <div className='container mx-auto p-0 sm:py-6 lg:px-4'>
       <TagsUI tags={tags} />
     </div>
   );

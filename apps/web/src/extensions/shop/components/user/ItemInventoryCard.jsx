@@ -20,8 +20,8 @@ export function ItemInventoryCard({ item, onEquip, onUnequip, actioning }) {
 
   return (
     <Card
-      className={`hover:shadow-lg transition-shadow ${
-        item.isEquipped ? 'border-primary' : ''
+      className={`shadow-none hover:border-primary/30 ${
+        item.isEquipped ? 'border-primary/30' : ''
       } ${expired ? 'opacity-60' : ''}`}
     >
       <CardHeader>

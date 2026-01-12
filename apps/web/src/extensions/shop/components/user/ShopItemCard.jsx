@@ -19,7 +19,7 @@ export function ShopItemCard({ item, userBalance, onPurchase, isAuthenticated })
   const canPurchase = isAuthenticated && !isOutOfStock && canAfford;
 
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card className="shadow-none hover:border-primary/30">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">

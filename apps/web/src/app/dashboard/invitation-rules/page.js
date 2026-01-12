@@ -209,14 +209,14 @@ export default function InvitationRulesPage() {
       {/* 规则列表 */}
       <div className='grid gap-4'>
         {rules.length === 0 ? (
-          <Card className='p-12 text-center'>
+          <Card className='p-12 text-center shadow-none'>
             <Shield className='h-12 w-12 mx-auto text-muted-foreground mb-4' />
             <p className='text-muted-foreground mb-4'>还没有配置任何规则</p>
             <Button onClick={handleCreate}>创建第一个规则</Button>
           </Card>
         ) : (
           rules.map((rule) => (
-            <Card key={rule.id} className='p-6'>
+            <Card key={rule.id} className='p-6 shadow-none'>
               <div className='flex items-start justify-between'>
                 <div className='flex-1'>
                   <div className='flex items-center gap-3 mb-4'>

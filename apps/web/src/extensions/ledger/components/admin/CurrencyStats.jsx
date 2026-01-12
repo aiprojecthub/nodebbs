@@ -18,7 +18,7 @@ export function CurrencyStats({ currency, stats, loading }) {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
+      <Card className="shadow-none">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">总流通{name}</CardTitle>
           <Coins className="h-4 w-4 text-muted-foreground" />
@@ -32,7 +32,7 @@ export function CurrencyStats({ currency, stats, loading }) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="shadow-none">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">今日发放</CardTitle>
           <TrendingUp className="h-4 w-4 text-green-600" />
@@ -46,7 +46,7 @@ export function CurrencyStats({ currency, stats, loading }) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="shadow-none">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">今日消费</CardTitle>
           <TrendingDown className="h-4 w-4 text-red-600" />
@@ -60,7 +60,7 @@ export function CurrencyStats({ currency, stats, loading }) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="shadow-none">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">活跃用户</CardTitle>
           <Users className="h-4 w-4 text-muted-foreground" />

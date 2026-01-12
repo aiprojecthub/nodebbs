@@ -193,12 +193,12 @@ export function LedgerTransactionTable({
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="shadow-none bg-transparent border-0">
+      <CardHeader className="px-0">
           <CardTitle>交易记录</CardTitle>
           <CardDescription>查看所有交易流水</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-0">
         {content}
       </CardContent>
     </Card>

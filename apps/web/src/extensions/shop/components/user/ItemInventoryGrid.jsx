@@ -22,7 +22,7 @@ export function ItemInventoryGrid({ items, onEquip, onUnequip, actioningItemId, 
 
   if (items.length === 0) {
     return (
-      <Card>
+      <Card className="shadow-none">
         <CardContent className="text-center py-12">
           <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
           <h3 className="text-lg font-medium text-card-foreground mb-2">

@@ -100,7 +100,7 @@ export default function UserWalletPage() {
           </div>
         ) : (
           accounts.map(account => (
-            <Card key={account.currency.code} className="relative overflow-hidden">
+            <Card key={account.currency.code} className="relative overflow-hidden shadow-none">
                <div className="absolute top-0 right-0 p-4 opacity-10">
                  <Wallet className="h-24 w-24" />
                </div>
