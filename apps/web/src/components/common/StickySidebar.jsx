@@ -8,11 +8,10 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
-  DrawerTrigger,
 } from '@/components/ui/drawer';
-import { Button } from '../ui/button';
 import { cn } from '@/lib/utils';
-import { ChevronRight, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
+import FloatingBall from './FloatingBall';
 
 /**
  * 自定义 useMediaQuery hook
@@ -56,33 +55,36 @@ export default function StickySidebar({ children, className, enabled = true }) {
   }
 
   return (
-    <Drawer direction='left' open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>
-        <Button variant='outline' size='icon' className='w-11 h-11 fixed z-10 top-1/2 -left-2 -translate-y-1/2 rounded-none rounded-tr-full rounded-br-full opacity-65'>
-          <ChevronRight className='h-6 w-6' />
-        </Button>
-      </DrawerTrigger>
-      <DrawerContent className='right-2 top-2 bottom-2 outline-none w-[310px]'>
-        <DrawerHeader>
-          <DrawerTitle className='text-right'>
-            <DrawerClose>
-              <X className='h-6 w-6' />
-            </DrawerClose>
-          </DrawerTitle>
-        </DrawerHeader>
-        {/* 移动端覆盖样式 */}
-        <div
-          className={cn(className, 'p-4 static overflow-y-auto')}
-          onClick={(e) => {
-            const link = e.target.closest('a');
-            if (link) {
-              setOpen(false);
-            }
-          }}
-        >
-          {children}
-        </div>
-      </DrawerContent>
-    </Drawer>
+    <>
+      {/* 悬浮球 - 始终挂载，保持位置状态 */}
+      <FloatingBall onClick={() => setOpen(true)}>
+        <Menu className='h-5 w-5' />
+      </FloatingBall>
+
+      <Drawer direction='left' open={open} onOpenChange={setOpen}>
+        <DrawerContent className='right-2 top-2 bottom-2 outline-none w-[310px]'>
+          <DrawerHeader>
+            <DrawerTitle className='text-right'>
+              <DrawerClose>
+                <X className='h-6 w-6' />
+              </DrawerClose>
+            </DrawerTitle>
+          </DrawerHeader>
+          {/* 移动端覆盖样式 */}
+          <div
+            className={cn(className, 'p-4 static overflow-y-auto')}
+            onClick={(e) => {
+              const link = e.target.closest('a');
+              if (link) {
+                setOpen(false);
+              }
+            }}
+          >
+            {children}
+          </div>
+        </DrawerContent>
+      </Drawer>
+    </>
   );
 }
+

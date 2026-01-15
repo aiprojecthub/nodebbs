@@ -161,7 +161,7 @@ export default function UserAvatar({
         <img 
           src={frame.imageUrl} 
           alt="头像框"
-          className="absolute pointer-events-none select-none z-10 max-w-none"
+          className="absolute pointer-events-none select-none z-[1] max-w-none"
           style={{
             width: `${scale * 100}%`,
             height: `${scale * 100}%`,
