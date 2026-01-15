@@ -39,7 +39,7 @@ export default function ThemeSwitcher() {
           <Palette className='h-4 w-4' />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align='end' className='w-56'>
+      <DropdownMenuContent align='end' className='min-w-48'>
         {/* 主题风格 - 色块选择 */}
         <DropdownMenuLabel className='text-xs font-medium text-muted-foreground'>
           主题风格
