@@ -21,7 +21,7 @@ export function CategoriesUI({ categories, loading, error }) {
     <>
       <div className='flex flex-col sm:flex-row sm:items-end justify-between mb-4 sm:mb-6 gap-4 border-b border-border pb-4 px-3 sm:px-0'>
         <div>
-          <h1 className='text-2xl font-semibold text-foreground mb-1'>
+          <h1 className='text-2xl font-semibold text-foreground'>
             版块导航
           </h1>
 

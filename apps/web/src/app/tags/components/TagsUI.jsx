@@ -27,7 +27,7 @@ export default function TagsUI({ tags = [] }) {
   return (
     <>
       {/* 头部区域：标题与搜索 */}
-      <div className='flex flex-col md:flex-row md:items-end justify-between gap-6 mb-6 border-b border-border pb-4 px-3 sm:px-0'>
+      <div className='flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 border-b border-border pb-4 px-3 sm:px-0'>
         <div>
           <h1 className='text-2xl font-semibold text-foreground mb-1'>
             标签广场
@@ -40,10 +40,10 @@ export default function TagsUI({ tags = [] }) {
         <div className='w-full md:w-72 relative'>
           <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none' />
           <Input
-            placeholder='搜索标签 / Search tags...'
+            placeholder='搜索标签'
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className='pl-9 bg-background focus-visible:ring-1'
+            className='pl-9'
           />
         </div>
       </div>

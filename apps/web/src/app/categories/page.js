@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function CategoriesPage() {
   return (
-    <div className='container mx-auto p-0 sm:py-6 lg:px-4'>
+    <div className='container mx-auto py-3 sm:py-6 lg:px-4'>
       <CategoriesLayout />
     </div>
   );
