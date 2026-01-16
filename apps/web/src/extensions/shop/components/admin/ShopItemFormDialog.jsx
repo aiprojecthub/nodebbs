@@ -325,9 +325,6 @@ export function ShopItemFormDialog({ open, onOpenChange, mode, initialData, onSu
                       {currency.symbol} {currency.name}
                     </SelectItem>
                   ))}
-                  {currencies.length === 0 && (
-                      <SelectItem value={DEFAULT_CURRENCY_CODE}>🪙 积分</SelectItem>
-                  )}
                 </SelectContent>
               </Select>
             </div>

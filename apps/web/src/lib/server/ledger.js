@@ -17,16 +17,16 @@ export async function getActiveCurrencies() {
 
 /**
  * 获取默认货币名称 (Server Side)
- * @returns {Promise<string>} 货币名称，如果获取失败则返回 '积分'
+ * @returns {Promise<string>} 货币名称，如果获取失败则返回货币代码
  */
 export async function getDefaultCurrencyName() {
     try {
         const currencies = await getActiveCurrencies();
         const defaultCurrency = currencies.find(c => c.code === DEFAULT_CURRENCY_CODE);
-        return defaultCurrency?.name || '积分';
+        return defaultCurrency?.name || DEFAULT_CURRENCY_CODE;
     } catch (error) {
         console.error('[Server] Failed to get default currency name', error);
-        return '积分';
+        return DEFAULT_CURRENCY_CODE;
     }
 }
 

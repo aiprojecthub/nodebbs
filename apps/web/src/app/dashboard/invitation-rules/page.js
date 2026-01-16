@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { Shield, Edit, Plus, Trash2 } from 'lucide-react';
 import { Loading } from '@/components/common/Loading';
 import { invitationsApi } from '@/lib/api';
+import { useDefaultCurrencyName } from '@/contexts/ExtensionContext';
 
 const ROLE_LABELS = {
   user: '普通用户',
@@ -28,6 +29,7 @@ const ROLE_LABELS = {
 };
 
 export default function InvitationRulesPage() {
+  const currencyName = useDefaultCurrencyName();
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingRule, setEditingRule] = useState(null);
@@ -254,7 +256,7 @@ export default function InvitationRulesPage() {
                       </p>
                     </div>
                     <div>
-                      <p className='text-muted-foreground'>积分消耗</p>
+                      <p className='text-muted-foreground'>{currencyName}消耗</p>
                       <p className='text-lg font-semibold'>
                         {rule.pointsCost} 分
                       </p>
@@ -373,7 +375,7 @@ export default function InvitationRulesPage() {
             </div>
 
             <div className='space-y-2'>
-              <Label htmlFor='pointsCost'>生成消耗积分</Label>
+              <Label htmlFor='pointsCost'>生成消耗{currencyName}</Label>
               <Input
                 id='pointsCost'
                 type='number'

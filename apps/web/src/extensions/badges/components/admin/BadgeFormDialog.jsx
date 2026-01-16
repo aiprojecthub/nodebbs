@@ -14,8 +14,10 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from 'sonner';
 import { FormDialog } from '@/components/common/FormDialog';
 import { ImageUpload } from '@/components/common/ImageUpload';
+import { useDefaultCurrencyName } from '@/contexts/ExtensionContext';
 
 export function BadgeFormDialog({ open, onOpenChange, mode, initialData, onSubmit }) {
+  const currencyName = useDefaultCurrencyName();
   const { register, handleSubmit, control, reset, watch, formState: { errors } } = useForm({
     defaultValues: {
       name: '',
@@ -303,7 +305,7 @@ export function BadgeFormDialog({ open, onOpenChange, mode, initialData, onSubmi
             <div className="space-y-4 rounded-md border p-4 bg-muted/10">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="_effectCheckInBonus">签到额外积分</Label>
+                  <Label htmlFor="_effectCheckInBonus">签到额外{currencyName}</Label>
                   <div className="flex items-center gap-2">
                     <Input
                       id="_effectCheckInBonus"
@@ -317,7 +319,7 @@ export function BadgeFormDialog({ open, onOpenChange, mode, initialData, onSubmi
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="_effectCheckInBonusPercent">签到积分加成</Label>
+                  <Label htmlFor="_effectCheckInBonusPercent">签到{currencyName}加成</Label>
                   <div className="flex items-center gap-2">
                     <Input
                       id="_effectCheckInBonusPercent"
