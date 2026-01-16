@@ -8,6 +8,7 @@ import {
   sysTransactions,
   sysCurrencies
 } from '../../ledger/schema.js';
+import { DEFAULT_CURRENCY_CODE } from '../../ledger/constants.js';
 import { users, userItems, shopItems } from '../../../db/schema.js';
 import { eq, sql, desc, ilike, and, inArray, ne } from 'drizzle-orm';
 import { getPassiveEffects } from '../../badges/services/badgeService.js';
@@ -49,7 +50,7 @@ export async function getUserCheckInStatus(fastify, userId) {
  * 每日签到
  */
 export async function checkIn(fastify, userId) {
-  const systemEnabled = await fastify.ledger.isCurrencyActive('credits');
+  const systemEnabled = await fastify.ledger.isCurrencyActive(DEFAULT_CURRENCY_CODE);
   if (!systemEnabled) throw new Error('奖励系统未启用');
 
   const today = new Date();
@@ -115,8 +116,8 @@ export async function checkIn(fastify, userId) {
 
   // 3. 发放奖励 (Ledger)
   try {
-    const baseAmount = await fastify.ledger.getCurrencyConfig('credits', 'check_in_base_amount', 10);
-    const streakBonus = await fastify.ledger.getCurrencyConfig('credits', 'check_in_streak_bonus', 5);
+    const baseAmount = await fastify.ledger.getCurrencyConfig(DEFAULT_CURRENCY_CODE, 'check_in_base_amount', 10);
+    const streakBonus = await fastify.ledger.getCurrencyConfig(DEFAULT_CURRENCY_CODE, 'check_in_streak_bonus', 5);
       
     let bonusAmount = Math.min(result.newStreak - 1, 6) * streakBonus;
     let effectBonus = 0;
@@ -131,7 +132,7 @@ export async function checkIn(fastify, userId) {
     const tx = await fastify.ledger.grant({
       userId,
       amount: totalAmount,
-      currencyCode: 'credits',
+      currencyCode: DEFAULT_CURRENCY_CODE,
       type: 'check_in',
       referenceType: 'check_in',
       referenceId: new Date().toISOString().split('T')[0] + '_' + userId,
@@ -150,7 +151,7 @@ export async function checkIn(fastify, userId) {
       fastify.eventBus.emit('user.checkin', { userId, streak: result.newStreak });
     }
 
-    const currencyName = await fastify.ledger.getCurrencyName('credits');
+    const currencyName = await fastify.ledger.getCurrencyName(DEFAULT_CURRENCY_CODE);
     return {
       amount: totalAmount,
       balance: tx.balanceAfter,
@@ -160,7 +161,7 @@ export async function checkIn(fastify, userId) {
 
   } catch (error) {
     console.error('CheckIn Grant Failed after Streak Update:', error);
-    const currencyName = await fastify.ledger.getCurrencyName('credits').catch(() => '积分');
+    const currencyName = await fastify.ledger.getCurrencyName(DEFAULT_CURRENCY_CODE).catch(() => DEFAULT_CURRENCY_CODE);
     throw new Error(`签到成功但发放${currencyName}失败，请联系管理员`);
   } finally {
     await fastify.cache.invalidate(`checkin:status:${userId}`);
@@ -262,7 +263,7 @@ export async function getCreditRanking(options = {}) {
       .from(sysAccounts)
       .innerJoin(users, eq(sysAccounts.userId, users.id))
       .where(and(
-        eq(sysAccounts.currencyCode, 'credits'),
+        eq(sysAccounts.currencyCode, DEFAULT_CURRENCY_CODE),
         eq(users.isDeleted, false),
         ne(users.role, 'admin')
       ))

@@ -3,6 +3,7 @@ import {
   getPostRewards,
   getCreditRanking,
 } from '../services/rewardService.js';
+import { DEFAULT_CURRENCY_CODE } from '../../ledger/constants.js';
 import db from '../../../db/index.js';
 import { posts, users } from '../../../db/schema.js';
 import { eq, sql, inArray, and, count, sum } from 'drizzle-orm';
@@ -61,14 +62,14 @@ export default async function rewardsRoutes(fastify, options) {
       if (post.userId === request.user.id) return reply.code(400).send({ error: '不能打赏自己的帖子' });
 
       // 检查金额限制
-      const minAmount = await fastify.ledger.getCurrencyConfig('credits', 'reward_min_amount', 1);
-      const maxAmount = await fastify.ledger.getCurrencyConfig('credits', 'reward_max_amount', 1000);
+      const minAmount = await fastify.ledger.getCurrencyConfig(DEFAULT_CURRENCY_CODE, 'reward_min_amount', 1);
+      const maxAmount = await fastify.ledger.getCurrencyConfig(DEFAULT_CURRENCY_CODE, 'reward_max_amount', 1000);
 
       if (amount < minAmount) return reply.code(400).send({ error: `打赏金额不能低于 ${minAmount}` });
       if (amount > maxAmount) return reply.code(400).send({ error: `打赏金额不能超过 ${maxAmount}` });
 
       // 检查系统是否启用
-      const isSystemEnabled = await fastify.ledger.isCurrencyActive('credits');
+      const isSystemEnabled = await fastify.ledger.isCurrencyActive(DEFAULT_CURRENCY_CODE);
       if (!isSystemEnabled) return reply.code(403).send({ error: '奖励系统未启用' });
 
       // 判断是话题还是回复 (postNumber === 1 为话题内容)
@@ -81,7 +82,7 @@ export default async function rewardsRoutes(fastify, options) {
         fromUserId: request.user.id,
         toUserId: post.userId,
         amount,
-        currencyCode: 'credits',
+        currencyCode: DEFAULT_CURRENCY_CODE,
         type: 'reward_post',
         referenceType: 'reward_transfer',
         referenceId: `reward_post_${Date.now()}`,
@@ -103,7 +104,7 @@ export default async function rewardsRoutes(fastify, options) {
         postId,
         fromUserId: request.user.id,
         toUserId: post.userId,
-        amount, // currency default 'credits'
+        amount, // currency default DEFAULT_CURRENCY_CODE
         message,
       });
 
@@ -127,7 +128,7 @@ export default async function rewardsRoutes(fastify, options) {
       };
     } catch (error) {
         if (error.message.includes('Insufficient funds')) {
-          const currencyName = await fastify.ledger.getCurrencyName('credits').catch(() => '');
+          const currencyName = await fastify.ledger.getCurrencyName(DEFAULT_CURRENCY_CODE).catch(() => '');
           return reply.code(400).send({ error: `${currencyName}余额不足` });
         }
         if (error.message.includes('未启用')) return reply.code(403).send({ error: error.message });
@@ -228,7 +229,7 @@ export default async function rewardsRoutes(fastify, options) {
       const tx = await fastify.ledger.grant({
           userId,
           amount,
-          currencyCode: 'credits',
+          currencyCode: DEFAULT_CURRENCY_CODE,
           type: 'admin_grant',
           referenceType: 'admin_operation',
           referenceId: `admin_grant_${Date.now()}`, 
@@ -246,7 +247,7 @@ export default async function rewardsRoutes(fastify, options) {
       const tx = await fastify.ledger.deduct({
           userId,
           amount,
-          currencyCode: 'credits',
+          currencyCode: DEFAULT_CURRENCY_CODE,
           type: 'admin_deduct',
           referenceType: 'admin_operation',
           referenceId: `admin_deduct_${Date.now()}`,

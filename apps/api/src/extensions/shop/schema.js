@@ -9,6 +9,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { users } from '../../db/schema.js';
+import { DEFAULT_CURRENCY_CODE } from '../ledger/constants.js';
 
 // ============ 公共字段 (重复定义以避免循环依赖) ============
 const $id = integer('id').primaryKey().generatedAlwaysAsIdentity();
@@ -42,7 +43,7 @@ export const shopItems = pgTable(
     name: varchar('name', { length: 100 }).notNull(), // 商品名称
     description: text('description'), // 商品描述
     price: integer('price').notNull(), // 价格（积分）
-    currencyCode: varchar('currency_code', { length: 20 }).notNull().default('credits'), // 货币类型
+    currencyCode: varchar('currency_code', { length: 20 }).notNull().default(DEFAULT_CURRENCY_CODE), // 货币类型
     imageUrl: varchar('image_url', { length: 500 }), // 商品图片
     stock: integer('stock'), // 库存（null=无限）
     isActive: boolean('is_active').notNull().default(true), // 是否上架

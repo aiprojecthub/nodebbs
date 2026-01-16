@@ -7,6 +7,7 @@ import {
   getTodayGeneratedCount,
   getUserInvitationRule,
 } from '../../utils/invitation.js';
+import { DEFAULT_CURRENCY_CODE } from '../../extensions/ledger/constants.js';
 
 export default async function invitationsRoutes(fastify) {
   // 生成邀请码
@@ -72,17 +73,17 @@ export default async function invitationsRoutes(fastify) {
         // 积分扣除检查
         if (rule.pointsCost > 0) {
           const totalCost = rule.pointsCost * count;
-          // 使用账本检查余额 (假设货币为 'credits')
+          // 使用账本检查余额
           if (!fastify.ledger) {
              throw new Error('账本系统不可用');
           }
 
           // 检查余额
-          const account = await fastify.ledger.getAccount(request.user.id, 'credits');
+          const account = await fastify.ledger.getAccount(request.user.id, DEFAULT_CURRENCY_CODE);
           const currentBalance = account ? Number(account.balance) : 0;
 
           if (currentBalance < totalCost) {
-              const currencyName = await fastify.ledger.getCurrencyName('credits').catch(() => '积分');
+              const currencyName = await fastify.ledger.getCurrencyName(DEFAULT_CURRENCY_CODE).catch(() => DEFAULT_CURRENCY_CODE);
               return reply.code(400).send({ error: `${currencyName}不足，需要 ${totalCost} ${currencyName} (当前余额: ${currentBalance})` });
           }
 
@@ -90,7 +91,7 @@ export default async function invitationsRoutes(fastify) {
           await fastify.ledger.transfer({
                fromUserId: request.user.id,
                toUserId: null, // Burn
-               currencyCode: 'credits',
+               currencyCode: DEFAULT_CURRENCY_CODE,
                amount: totalCost,
                type: 'invite_create',
                description: `生成 ${count} 个邀请码`,

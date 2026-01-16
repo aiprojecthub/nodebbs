@@ -21,6 +21,7 @@ import { normalizeEmail, normalizeIdentifier, normalizeUsername } from '../../ut
 import { checkSpammer, formatSpamCheckMessage } from '../../utils/stopforumspam.js';
 import qrLoginRoutes from './qr-login.js';
 import { isDev } from '../../utils/env.js';
+import { DEFAULT_CURRENCY_CODE } from '../../extensions/ledger/constants.js';
 
 export default async function authRoutes(fastify, options) {
   // 注册扫码登录路由
@@ -245,16 +246,16 @@ export default async function authRoutes(fastify, options) {
         if (usedInvitation && usedInvitation.createdBy) {
           try {
             // 检查奖励功能是否开启
-            const isRewardsActive = await fastify.ledger.isCurrencyActive('credits');
-            
+            const isRewardsActive = await fastify.ledger.isCurrencyActive(DEFAULT_CURRENCY_CODE);
+
             if (isRewardsActive) {
-                const inviteAmount = await fastify.ledger.getCurrencyConfig('credits', 'invite_user_amount', 10);
-                
+                const inviteAmount = await fastify.ledger.getCurrencyConfig(DEFAULT_CURRENCY_CODE, 'invite_user_amount', 10);
+
                 if (inviteAmount > 0) {
                      await fastify.ledger.grant({
                         userId: usedInvitation.createdBy,
                         amount: inviteAmount,
-                        currencyCode: 'credits',
+                        currencyCode: DEFAULT_CURRENCY_CODE,
                         type: 'invite_user',
                         referenceType: 'invite_user',
                         referenceId: `${usedInvitation.createdBy}_invite_${newUser.id}`,

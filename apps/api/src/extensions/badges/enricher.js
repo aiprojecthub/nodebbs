@@ -1,5 +1,6 @@
 import { userEnricher } from '../../services/userEnricher.js';
 import { getUserBadges, getUsersBadges } from './services/badgeService.js';
+import { DEFAULT_CURRENCY_CODE } from '../ledger/constants.js';
 
 /**
  * 为单个用户补充勋章信息
@@ -13,7 +14,7 @@ export default function registerBadgeEnricher(fastify) {
 
     // 检查积分货币是否启用 (Assuming badges rely on credits system)
     if (fastify && fastify.ledger) {
-      const isCreditsActive = await fastify.ledger.isCurrencyActive('credits');
+      const isCreditsActive = await fastify.ledger.isCurrencyActive(DEFAULT_CURRENCY_CODE);
       if (!isCreditsActive) return;
     }
 
@@ -35,7 +36,7 @@ export default function registerBadgeEnricher(fastify) {
 
     // 检查积分货币是否启用
     if (fastify && fastify.ledger) {
-      const isCreditsActive = await fastify.ledger.isCurrencyActive('credits');
+      const isCreditsActive = await fastify.ledger.isCurrencyActive(DEFAULT_CURRENCY_CODE);
       if (!isCreditsActive) return;
     }
 

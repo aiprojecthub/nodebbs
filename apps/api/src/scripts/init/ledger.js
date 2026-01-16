@@ -5,13 +5,14 @@
 
 import { sysCurrencies, sysAccounts, sysTransactions } from '../../extensions/ledger/schema.js';
 import { eq } from 'drizzle-orm';
+import { DEFAULT_CURRENCY_CODE } from '../../extensions/ledger/constants.js';
 
 /**
  * 默认货币列表
  */
 export const DEFAULT_CURRENCIES = [
   {
-    code: 'credits',
+    code: DEFAULT_CURRENCY_CODE,
     name: '积分',
     symbol: 'pts',
     precision: 0,

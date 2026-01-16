@@ -2,6 +2,7 @@ import { userEnricher } from '../../services/userEnricher.js';
 import db from '../../db/index.js';
 import { eq, and, inArray } from 'drizzle-orm';
 import { shopItems, userItems } from '../../db/schema.js';
+import { DEFAULT_CURRENCY_CODE } from '../ledger/constants.js';
 
 export default function registerShopEnricher(fastify) {
   // 注册头像框增强 (单用户)
@@ -11,7 +12,7 @@ export default function registerShopEnricher(fastify) {
 
     // 检查积分货币是否启用
     if (fastify && fastify.ledger) {
-      const isCreditsActive = await fastify.ledger.isCurrencyActive('credits');
+      const isCreditsActive = await fastify.ledger.isCurrencyActive(DEFAULT_CURRENCY_CODE);
       if (!isCreditsActive) return;
     }
 
@@ -52,7 +53,7 @@ export default function registerShopEnricher(fastify) {
 
     // 检查积分货币是否启用
     if (fastify && fastify.ledger) {
-      const isCreditsActive = await fastify.ledger.isCurrencyActive('credits');
+      const isCreditsActive = await fastify.ledger.isCurrencyActive(DEFAULT_CURRENCY_CODE);
       if (!isCreditsActive) return;
     }
 

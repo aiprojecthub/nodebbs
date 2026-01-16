@@ -9,6 +9,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { users, topics, posts } from '../../db/schema.js';
+import { DEFAULT_CURRENCY_CODE } from '../ledger/constants.js';
 
 // ============ Common Fields (Duplicated to avoid circular dep) ============
 const $id = integer('id').primaryKey().generatedAlwaysAsIdentity();
@@ -78,7 +79,7 @@ export const postRewards = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     amount: integer('amount').notNull(), // 打赏金额 (Credits)
-    currency: varchar('currency', { length: 20 }).default('credits'), // 支持多币种打赏
+    currency: varchar('currency', { length: 20 }).default(DEFAULT_CURRENCY_CODE), // 支持多币种打赏
     message: text('message'), // 打赏留言
   },
   (table) => [

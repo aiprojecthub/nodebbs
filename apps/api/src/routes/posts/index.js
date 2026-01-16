@@ -4,6 +4,7 @@ import { eq, sql, desc, and, inArray, ne, like, or, not } from 'drizzle-orm';
 import { getSetting } from '../../utils/settings.js';
 import { userEnricher } from '../../services/userEnricher.js';
 import { sysCurrencies, sysAccounts } from '../../extensions/ledger/schema.js';
+import { DEFAULT_CURRENCY_CODE } from '../../extensions/ledger/constants.js';
 import { getPassiveEffects } from '../../extensions/badges/services/badgeService.js';
 import { applyUserInfoVisibility, shouldHideUserInfo } from '../../utils/visibility.js';
 
@@ -633,7 +634,7 @@ export default async function postRoutes(fastify, options) {
     // 4. 检查积分扣除 (如果配置为负数)
     if (postNumber > 1) {
       try {
-        const replyCreditChange = await fastify.ledger.getCurrencyConfig('credits', 'post_reply_amount', 2); // 默认值2，表示回复奖励2积分
+        const replyCreditChange = await fastify.ledger.getCurrencyConfig(DEFAULT_CURRENCY_CODE, 'post_reply_amount', 2); // 默认值2，表示回复奖励2积分
         const replyCost = replyCreditChange < 0 ? Math.abs(Number(replyCreditChange)) : 0;
         
         if (replyCost > 0) {
@@ -647,11 +648,10 @@ export default async function postRoutes(fastify, options) {
            }
            
            // Deduct credits via Ledger
-           // Assuming 'credits' currency code
            if (fastify.ledger) {
               await fastify.ledger.deduct({
                   userId: request.user.id,
-                  currencyCode: 'credits',
+                  currencyCode: DEFAULT_CURRENCY_CODE,
                   amount: finalCost,
                   type: 'post_reply',
                   referenceType: 'topic',
@@ -668,8 +668,8 @@ export default async function postRoutes(fastify, options) {
       } catch (err) {
         // 如果是余额不足，返回 400
         if (err.message.includes('余额不足') || err.message.includes('Insufficient funds')) {
-           const currencyName = await fastify.ledger.getCurrencyName('credits').catch(() => '积分');
-           const cost = Math.abs(await fastify.ledger.getCurrencyConfig('credits', 'post_reply_amount', 0));
+           const currencyName = await fastify.ledger.getCurrencyName(DEFAULT_CURRENCY_CODE).catch(() => DEFAULT_CURRENCY_CODE);
+           const cost = Math.abs(await fastify.ledger.getCurrencyConfig(DEFAULT_CURRENCY_CODE, 'post_reply_amount', 0));
            return reply.code(400).send({ error: `${currencyName}余额不足，发表回复需要 ${cost} ${currencyName}` });
         }
         // 其他积分系统错误（如未启用），记录日志但允许发帖（或者也可以选择拦截）

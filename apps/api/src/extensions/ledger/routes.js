@@ -1,4 +1,5 @@
 import { sysAccounts, sysTransactions, sysCurrencies } from './schema.js';
+import { DEFAULT_CURRENCY_CODE } from './constants.js';
 import db from '../../db/index.js';
 import { eq, and, desc, sql, gte, lt, count } from 'drizzle-orm';
 import { users } from '../../db/schema.js';
@@ -162,13 +163,13 @@ export default async function ledgerRoutes(fastify, options) {
           querystring: {
               type: 'object',
               properties: {
-                  currency: { type: 'string', default: 'credits' },
+                  currency: { type: 'string', default: DEFAULT_CURRENCY_CODE },
                   userId: { type: 'integer' }
               }
           }
       }
   }, async (req, reply) => {
-      const { currency = 'credits', userId } = req.query;
+      const { currency = DEFAULT_CURRENCY_CODE, userId } = req.query;
       
       let targetUserId = req.user.id;
       if (req.user.role === 'admin' && userId) {

@@ -1,6 +1,7 @@
 import db from '../../../db/index.js';
 import { sysCurrencies, sysAccounts, sysTransactions } from '../schema.js';
 import { eq, and, sql } from 'drizzle-orm';
+import { DEFAULT_CURRENCY_CODE } from '../constants.js';
 
 /**
  * 账本服务
@@ -282,10 +283,10 @@ export class LedgerService {
 
   /**
    * 获取货币名称（带缓存）
-   * @param {string} currencyCode - 货币代码，默认 'credits'
+   * @param {string} currencyCode - 货币代码，默认 DEFAULT_CURRENCY_CODE
    * @returns {Promise<string>} 货币名称
    */
-  async getCurrencyName(currencyCode = 'credits') {
+  async getCurrencyName(currencyCode = DEFAULT_CURRENCY_CODE) {
     const cacheKey = `currency:name:${currencyCode}`;
     const ttl = 3600; // 缓存 1 小时
 

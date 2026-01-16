@@ -1,6 +1,7 @@
 // import { grantReward } from './services/rewardService.js';
 import db from '../../db/index.js';
 import { eq, and } from 'drizzle-orm';
+import { DEFAULT_CURRENCY_CODE } from '../ledger/constants.js';
 
 /**
  * Register reward system event listeners
@@ -19,16 +20,16 @@ export async function registerRewardListeners(fastify) {
     try {
       fastify.log.debug(`[奖励系统] 处理话题创建奖励: TopicID=${topic.id}, UserID=${topic.userId}`);
       
-      const amount = await fastify.ledger.getCurrencyConfig('credits', 'post_topic_amount', 5);
+      const amount = await fastify.ledger.getCurrencyConfig(DEFAULT_CURRENCY_CODE, 'post_topic_amount', 5);
       const amountNum = Number(amount);
 
       if (amountNum > 0) {
-        const isCurrencyActive = await fastify.ledger.isCurrencyActive('credits');
+        const isCurrencyActive = await fastify.ledger.isCurrencyActive(DEFAULT_CURRENCY_CODE);
         if (isCurrencyActive) {
             await fastify.ledger.grant({
               userId: topic.userId,
               amount: amountNum,
-              currencyCode: 'credits',
+              currencyCode: DEFAULT_CURRENCY_CODE,
               type: 'post_topic',
               referenceType: 'reward_event',
               referenceId: `post_topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -54,16 +55,16 @@ export async function registerRewardListeners(fastify) {
       fastify.log.debug(`[积分系统] 处理回复创建奖励: PostID=${post.id}, UserID=${post.userId}`);
 
       // 读取配置
-      const replyAmount = await fastify.ledger.getCurrencyConfig('credits', 'post_reply_amount', 2);
+      const replyAmount = await fastify.ledger.getCurrencyConfig(DEFAULT_CURRENCY_CODE, 'post_reply_amount', 2);
       const amountNum = Number(replyAmount);
 
       if (amountNum > 0) {
-        const isCurrencyActive = await fastify.ledger.isCurrencyActive('credits');
+        const isCurrencyActive = await fastify.ledger.isCurrencyActive(DEFAULT_CURRENCY_CODE);
         if (isCurrencyActive) {
             await fastify.ledger.grant({
               userId: post.userId,
               amount: amountNum,
-              currencyCode: 'credits',
+              currencyCode: DEFAULT_CURRENCY_CODE,
               type: 'post_reply',
               referenceType: 'reward_event',
               referenceId: `post_reply_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -115,15 +116,15 @@ export async function registerRewardListeners(fastify) {
         return;
       }
 
-      const amount = await fastify.ledger.getCurrencyConfig('credits', 'receive_like_amount', 1);
+      const amount = await fastify.ledger.getCurrencyConfig(DEFAULT_CURRENCY_CODE, 'receive_like_amount', 1);
 
       if (amount > 0) {
-        const isCurrencyActive = await fastify.ledger.isCurrencyActive('credits');
+        const isCurrencyActive = await fastify.ledger.isCurrencyActive(DEFAULT_CURRENCY_CODE);
         if (isCurrencyActive) {
             await fastify.ledger.grant({
               userId: postAuthorId, // 给帖子作者加分
               amount: Number(amount),
-              currencyCode: 'credits',
+              currencyCode: DEFAULT_CURRENCY_CODE,
               type: 'receive_like',
               referenceType: 'reward_event',
               referenceId: `receive_like_${postId}_${userId}`, // Deterministic ID for deduplication
