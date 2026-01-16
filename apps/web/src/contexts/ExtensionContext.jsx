@@ -1,11 +1,12 @@
 'use client';
 
 import { createContext, useContext, useMemo } from 'react';
+import { DEFAULT_CURRENCY_CODE } from '@/extensions/ledger/constants';
 
 const ExtensionContext = createContext(null);
 
-// 默认货币 code
-export const DEFAULT_CURRENCY_CODE = 'credits';
+// 重新导出常量，保持向后兼容
+export { DEFAULT_CURRENCY_CODE };
 
 export function ExtensionProvider({ children, activeCurrencies = [] }) {
   // 直接使用 SSR 传递的数据，不进行客户端请求

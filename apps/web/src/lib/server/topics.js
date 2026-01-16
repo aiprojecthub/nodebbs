@@ -1,5 +1,6 @@
 import { cache } from 'react';
 import { request } from '@/lib/server/api';
+import { DEFAULT_CURRENCY_CODE } from '@/extensions/ledger/constants';
 
 /**
  * 服务端获取话题列表数据
@@ -184,7 +185,7 @@ export async function getPostsData(topicId, page = 1, limit = 20) {
 export async function getRewardEnabledStatus() {
   try {
     const { isCurrencyActive } = await import('@/lib/server/ledger');
-    return await isCurrencyActive('credits');
+    return await isCurrencyActive(DEFAULT_CURRENCY_CODE);
   } catch (error) {
     console.error('检查积分系统状态失败:', error);
     return false;

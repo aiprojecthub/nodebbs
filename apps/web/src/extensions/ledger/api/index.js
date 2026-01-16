@@ -1,4 +1,5 @@
 import apiClient from '../../../lib/api';
+import { DEFAULT_CURRENCY_CODE } from '../constants';
 
 export const ledgerApi = {
   // 获取当前用户的所有账户余额（钱包视图）
@@ -24,7 +25,7 @@ export const ledgerApi = {
   },
 
   // 获取单个货币余额
-  async getBalance(currency = 'credits', userId) {
+  async getBalance(currency = DEFAULT_CURRENCY_CODE, userId) {
     const params = { currency };
     if (userId) {
       params.userId = userId;

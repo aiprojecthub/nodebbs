@@ -11,6 +11,7 @@ import { FormDialog } from '@/components/common/FormDialog';
 import { CurrencyOperationDialog } from './CurrencyOperationDialog';
 import { Plus, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { ledgerApi } from '../../api';
+import { DEFAULT_CURRENCY_CODE } from '../../constants';
 import { toast } from 'sonner';
 
 export function LedgerCurrencies() {
@@ -203,7 +204,14 @@ export function LedgerCurrencies() {
             <DataTable
                 columns={[
                     { key: 'name', label: '名称' },
-                    { key: 'code', label: '代码', render: (val) => <span className="font-mono">{val}</span> },
+                    { key: 'code', label: '代码', render: (val) => (
+                        <span className="font-mono">
+                            {val}
+                            {val === DEFAULT_CURRENCY_CODE && (
+                                <span className="ml-2 text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">默认</span>
+                            )}
+                        </span>
+                    )},
                     { key: 'symbol', label: '符号' },
                     { 
                         key: 'isActive', 

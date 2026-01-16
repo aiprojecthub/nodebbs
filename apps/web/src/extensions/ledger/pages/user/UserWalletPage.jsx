@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Wallet, Loader2, Trophy, TrendingUp } from 'lucide-react';
 import Link from '@/components/common/Link';
 import { ledgerApi } from '../../api';
+import { DEFAULT_CURRENCY_CODE } from '../../constants';
 import { rewardsApi } from '@/lib/api';
 import { CheckInStatus } from '../../components/user/CheckInStatus';
 import { LedgerTransactionTable } from '../../components/common/LedgerTransactionTable';
@@ -56,7 +57,7 @@ export default function UserWalletPage() {
 
   const getCurrencySymbol = (code) => {
     switch (code) {
-      case 'credits': return '🪙';
+      case DEFAULT_CURRENCY_CODE: return '🪙';
       case 'gold': return '💰';
       default: return '$';
     }

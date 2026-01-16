@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { rewardsApi, ledgerApi } from '@/lib/api';
 import { Coins, Loader2, Heart } from 'lucide-react';
 import { toast } from 'sonner';
-import { useDefaultCurrencyName } from '@/contexts/ExtensionContext';
+import { useDefaultCurrencyName, DEFAULT_CURRENCY_CODE } from '@/contexts/ExtensionContext';
 
 const QUICK_AMOUNTS = [1, 5, 10, 20, 50, 100];
 
@@ -46,7 +46,7 @@ export function RewardDialog({ open, onOpenChange, postId, postAuthor, onSuccess
     try {
       // 获取账户列表，包含配置信息
       const accounts = await ledgerApi.getAccounts();
-      const creditsAccount = accounts.find(a => a.currency.code === 'credits');
+      const creditsAccount = accounts.find(a => a.currency.code === DEFAULT_CURRENCY_CODE);
       
       if (creditsAccount) {
         setBalance(creditsAccount.balance);

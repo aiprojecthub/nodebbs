@@ -15,6 +15,7 @@ import Image from 'next/image';
 import { ITEM_TYPES, getItemTypeLabel } from '../../utils/itemTypes';
 import { badgesApi } from '@/extensions/badges/api';
 import { ledgerApi } from '@/extensions/ledger/api';
+import { DEFAULT_CURRENCY_CODE } from '@/extensions/ledger/constants';
 import UserAvatar from '@/components/user/UserAvatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { FormDialog } from '@/components/common/FormDialog';
@@ -60,7 +61,7 @@ export function ShopItemFormDialog({ open, onOpenChange, mode, initialData, onSu
     displayOrder: 0,
     isActive: true,
     metadata: '',
-    currencyCode: 'credits',
+    currencyCode: DEFAULT_CURRENCY_CODE,
   });
 
   const { user } = useAuth();
@@ -118,7 +119,7 @@ export function ShopItemFormDialog({ open, onOpenChange, mode, initialData, onSu
         name: initialData.name,
         description: initialData.description || '',
         price: initialData.price,
-        currencyCode: initialData.currencyCode || 'credits',
+        currencyCode: initialData.currencyCode || DEFAULT_CURRENCY_CODE,
         imageUrl: initialData.imageUrl || '',
         stock: initialData.stock,
         displayOrder: initialData.displayOrder || 0,
@@ -131,7 +132,7 @@ export function ShopItemFormDialog({ open, onOpenChange, mode, initialData, onSu
         name: '',
         description: '',
         price: 0,
-        currencyCode: 'credits',
+        currencyCode: DEFAULT_CURRENCY_CODE,
         imageUrl: '',
         stock: null,
         displayOrder: 0,
@@ -325,7 +326,7 @@ export function ShopItemFormDialog({ open, onOpenChange, mode, initialData, onSu
                     </SelectItem>
                   ))}
                   {currencies.length === 0 && (
-                      <SelectItem value="credits">🪙 积分</SelectItem>
+                      <SelectItem value={DEFAULT_CURRENCY_CODE}>🪙 积分</SelectItem>
                   )}
                 </SelectContent>
               </Select>

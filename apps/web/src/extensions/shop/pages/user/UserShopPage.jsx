@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShoppingCart } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useDefaultCurrencyName } from '@/contexts/ExtensionContext';
+import { useDefaultCurrencyName, DEFAULT_CURRENCY_CODE } from '@/contexts/ExtensionContext';
 import { shopApi, rewardsApi, ledgerApi } from '@/lib/api';
 import { toast } from 'sonner';
 import { useShopItems } from '@/extensions/shop/hooks/useShopItems';
@@ -115,7 +115,7 @@ export default function UserShopPage() {
     }
   };
 
-  const currentPointsBalance = accounts.find(a => a.currency.code === 'credits')?.balance || 0;
+  const currentPointsBalance = accounts.find(a => a.currency.code === DEFAULT_CURRENCY_CODE)?.balance || 0;
 
   return (
     <div className="space-y-6">

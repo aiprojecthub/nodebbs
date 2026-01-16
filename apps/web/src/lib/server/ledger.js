@@ -1,6 +1,5 @@
 import { request } from '@/lib/server/api';
-
-const DEFAULT_CURRENCY_CODE = 'credits';
+import { DEFAULT_CURRENCY_CODE } from '@/extensions/ledger/constants';
 
 /**
  * 获取活跃货币列表 (Server Side)
