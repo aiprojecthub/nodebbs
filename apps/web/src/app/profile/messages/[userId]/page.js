@@ -215,14 +215,14 @@ export default function MessageDetailPage() {
   return (
     <div className='flex flex-col h-[calc(100vh-12rem)]'>
       {/* 聊天容器 */}
-      <div className='bg-card border border-border rounded-lg overflow-hidden flex flex-col h-full'>
+      <div className='bg-background/50 backdrop-blur-sm border border-border/50 rounded-2xl overflow-hidden flex flex-col h-full shadow-sm'>
         {/* 会话对象信息头部 */}
-        <div className='border-b border-border px-4 py-3 bg-muted/20 shrink-0'>
+        <div className='border-b border-border/50 px-4 py-3 bg-muted/30 shrink-0 backdrop-blur-md sticky top-0 z-10'>
           <div className='flex items-center justify-between'>
             <div className='flex items-center space-x-3'>
               <Link
                 href='/profile/messages'
-                className='text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-accent'
+                className='text-muted-foreground hover:text-foreground transition-colors p-2 -ml-2 rounded-full hover:bg-background/80'
               >
                 <ArrowLeft className='h-5 w-5' />
               </Link>
@@ -230,11 +230,12 @@ export default function MessageDetailPage() {
                 url={otherUser.avatar}
                 name={otherUser.username}
                 size='md'
+                className="ring-2 ring-background"
               />
               <div>
                 <Link
                   href={`/users/${otherUser.username}`}
-                  className='text-sm font-semibold text-foreground hover:text-primary transition-colors'
+                  className='text-sm font-bold text-foreground hover:text-primary transition-colors'
                 >
                   {otherUser.name || otherUser.username}
                 </Link>
@@ -247,59 +248,65 @@ export default function MessageDetailPage() {
         </div>
 
         {/* 会话记录 - 可滚动区域 */}
-        <div ref={messagesContainerRef} className='flex-1 overflow-y-auto p-4'>
+        <div ref={messagesContainerRef} className='flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-muted-foreground/20'>
           {conversation.length === 0 ? (
             <div className='flex items-center justify-center h-full'>
-              <div className='text-center'>
-                <Mail className='h-12 w-12 text-muted-foreground mx-auto mb-2' />
-                <p className='text-muted-foreground'>暂无会话记录</p>
+              <div className='text-center space-y-3 opacity-60'>
+                <div className="bg-muted p-4 rounded-full inline-block">
+                    <Mail className='h-8 w-8 text-muted-foreground' />
+                </div>
+                <p className='text-sm text-muted-foreground'>暂无记录，打个招呼吧</p>
               </div>
             </div>
           ) : (
-            <div className='space-y-4 min-h-full flex flex-col justify-end'>
+            <div className='space-y-6 min-h-full flex flex-col justify-end pb-2'>
               {/* 加载更多按钮 */}
               {hasMore && (
-                <div className='flex justify-center pb-2'>
+                <div className='flex justify-center py-4'>
                   <Button
-                    variant='outline'
+                    variant='ghost'
                     size='sm'
                     onClick={handleLoadMore}
                     disabled={loadingMore}
-                    className='text-xs'
+                    className='text-xs text-muted-foreground hover:text-foreground rounded-full bg-muted/30 hover:bg-muted/50'
                   >
                     {loadingMore ? (
                       <>
                         <Loader2 className='h-3 w-3 mr-1 animate-spin' />
-                        加载中...
+                        加载历史消息...
                       </>
                     ) : (
-                      `加载更多 (${total - conversation.length} 条)`
+                      `查看更多历史消息`
                     )}
                   </Button>
                 </div>
               )}
-              {conversation.map((msg) => {
+              {conversation.map((msg, index) => {
                 const isSentByMe = msg.senderId === user.id;
+                // Check if previous message is from same user to group visually
+                const isSequence = index > 0 && conversation[index-1].senderId === msg.senderId;
 
                 return (
                   <div
                     key={msg.id}
                     className={`flex ${
                       isSentByMe ? 'justify-end' : 'justify-start'
-                    } group`}
+                    } group animate-in slide-in-from-bottom-2 duration-500`}
                   >
                     <div
-                      className={`flex items-start gap-2 max-w-[75%] ${
+                      className={`flex items-end gap-2 max-w-[85%] sm:max-w-[70%] ${
                         isSentByMe ? 'flex-row' : 'flex-row'
                       }`}
                     >
                       {/* 左侧头像 - 对方消息 */}
                       {!isSentByMe && (
-                        <UserAvatar
-                          url={msg.senderAvatar}
-                          name={msg.senderUsername}
-                          size='sm'
-                        />
+                         <div className={`flex-shrink-0 w-8 ${isSequence ? 'invisible' : ''}`}>
+                            <UserAvatar
+                              url={msg.senderAvatar}
+                              name={msg.senderUsername}
+                              size='sm'
+                            />
+                         </div>
                       )}
 
                       {/* 消息气泡 */}
@@ -308,81 +315,53 @@ export default function MessageDetailPage() {
                           isSentByMe ? 'items-end' : 'items-start'
                         }`}
                       >
-                        {/* 发送者名称和时间 */}
-                        <div
-                          className={`flex items-center gap-2 mb-1 ${
-                            isSentByMe ? 'flex-row-reverse' : 'flex-row'
-                          }`}
-                        >
-                          {!isSentByMe && (
-                            <span className='text-xs font-semibold text-foreground'>
-                              {msg.senderName || msg.senderUsername}
+                         {!isSequence && !isSentByMe && (
+                            <span className="text-[10px] text-muted-foreground ml-1 mb-1">
+                                {msg.senderName || msg.senderUsername}
                             </span>
-                          )}
-                          <span className='text-xs text-muted-foreground'>
-                            <Time date={msg.createdAt} fromNow />
-                          </span>
-                          {!msg.isRead && !isSentByMe && (
-                            <Badge
-                              variant='default'
-                              className='h-4 px-1.5 text-xs font-medium'
-                            >
-                              新
-                            </Badge>
-                          )}
-                        </div>
+                         )}
 
-                        {/* 消息内容 */}
                         <div
-                          className={`relative rounded-lg px-3 py-2 ${
+                          className={`relative px-4 py-2.5 shadow-sm text-sm break-all ${
                             isSentByMe
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted text-foreground border border-border'
+                              ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-2xl rounded-br-sm'
+                              : 'bg-card border border-border/50 text-card-foreground rounded-2xl rounded-bl-sm'
                           }`}
                         >
                           {msg.subject && (
-                            <div
-                              className={`text-sm font-semibold mb-1 ${
-                                isSentByMe
-                                  ? 'text-primary-foreground/90'
-                                  : 'text-card-foreground'
-                              }`}
-                            >
+                            <div className="font-bold mb-1 border-b border-white/20 pb-1">
                               {msg.subject}
                             </div>
                           )}
-                          <p className='text-sm break-all'>
+                          <p className="leading-relaxed whitespace-pre-wrap">
                             {msg.content}
                           </p>
 
-                          {/* 删除按钮 - 悬停显示 */}
-                          <Button
-                            onClick={() => handleDelete(msg.id)}
-                            disabled={deleting}
-                            variant='destructive'
-                            className={`absolute -top-2 ${
-                              isSentByMe ? '-left-8' : '-right-8'
-                            } opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6`}
-                            title='删除消息'
-                            size='icon'
-                          >
-                            {deleting ? (
-                              <Loader2 className='h-3.5 w-3.5 animate-spin' />
-                            ) : (
-                              <Trash2 className='h-3.5 w-3.5' />
-                            )}
-                          </Button>
+                          {/* 删除按钮 - 悬停优雅显示 */}
+                          <div className={`absolute top-0 bottom-0 ${isSentByMe ? '-left-10' : '-right-10'} flex items-center opacity-0 group-hover:opacity-100 transition-opacity`}>
+                              <Button
+                                onClick={() => handleDelete(msg.id)}
+                                disabled={deleting}
+                                variant='ghost'
+                                size='icon'
+                                className='h-8 w-8 text-muted-foreground hover:text-destructive rounded-full bg-background/50 backdrop-blur-sm'
+                                title='删除'
+                              >
+                                {deleting ? <Loader2 className='h-3.5 w-3.5 animate-spin' /> : <Trash2 className='h-4 w-4' />}
+                              </Button>
+                          </div>
+                        </div>
+                        
+                        {/* 时间 & 状态 */}
+                        <div className={`text-[10px] text-muted-foreground mt-1 flex items-center gap-1 ${isSentByMe ? 'mr-1' : 'ml-1'}`}>
+                           <Time date={msg.createdAt} fromNow />
+                           {isSentByMe && (
+                               <span>
+                                   {msg.isRead ? '· 已读' : ''}
+                               </span>
+                           )}
                         </div>
                       </div>
-
-                      {/* 右侧头像 - 我的消息 */}
-                      {isSentByMe && (
-                        <UserAvatar
-                          url={user.avatar}
-                          name={user.username}
-                          size='sm'
-                        />
-                      )}
                     </div>
                   </div>
                 );
@@ -392,44 +371,44 @@ export default function MessageDetailPage() {
           )}
         </div>
 
-        {/* 回复区域 - 固定底部 */}
-        <div className='border-t border-border p-3 bg-muted/10 shrink-0'>
-          <div className='flex items-end space-x-2'>
-            <Textarea
-              ref={textareaRef}
-              className='flex-1 min-h-[40px] max-h-[120px] resize-none text-sm bg-background shadow-none'
-              placeholder={`发送消息给 ${
-                otherUser.name || otherUser.username
-              }...`}
-              value={replyContent}
-              onChange={(e) => setReplyContent(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  if (replyContent.trim() && !replying) {
-                    handleReply();
-                  }
-                }
-              }}
-              disabled={replying}
-              rows={1}
-            />
-            <Button
-              onClick={handleReply}
-              disabled={replying || !replyContent.trim()}
-              size='icon'
-              className='h-[40px] w-[40px] shrink-0'
-            >
-              {replying ? (
-                <Loader2 className='h-4 w-4 animate-spin' />
-              ) : (
-                <Send className='h-4 w-4' />
-              )}
-            </Button>
-          </div>
-          <p className='text-xs text-muted-foreground mt-1.5'>
-            按 Enter 发送，Shift + Enter 换行
-          </p>
+        {/* 回复区域 - 悬浮式 */}
+        <div className='p-4 pt-2'>
+            <div className="bg-muted/30 backdrop-blur-md rounded-xl p-1.5 border border-border/50 flex items-end gap-2 shadow-sm focus-within:ring-1 focus-within:ring-primary/30 transition-shadow">
+                <Textarea
+                  ref={textareaRef}
+                  className='flex-1 min-h-[40px] max-h-[120px] resize-none text-sm bg-transparent border-0 shadow-none focus-visible:ring-0 p-3 placeholder:text-muted-foreground/50'
+                  placeholder="输入消息..."
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      if (replyContent.trim() && !replying) {
+                        handleReply();
+                      }
+                    }
+                  }}
+                  disabled={replying}
+                  rows={1}
+                />
+                <Button
+                  onClick={handleReply}
+                  disabled={replying || !replyContent.trim()}
+                  size='icon'
+                  className={`h-10 w-10 shrink-0 rounded-lg transition-all ${
+                      replyContent.trim() ? 'bg-primary text-primary-foreground shadow-md' : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {replying ? (
+                    <Loader2 className='h-4 w-4 animate-spin' />
+                  ) : (
+                    <Send className='h-4 w-4' />
+                  )}
+                </Button>
+            </div>
+            <p className='text-[10px] text-muted-foreground text-center mt-2 opacity-50 hidden sm:block'>
+                Enter 发送，Shift + Enter 换行
+            </p>
         </div>
       </div>
     </div>

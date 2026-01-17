@@ -129,7 +129,7 @@ export default function MessagesPage() {
 
       {/* 会话列表 */}
       {conversations.length > 0 ? (
-        <div className='bg-card border border-border rounded-lg divide-y divide-border'>
+        <div className='bg-card border border-border rounded-lg divide-y divide-border overflow-hidden'>
           {conversations.map((conversation) => {
             const {
               user: otherUser,
@@ -141,107 +141,105 @@ export default function MessagesPage() {
             return (
               <div
                 key={otherUser.id}
-                className={`hover:bg-accent/50 transition-colors ${
-                  hasUnread ? 'bg-accent/30' : ''
+                className={`group relative overflow-hidden transition-all duration-300 hover:shadow-md ${
+                  hasUnread ? 'bg-primary/5 hover:bg-primary/10' : 'bg-card hover:bg-muted/50'
                 }`}
               >
-                <div className='p-4'>
-                  <div className='flex items-start space-x-3'>
+                {/* 左侧装饰条 (未读时显示) */}
+                {hasUnread && (
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
+                )}
+
+                <div className='p-4 pl-5'>
+                  <div className='flex items-start space-x-4'>
                     {/* 用户头像 */}
-                    <Link href={`/profile/messages/${otherUser.id}`}>
+                    <Link href={`/profile/messages/${otherUser.id}`} className="flex-shrink-0">
                       <UserAvatar
                         url={otherUser.avatar}
                         name={otherUser.username}
                         size='md'
+                        className="border-2 border-background shadow-sm transition-transform group-hover:scale-105"
                       />
                     </Link>
 
                     <Link
                       href={`/profile/messages/${otherUser.id}`}
-                      className='flex-1 min-w-0 group'
+                      className='flex-1 min-w-0'
                     >
-                      <div className='flex items-start justify-between mb-1.5'>
-                        <div className='flex items-center space-x-2 flex-wrap'>
-                          <span
-                            className={`text-sm font-semibold group-hover:text-primary transition-colors ${
-                              hasUnread ? 'text-foreground' : 'text-foreground'
-                            }`}
-                          >
+                      <div className='flex items-center justify-between mb-1'>
+                        <div className='flex items-center gap-2 max-w-[70%]'>
+                          <span className={`text-base font-semibold truncate ${
+                               hasUnread ? 'text-primary' : 'text-foreground'
+                          }`}>
                             {otherUser.name || otherUser.username}
                           </span>
-                          <span className='text-xs text-muted-foreground'>
-                            @{otherUser.username}
-                          </span>
                         </div>
-                        <div className='flex items-center space-x-2'>
-                          {hasUnread && (
-                            <Badge
-                              variant='default'
-                              className='h-5 px-2 text-xs font-medium'
-                            >
-                              {unreadCount}
-                            </Badge>
-                          )}
-                          <span className='text-xs text-muted-foreground whitespace-nowrap'>
-                            <Time date={latestMessage.createdAt} fromNow />
-                          </span>
-                        </div>
+                        <span className='text-xs text-muted-foreground flex-shrink-0'>
+                           <Time date={latestMessage.createdAt} fromNow />
+                        </span>
                       </div>
 
-                      <div
-                        className={`text-sm line-clamp-2 ${
-                          hasUnread
-                            ? 'text-foreground font-medium'
-                            : 'text-muted-foreground'
-                        }`}
-                      >
-                        {latestMessage.isSentByMe && (
-                          <span className='text-muted-foreground/70 mr-1'>
-                            你:
-                          </span>
-                        )}
-                        {latestMessage.content}
+                      <div className="flex items-center justify-between gap-4">
+                          <p className={`text-sm line-clamp-1 flex-1 ${
+                             hasUnread ? 'text-foreground font-medium' : 'text-muted-foreground'
+                          }`}>
+                            {latestMessage.isSentByMe && (
+                              <span className='text-muted-foreground mr-1'>
+                                你:
+                              </span>
+                            )}
+                            {latestMessage.content}
+                          </p>
+                          
+                          {/* 未读气泡 */}
+                          {hasUnread && (
+                             <Badge variant="default" className="h-5 w-auto min-w-[1.25rem] px-1 flex items-center justify-center rounded-full text-[10px] shrink-0">
+                                {unreadCount}
+                             </Badge>
+                          )}
                       </div>
                     </Link>
 
-                    {/* 操作菜单 */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant='ghost'
-                          size='icon'
-                          className='h-8 w-8 shrink-0'
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreVertical className='h-4 w-4' />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align='end'>
-                        <DropdownMenuItem
-                          className='text-destructive focus:text-destructive cursor-pointer'
-                          disabled={deletingUserId === otherUser.id}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleDeleteConversation(
-                              otherUser.id,
-                              otherUser.name || otherUser.username
-                            );
-                          }}
-                        >
-                          {deletingUserId === otherUser.id ? (
-                            <>
-                              <Loader2 className='h-4 w-4 animate-spin' />
-                              删除中...
-                            </>
-                          ) : (
-                            <>
-                              <Trash2 className='h-4 w-4' />
-                              删除会话
-                            </>
-                          )}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {/* 操作菜单 - 仅悬浮显示或在移动端显示 */}
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant='ghost'
+                              size='icon'
+                              className='h-8 w-8 text-muted-foreground hover:text-foreground'
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreVertical className='h-4 w-4' />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align='end'>
+                            <DropdownMenuItem
+                              className='text-destructive focus:text-destructive cursor-pointer'
+                              disabled={deletingUserId === otherUser.id}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleDeleteConversation(
+                                  otherUser.id,
+                                  otherUser.name || otherUser.username
+                                );
+                              }}
+                            >
+                              {deletingUserId === otherUser.id ? (
+                                <>
+                                  <Loader2 className='h-4 w-4 animate-spin mr-2' />
+                                  删除...
+                                </>
+                              ) : (
+                                <>
+                                  <Trash2 className='h-4 w-4 mr-2' />
+                                  删除会话
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                   </div>
                 </div>
               </div>
