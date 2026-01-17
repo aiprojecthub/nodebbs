@@ -2,7 +2,7 @@
 
 import React from 'react';
 import CopyButton from '@/components/common/CopyButton';
-import { Github, Rocket, Bot, Code2, Plug, Settings, Shield, Mail, Zap, QrCode, Copy, Check, Star, GitFork, ArrowRight, Terminal } from 'lucide-react';
+import { Github, Rocket, Bot, Code2, Plug, Settings, Shield, Mail, Zap, QrCode, Copy, Check, Star, GitFork, ArrowRight, Terminal, Award, Gift, MessageCircle, Search, Users, Ticket, Coins, ShieldCheck } from 'lucide-react';
 
 const CodeBlock = ({ code, language = 'bash' }) => {
   return (
@@ -260,32 +260,47 @@ const AboutContent = () => {
             <SmallFeatureCard
               icon={Shield}
               title="内容审核"
-              description="开启内容审核，保障社区质量"
+              description="支持发布前审核、举报处理、审核日志"
             />
             <SmallFeatureCard
               icon={QrCode}
               title="二维码登录"
-              description="扫码即可登录，方便快捷"
-            />
-            <SmallFeatureCard
-              icon={Shield}
-              title="垃圾注册拦截"
-              description="有效防止垃圾注册和恶意账号"
+              description="扫码即可登录，跨平台便捷体验"
             />
             <SmallFeatureCard
               icon={Plug}
               title="OAuth 认证"
-              description="支持第三方 OAuth 登录集成"
+              description="支持 GitHub、Google、微信等第三方登录"
             />
             <SmallFeatureCard
-              icon={Mail}
-              title="邮件服务"
-              description="内置邮件通知和验证功能"
+              icon={ShieldCheck}
+              title="人机验证"
+              description="集成 reCAPTCHA、hCaptcha、Turnstile"
             />
             <SmallFeatureCard
-              icon={Zap}
-              title="API 限速"
-              description="智能限流保护，防止滥用"
+              icon={Coins}
+              title="积分系统"
+              description="完整的积分、余额、交易记录管理"
+            />
+            <SmallFeatureCard
+              icon={Award}
+              title="勋章成就"
+              description="根据用户行为自动颁发勋章奖励"
+            />
+            <SmallFeatureCard
+              icon={Gift}
+              title="签到奖励"
+              description="每日签到、连续签到额外奖励"
+            />
+            <SmallFeatureCard
+              icon={MessageCircle}
+              title="私信系统"
+              description="用户间私聊、消息通知提醒"
+            />
+            <SmallFeatureCard
+              icon={Ticket}
+              title="邀请注册"
+              description="邀请码机制，精准控制用户增长"
             />
           </div>
         </div>
