@@ -105,12 +105,12 @@ export default function InvitationsPage() {
           </div>
         </Card>
       ) : !loading && (
-        <Card className="p-6 bg-yellow-50 border-yellow-200">
+        <Card className="p-6 shadow-none">
           <div className="flex items-center gap-3">
-            <X className="h-5 w-5 text-yellow-600" />
+            <X className="h-5 w-5 text-destructive" />
             <div>
-              <p className="font-medium text-yellow-900">邀请功能已禁用</p>
-              <p className="text-sm text-yellow-700">
+              <p className="font-medium text-destructive">邀请功能已禁用</p>
+              <p className="text-sm text-muted">
                 您当前的角色无法生成邀请码，请联系管理员了解详情
               </p>
             </div>

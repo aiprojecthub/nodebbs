@@ -55,9 +55,9 @@ export function useInvitations() {
       setStats(data.stats);
     } catch (error) {
       console.error('Failed to load quota:', error);
-      if (error.message && error.message.includes('禁用')) {
-        toast.error(error.message);
-      }
+      // if (error.message && error.message.includes('禁用')) {
+      //   toast.error(error.message);
+      // }
     }
   }, []);
 

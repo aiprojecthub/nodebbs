@@ -132,7 +132,7 @@ export default function MessageDetailPage() {
         content: replyContent.trim(),
       });
 
-      toast.success('消息发送成功');
+      // toast.success('消息发送成功');
       setReplyContent('');
 
       // Add the new message to the conversation locally
@@ -215,7 +215,7 @@ export default function MessageDetailPage() {
   return (
     <div className='flex flex-col h-[calc(100vh-12rem)]'>
       {/* 聊天容器 */}
-      <div className='bg-background/50 backdrop-blur-sm border border-border/50 rounded-2xl overflow-hidden flex flex-col h-full shadow-sm'>
+      <div className='bg-background/50 backdrop-blur-sm border border-border/50 rounded-2xl overflow-hidden flex flex-col h-full'>
         {/* 会话对象信息头部 */}
         <div className='border-b border-border/50 px-4 py-3 bg-muted/30 shrink-0 backdrop-blur-md sticky top-0 z-10'>
           <div className='flex items-center justify-between'>
@@ -373,10 +373,10 @@ export default function MessageDetailPage() {
 
         {/* 回复区域 - 悬浮式 */}
         <div className='p-4 pt-2'>
-            <div className="bg-muted/30 backdrop-blur-md rounded-xl p-1.5 border border-border/50 flex items-end gap-2 shadow-sm focus-within:ring-1 focus-within:ring-primary/30 transition-shadow">
+            <div className="bg-muted/30 backdrop-blur-md rounded-xl p-1.5 border border-border/50 flex items-end gap-2 focus-within:ring-1 focus-within:ring-primary/30">
                 <Textarea
                   ref={textareaRef}
-                  className='flex-1 min-h-[40px] max-h-[120px] resize-none text-sm bg-transparent border-0 shadow-none focus-visible:ring-0 p-3 placeholder:text-muted-foreground/50'
+                  className='flex-1 min-h-[40px] max-h-[120px] resize-none text-sm shadow-none p-3 placeholder:text-muted-foreground/50'
                   placeholder="输入消息..."
                   value={replyContent}
                   onChange={(e) => setReplyContent(e.target.value)}
