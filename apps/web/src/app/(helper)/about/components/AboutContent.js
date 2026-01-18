@@ -4,6 +4,8 @@ import React from 'react';
 import CopyButton from '@/components/common/CopyButton';
 import { Github, Rocket, Bot, Code2, Plug, Settings, Shield, Mail, Zap, QrCode, Copy, Check, Star, GitFork, ArrowRight, Terminal, Award, Gift, MessageCircle, Search, Users, Ticket, Coins, ShieldCheck } from 'lucide-react';
 
+const GITHUB_REPO_URL = 'https://github.com/aiprojecthub/nodebbs';
+
 const CodeBlock = ({ code, language = 'bash' }) => {
   return (
     <div className="relative group overflow-hidden min-w-0 rounded-xl shadow-lg">
@@ -125,7 +127,7 @@ const AboutContent = () => {
 
             <div className="flex flex-wrap items-center justify-center gap-4 mt-10">
               <a
-                href="https://github.com/aiprojecthub/nodebbs"
+                href={GITHUB_REPO_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background rounded-full font-medium hover:opacity-90 transition-opacity"
@@ -175,7 +177,7 @@ const AboutContent = () => {
                     <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs">1</span>
                     克隆仓库（源码部署）
                   </div>
-                  <CodeBlock code="git clone https://github.com/aiprojecthub/nodebbs.git" />
+                  <CodeBlock code={`git clone ${GITHUB_REPO_URL}.git`} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 text-sm font-medium mb-3">
@@ -187,7 +189,7 @@ const AboutContent = () => {
               </div>
 
               <a
-                href="https://github.com/aiprojecthub/nodebbs"
+                href={GITHUB_REPO_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 mt-8 text-primary font-medium hover:gap-3 transition-all"
@@ -204,14 +206,24 @@ const AboutContent = () => {
                 <div className="relative p-12 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-border/50">
                   <Github className="h-32 w-32 md:h-40 md:w-40 text-foreground/80" />
                   <div className="flex items-center justify-center gap-6 mt-6">
-                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <a
+                      href={GITHUB_REPO_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-yellow-500 transition-colors"
+                    >
                       <Star className="h-4 w-4 text-yellow-500" />
                       <span>Star</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    </a>
+                    <a
+                      href={`${GITHUB_REPO_URL}/fork`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
+                    >
                       <GitFork className="h-4 w-4" />
                       <span>Fork</span>
-                    </div>
+                    </a>
                   </div>
                 </div>
               </div>
@@ -331,7 +343,7 @@ const AboutContent = () => {
 
           <div className="flex flex-wrap gap-4 justify-center mt-10">
             <a
-              href="https://github.com/aiprojecthub/nodebbs"
+              href={GITHUB_REPO_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-8 py-4 bg-foreground text-background rounded-full font-medium hover:opacity-90 transition-opacity shadow-lg"
