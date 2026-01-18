@@ -54,7 +54,7 @@ export function ItemInventoryCard({ item, onEquip, onUnequip, actioning }) {
 
       <CardContent className="flex-1 p-3 md:p-6 pt-2 md:pt-0 flex items-center justify-center">
          {item.itemImageUrl ? (
-          <div className="relative w-full aspect-square overflow-hidden flex items-center justify-center rounded-lg bg-muted/20">
+          <div className="relative w-full aspect-square flex items-center justify-center rounded-lg bg-muted/20">
             <img
               src={item.itemImageUrl}
               alt={item.itemName}
@@ -69,45 +69,45 @@ export function ItemInventoryCard({ item, onEquip, onUnequip, actioning }) {
       </CardContent>
 
       <CardFooter className="p-3 md:p-6 pt-0 flex flex-col gap-2">
-        <div className="w-full flex items-center justify-between text-[10px] md:text-sm text-muted-foreground">
+        {/* 获取时间行 - 固定高度 */}
+        <div className="w-full flex items-center justify-between text-[10px] md:text-sm text-muted-foreground h-5 md:h-8">
           <span>获得: <Time date={item.createdAt} fromNow className="ml-1" /></span>
-          
-            {/* 礼物图标 - 点击弹出详情 */}
-            {(() => {
-              try {
-                if (item.metadata) {
-                  const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
-                  if (meta.fromUserId) {
-                    return (
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant='ghost' size='icon' className="h-5 w-5 md:h-8 md:w-8 text-amber-500 hover:text-amber-600 transition-colors" title="查看礼物详情">
-                            <Gift className="h-3 w-3 md:h-4 md:w-4" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-64 p-3">
-                          <div className="space-y-2">
-                            <p className="text-sm font-medium text-amber-600 flex items-center gap-1.5">
-                              <Gift className="h-4 w-4" />
-                              来自 {meta.fromUsername || '好友'} 的礼物
+
+          {/* 礼物图标 - 点击弹出详情 */}
+          {(() => {
+            try {
+              if (item.metadata) {
+                const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+                if (meta.fromUserId) {
+                  return (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant='ghost' size='icon' className="h-5 w-5 md:h-8 md:w-8 text-amber-500 hover:text-amber-600 transition-colors" title="查看礼物详情">
+                          <Gift className="h-3 w-3 md:h-4 md:w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 p-3">
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium text-amber-600 flex items-center gap-1.5">
+                            <Gift className="h-4 w-4" />
+                            来自 {meta.fromUsername || '好友'} 的礼物
+                          </p>
+                          {meta.message && (
+                            <p className="text-sm text-muted-foreground italic bg-muted/50 p-2 rounded">
+                              "{meta.message}"
                             </p>
-                            {meta.message && (
-                              <p className="text-sm text-muted-foreground italic bg-muted/50 p-2 rounded">
-                                "{meta.message}"
-                              </p>
-                            )}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    );
-                  }
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  );
                 }
-              } catch (e) {
-                // 忽略解析错误
               }
-              return null;
-            })()}
-        
+            } catch (e) {
+              // 忽略解析错误
+            }
+            return null;
+          })()}
         </div>
 
         {item.expiresAt && (

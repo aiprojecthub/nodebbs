@@ -43,7 +43,7 @@ export function ShopItemCard({ item, userBalance, onPurchase, isAuthenticated })
 
       <CardContent className="flex-1 p-3 md:p-6 pt-2 md:pt-0 flex items-center justify-center">
         {item.imageUrl ? (
-          <div className="relative w-full aspect-square overflow-hidden flex items-center justify-center rounded-lg bg-muted/20">
+          <div className="relative w-full aspect-square flex items-center justify-center rounded-lg bg-muted/20">
             <img
               src={item.imageUrl}
               alt={item.name}
