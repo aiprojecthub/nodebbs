@@ -54,9 +54,71 @@ export default function NotificationsPage() {
         description="查看你的所有通知消息"
       />
 
+      {/* 筛选和操作按钮 - 始终显示 */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Badge
+            variant={filter === 'all' ? 'default' : 'outline'}
+            className="cursor-pointer transition-colors"
+            onClick={() => handleFilterChange('all')}
+          >
+            全部
+          </Badge>
+          <Badge
+            variant={filter === 'unread' ? 'default' : 'outline'}
+            className="cursor-pointer transition-colors"
+            onClick={() => handleFilterChange('unread')}
+          >
+            未读
+          </Badge>
+          <Badge
+            variant={filter === 'read' ? 'default' : 'outline'}
+            className="cursor-pointer transition-colors"
+            onClick={() => handleFilterChange('read')}
+          >
+            已读
+          </Badge>
+        </div>
+
+        <div className="flex items-center gap-2 min-h-8">
+          {unreadCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={markAllAsRead}
+              disabled={isActionLoading('read-all')}
+              className="h-8 gap-1.5"
+            >
+              {isActionLoading('read-all') ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <CheckCheck className="h-3.5 w-3.5" />
+              )}
+              全部已读
+            </Button>
+          )}
+          {readCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={deleteAllRead}
+              disabled={isActionLoading('delete-all-read')}
+              className="h-8 gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              {isActionLoading('delete-all-read') ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="h-3.5 w-3.5" />
+              )}
+              清除已读
+            </Button>
+          )}
+        </div>
+      </div>
+
       {/* 初始加载状态 */}
       {isInitialLoading ? (
-        <Loading text="加载中..." className="min-h-[300px]" />
+        <Loading text="加载中..." className="min-h-[200px]" />
       ) : error ? (
         /* 错误状态 */
         <Card className="border-destructive/20 shadow-none">
@@ -71,74 +133,10 @@ export default function NotificationsPage() {
             </Button>
           </CardContent>
         </Card>
-      ) : (
-        <>
-          {/* 筛选和操作按钮 */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Badge
-                variant={filter === 'all' ? 'default' : 'outline'}
-                className="cursor-pointer transition-colors"
-                onClick={() => handleFilterChange('all')}
-              >
-                全部 ({total})
-              </Badge>
-              <Badge
-                variant={filter === 'unread' ? 'default' : 'outline'}
-                className="cursor-pointer transition-colors"
-                onClick={() => handleFilterChange('unread')}
-              >
-                未读 ({unreadCount})
-              </Badge>
-              <Badge
-                variant={filter === 'read' ? 'default' : 'outline'}
-                className="cursor-pointer transition-colors"
-                onClick={() => handleFilterChange('read')}
-              >
-                已读 ({readCount})
-              </Badge>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {unreadCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={markAllAsRead}
-                  disabled={isActionLoading('read-all')}
-                  className="h-8 gap-1.5"
-                >
-                  {isActionLoading('read-all') ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <CheckCheck className="h-3.5 w-3.5" />
-                  )}
-                  全部已读
-                </Button>
-              )}
-              {readCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={deleteAllRead}
-                  disabled={isActionLoading('delete-all-read')}
-                  className="h-8 gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  {isActionLoading('delete-all-read') ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-3.5 w-3.5" />
-                  )}
-                  清除已读
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* 通知列表 */}
-          {notifications.length > 0 ? (
-            <div className="space-y-3">
-              {notifications.map((notification) => (
+      ) : notifications.length > 0 ? (
+        /* 通知列表 */
+        <div className="space-y-3">
+          {notifications.map((notification) => (
                 <Card
                   key={notification.id}
                   className={`group shadow-none transition-all ${
@@ -261,11 +259,9 @@ export default function NotificationsPage() {
                     ? '你的通知消息会显示在这里'
                     : '切换筛选查看其他通知'}
                 </p>
-              </CardContent>
+          </CardContent>
             </Card>
           )}
-        </>
-      )}
     </div>
   );
 }
