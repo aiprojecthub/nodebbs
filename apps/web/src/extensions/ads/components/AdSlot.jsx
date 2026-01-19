@@ -37,7 +37,7 @@ export default function AdSlot({ slotCode, className, showEmpty = false, imageFi
               src={ad.content}
               alt={ad.title}
               className={cn(
-                'block mx-auto rounded-lg',
+                'block mx-auto',
                 isBanner
                   ? 'max-w-full' // Banner: 最大宽度 100%
                   : 'w-full h-auto object-contain' // Rectangle: 宽度受限，高度自适应
@@ -101,7 +101,7 @@ export default function AdSlot({ slotCode, className, showEmpty = false, imageFi
   }
 
   return (
-    <div className={cn('promo-slot', className)} data-slot={slotCode}>
+    <div className={cn('promo-slot rounded-lg overflow-hidden', className)} data-slot={slotCode}>
       {ads.map(renderAd)}
     </div>
   );

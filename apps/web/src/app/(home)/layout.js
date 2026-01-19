@@ -12,7 +12,7 @@ export default async function HomeLayout({ children }) {
 
   return (
     <div className='container mx-auto py-3 sm:p-2 lg:px-4 lg:py-6 space-y-3'>
-      <AdSlot slotCode='header_banner' />
+      <AdSlot slotCode='header_banner' className='rounded-none lg:rounded-lg' />
       <div className='flex lg:gap-6'>
         <div className='fixed z-10 -left-full lg:static lg:w-64 shrink-0'>
           <StickySidebar className='sticky top-[81px] space-y-4'>
