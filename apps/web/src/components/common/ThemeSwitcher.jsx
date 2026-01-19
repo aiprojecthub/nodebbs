@@ -51,7 +51,7 @@ export default function ThemeSwitcher() {
               title={t.label}
             >
               <div
-                className={`w-10 h-10 rounded-lg transition-all flex items-center justify-center ${
+                className={`w-10 h-10 rounded-lg transition flex items-center justify-center ${
                   themeStyle === t.value
                     ? 'scale-102 shadow-lg ring-2 ring-offset-0 ring-offset-background ring-foreground/20'
                     : 'hover:scale-105'

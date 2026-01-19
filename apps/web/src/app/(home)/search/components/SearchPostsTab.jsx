@@ -51,7 +51,7 @@ export function SearchPostsTab({
           <Link
             key={post.id}
             href={`/topic/${post.topicId}#post-${post.id}`}
-            className='block bg-card border border-border rounded-lg p-4 hover:bg-accent/50 transition-all'
+            className='block bg-card border border-border rounded-lg p-4 hover:bg-accent/50 transition-colors'
           >
             <div className='text-sm font-medium text-muted-foreground mb-2'>
               {post.topicTitle}

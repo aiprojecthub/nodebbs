@@ -395,7 +395,7 @@ export default function MessageDetailPage() {
                   onClick={handleReply}
                   disabled={replying || !replyContent.trim()}
                   size='icon'
-                  className={`h-10 w-10 shrink-0 rounded-lg transition-all ${
+                  className={`h-10 w-10 shrink-0 rounded-lg transition ${
                       replyContent.trim() ? 'bg-primary text-primary-foreground shadow-md' : 'bg-muted text-muted-foreground'
                   }`}
                 >

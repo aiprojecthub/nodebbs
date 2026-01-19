@@ -28,7 +28,7 @@ export function ItemTypeSelector({ value, onChange, showAll = true, excludedType
                 flex-1 md:flex-none
                 px-1 md:px-6 
                 py-2 
-                text-xs md:text-sm font-medium transition-all duration-300
+                text-xs md:text-sm font-medium transition duration-300
                 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-none
                 data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:bg-muted/50
                 flex items-center justify-center gap-1 md:gap-2

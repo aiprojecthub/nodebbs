@@ -44,7 +44,7 @@ export function TopicItem({ topic }) {
   return (
     <div
       className={`
-        p-3 transition-all duration-200 group relative
+        p-3 transition-colors duration-200 group relative
         ${isPinned
           ? 'bg-primary/[0.03] dark:bg-primary/[0.06] border-l-[3px] border-l-primary'
           : 'hover:bg-accent/50'
@@ -60,7 +60,7 @@ export function TopicItem({ topic }) {
               name={topic.userName || topic.username}
               size='md'
               className={`
-                transition-all duration-200
+                transition duration-200
                 ${!topic.userAvatarFrame?.itemMetadata
                   ? isPinned
                     ? 'ring-2 ring-primary/20'

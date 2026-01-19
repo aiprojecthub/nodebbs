@@ -94,7 +94,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
     <>
       <div
         id={`post-${localReply.id}`}
-        className={`bg-card border-b border-x-0 border-t-0 sm:border sm:rounded-lg hover:border-border/80 transition-all duration-300 group ${
+        className={`bg-card border-b border-x-0 border-t-0 sm:border sm:rounded-lg hover:border-border/80 transition-colors duration-300 group ${
           isPending
             ? 'border-chart-5/30 bg-chart-5/5'
             : isRejected

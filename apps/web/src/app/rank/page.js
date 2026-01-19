@@ -107,7 +107,7 @@ function RankItem({ user, index, rankType, currentUserId }) {
      
     >
       <div className={cn(
-          "flex items-center gap-3 sm:gap-6 p-4 rounded-xl transition-all hover:bg-muted/50",
+          "flex items-center gap-3 sm:gap-6 p-4 rounded-xl transition-colors hover:bg-muted/50",
           "border border-transparent", // 预留边框空间
           isCurrentUser && "bg-primary/5 hover:bg-primary/10 border-primary/20",
       )}>
@@ -273,13 +273,13 @@ export default async function RankPage({ searchParams }) {
         {/* Tab 切换器 - 简单的链接样式，使头部更整洁 */}
         <div className="flex bg-muted p-1 rounded-lg self-start sm:self-auto">
              <Link href="/rank?type=balance" scroll={false} replace className={cn(
-                "px-4 py-1.5 text-sm font-medium rounded-md transition-all",
+                "px-4 py-1.5 text-sm font-medium rounded-md transition",
                 rankType === 'balance' ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"
              )}>
                  余额榜
              </Link>
              <Link href="/rank?type=totalEarned" scroll={false} replace className={cn(
-                "px-4 py-1.5 text-sm font-medium rounded-md transition-all",
+                "px-4 py-1.5 text-sm font-medium rounded-md transition",
                 rankType === 'totalEarned' ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"
              )}>
                  财富榜

@@ -74,7 +74,7 @@ function TagCard({ tag }) {
   return (
     <Link
       href={`/tags/${tag.slug}`}
-      className='group flex flex-col h-full bg-card border-b border-x-0 sm:border border-border sm:rounded-lg px-3 py-4 sm:p-5 hover:bg-accent/50 sm:hover:border-primary/50 transition-all duration-200'
+      className='group flex flex-col h-full bg-card border-b border-x-0 sm:border border-border sm:rounded-lg px-3 py-4 sm:p-5 hover:bg-accent/50 sm:hover:border-primary/50 transition-colors duration-200'
      
     >
       <div className='flex items-start justify-between mb-3'>

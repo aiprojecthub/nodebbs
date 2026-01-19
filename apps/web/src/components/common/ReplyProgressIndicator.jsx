@@ -85,14 +85,14 @@ export default function ReplyProgressIndicator({ posts, totalReplies, maxPostNum
       className="fixed left-4 top-1/2 -translate-y-1/2 z-40 hidden lg:block"
       onClick={handleClick}
     >
-      <div className="flex flex-col items-center gap-2 bg-card border border-border rounded-lg shadow-lg p-3 cursor-pointer hover:shadow-xl transition-all hover:scale-105">
+      <div className="flex flex-col items-center gap-2 bg-card border border-border rounded-lg shadow-lg p-3 cursor-pointer hover:shadow-xl transition hover:scale-105">
         {/* 图标 */}
         <MessageSquare className="h-5 w-5 text-muted-foreground" />
         
         {/* 进度条 */}
         <div className="relative w-1 h-24 bg-muted rounded-full overflow-hidden">
           <div
-            className="absolute top-0 left-0 right-0 bg-primary rounded-full transition-all duration-300"
+            className="absolute top-0 left-0 right-0 bg-primary rounded-full transition-[height] duration-300"
             style={{
               height: `${(currentPostNumber / maxPostNumber) * 100}%`,
             }}

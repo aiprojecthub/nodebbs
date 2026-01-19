@@ -143,7 +143,7 @@ export default function MessagesPage() {
             return (
               <div
                 key={otherUser.id}
-                className={`group relative overflow-hidden transition-all duration-300 hover:shadow-md ${
+                className={`group relative overflow-hidden transition duration-300 hover:shadow-md ${
                   hasUnread ? 'bg-primary/5 hover:bg-primary/10' : 'bg-card hover:bg-muted/50'
                 }`}
               >

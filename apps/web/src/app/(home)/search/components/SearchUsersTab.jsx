@@ -52,7 +52,7 @@ export function SearchUsersTab({
           <Link
             key={user.id}
             href={`/users/${user.username}`}
-            className='block bg-card border border-border rounded-lg p-4 hover:bg-accent/50 hover:border-accent-foreground/20 transition-all'
+            className='block bg-card border border-border rounded-lg p-4 hover:bg-accent/50 hover:border-accent-foreground/20 transition-colors'
           >
             <div className='flex items-center space-x-3'>
               <UserAvatar

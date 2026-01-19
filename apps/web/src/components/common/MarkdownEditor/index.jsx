@@ -447,7 +447,7 @@ export default function MarkdownEditor({
             type="button"
             variant="ghost"
             size="icon"
-            className="absolute top-2 right-2 z-10 h-8 w-8 text-muted-foreground hover:text-foreground opacity-50 hover:opacity-100 transition-all"
+            className="absolute top-2 right-2 z-10 h-8 w-8 text-muted-foreground hover:text-foreground opacity-50 hover:opacity-100 transition"
             onClick={() => setIsExpanded(true)}
             title="使用富文本编辑器"
             disabled={disabled}

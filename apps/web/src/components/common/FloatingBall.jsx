@@ -252,7 +252,7 @@ export default function FloatingBall({ children, onClick, className }) {
         'active:scale-95',
         isDragging 
           ? 'scale-110 shadow-[0_8px_25px_rgba(0,0,0,0.3)] cursor-grabbing' 
-          : 'transition-all duration-300 ease-out hover:scale-105 hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)]',
+          : 'transition duration-300 ease-out hover:scale-105 hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)]',
         className
       )}
       style={{

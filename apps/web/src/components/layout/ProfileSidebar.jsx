@@ -195,7 +195,7 @@ export default function ProfileSidebar() {
         key={item.href}
         href={item.href}
         className={cn(
-          "group flex items-center justify-between gap-3 mx-2 px-3 py-2 text-sm rounded-md transition-all duration-200",
+          "group flex items-center justify-between gap-3 mx-2 px-3 py-2 text-sm rounded-md transition-colors duration-200",
           active
             ? "text-primary font-medium bg-primary/10"
             : "text-foreground/80 hover:text-foreground hover:bg-muted/50"

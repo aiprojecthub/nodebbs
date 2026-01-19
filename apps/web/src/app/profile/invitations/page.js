@@ -144,7 +144,7 @@ export default function InvitationsPage() {
               {/* 进度条 */}
               <div className="mt-3 h-1.5 bg-primary/10 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-primary rounded-full transition-all duration-500"
+                  className="h-full bg-primary rounded-full transition-[width] duration-500"
                   style={{ width: `${(quota.todayRemaining / quota.dailyLimit) * 100}%` }}
                 />
               </div>
@@ -307,7 +307,7 @@ export default function InvitationsPage() {
                       value={code.code}
                       variant="outline"
                       size="sm"
-                      className="h-8 w-[72px] gap-1.5 opacity-70 group-hover:opacity-100 transition-all"
+                      className="h-8 w-[72px] gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity"
                     >
                       {({ copied }) => (
                         copied ? (

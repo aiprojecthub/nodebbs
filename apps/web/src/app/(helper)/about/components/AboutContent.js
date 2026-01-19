@@ -23,7 +23,7 @@ const CodeBlock = ({ code, language = 'bash' }) => {
         </div>
         <CopyButton
           value={code}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs bg-slate-700/50 hover:bg-slate-600 text-slate-300 hover:text-slate-100 transition-all h-auto w-auto shrink-0 border border-slate-600/50"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs bg-slate-700/50 hover:bg-slate-600 text-slate-300 hover:text-slate-100 transition-colors h-auto w-auto shrink-0 border border-slate-600/50"
           title="复制代码"
         >
           {({ copied }) => (
@@ -53,7 +53,7 @@ const CodeBlock = ({ code, language = 'bash' }) => {
 };
 
 const FeatureCard = ({ icon: Icon, title, description, link, linkText }) => (
-  <div className="group relative p-8 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300">
+  <div className="group relative p-8 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition duration-300">
     <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
     <div className="relative">
       <div className="inline-flex p-3 rounded-xl bg-primary/10 text-primary mb-5">
@@ -66,10 +66,10 @@ const FeatureCard = ({ icon: Icon, title, description, link, linkText }) => (
           href={link}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 mt-4 text-sm font-medium text-primary hover:gap-2.5 transition-all"
+          className="inline-flex items-center gap-1.5 mt-4 text-sm font-medium text-primary transition-colors group"
         >
           {linkText}
-          <ArrowRight className="h-4 w-4" />
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
         </a>
       )}
     </div>
@@ -77,7 +77,7 @@ const FeatureCard = ({ icon: Icon, title, description, link, linkText }) => (
 );
 
 const SmallFeatureCard = ({ icon: Icon, title, description }) => (
-  <div className="group flex items-start gap-4 p-5 rounded-xl bg-card border border-border/50 hover:border-primary/30 hover:bg-accent/50 transition-all duration-300">
+  <div className="group flex items-start gap-4 p-5 rounded-xl bg-card border border-border/50 hover:border-primary/30 hover:bg-accent/50 transition-colors duration-300">
     <div className="shrink-0 p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
       <Icon className="h-5 w-5" />
     </div>
@@ -192,11 +192,11 @@ const AboutContent = () => {
                 href={GITHUB_REPO_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 mt-8 text-primary font-medium hover:gap-3 transition-all"
+                className="inline-flex items-center gap-2 mt-8 text-primary font-medium transition-colors group"
               >
                 <Github className="h-5 w-5" />
                 访问 GitHub 仓库
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </a>
             </div>
 

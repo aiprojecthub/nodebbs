@@ -86,7 +86,7 @@ export default function BadgeCard({
         <TooltipTrigger asChild>
           <div 
             className={`
-              group relative flex flex-col items-center p-4 rounded-2xl border transition-all duration-500 cursor-default h-full isolate overflow-hidden
+              group relative flex flex-col items-center p-4 rounded-2xl border transition duration-500 cursor-default h-full isolate overflow-hidden
               ${isUnlocked 
                 ? 'bg-gradient-to-b from-card to-muted/20 border-primary/10 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1' 
                 : 'bg-muted/20 border-transparent hover:bg-muted/30 hover:border-border/30'
@@ -112,7 +112,7 @@ export default function BadgeCard({
                 <button 
                   type="button"
                   className={`
-                    p-1.5 rounded-full transition-all duration-300 backdrop-blur-sm
+                    p-1.5 rounded-full transition-colors duration-300 backdrop-blur-sm
                     ${isDisplayed 
                       ? 'bg-primary/10 text-primary ring-1 ring-primary/20 hover:bg-primary/20' 
                       : 'bg-muted/50 text-muted-foreground ring-1 ring-border/50 hover:bg-muted hover:text-foreground'
@@ -137,7 +137,7 @@ export default function BadgeCard({
                  src={badge.iconUrl} 
                  alt={badge.name} 
                  className={`
-                    w-full h-full object-contain relative z-10 filter drop-shadow-md transition-all duration-500
+                    w-full h-full object-contain relative z-10 filter drop-shadow-md transition duration-500
                     ${!isUnlocked && 'grayscale opacity-30 contrast-75'}
                  `}
                />

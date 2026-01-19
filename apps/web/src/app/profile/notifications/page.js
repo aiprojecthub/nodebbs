@@ -147,7 +147,7 @@ export default function NotificationsPage() {
           {notifications.map((notification) => (
                 <Card
                   key={notification.id}
-                  className={`group shadow-none transition-all ${
+                  className={`group shadow-none transition-colors ${
                     !notification.isRead
                       ? 'border-primary/30 bg-primary/[0.02]'
                       : 'hover:border-border/80'

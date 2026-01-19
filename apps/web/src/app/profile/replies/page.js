@@ -25,7 +25,7 @@ function ReplyCard({ reply }) {
     : reply.content;
 
   return (
-    <div className='bg-card border border-border rounded-lg overflow-hidden transition-all duration-200 hover:border-primary/30 hover:shadow-sm'>
+    <div className='bg-card border border-border rounded-lg overflow-hidden transition duration-200 hover:border-primary/30 hover:shadow-sm'>
       {/* 话题信息头部 */}
       <Link
         href={`/topic/${reply.topicId}#post-${reply.id}`}
