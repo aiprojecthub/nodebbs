@@ -1,10 +1,17 @@
 import { checkBadgeConditions } from './services/badgeService.js';
+import { DEFAULT_CURRENCY_CODE } from '../ledger/constants.js';
 
 export default async function badgeListeners(fastify) {
   if (!fastify.eventBus) return;
 
   const handleActivity = async (payload) => {
     try {
+      // 检查积分货币是否启用 (Assuming badges rely on credits system)
+      if (fastify.ledger) {
+        const isCreditsActive = await fastify.ledger.isCurrencyActive(DEFAULT_CURRENCY_CODE);
+        if (!isCreditsActive) return;
+      }
+
       const userId = payload.userId || payload.user?.id;
       if (userId) {
         fastify.log.info(`[Badges] Checking conditions for user ${userId}`);
