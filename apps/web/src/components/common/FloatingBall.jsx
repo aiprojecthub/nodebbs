@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 
 /**
@@ -18,6 +19,7 @@ export default function FloatingBall({ children, onClick, className }) {
   const [isDragging, setIsDragging] = useState(false);
   const [isLeft, setIsLeft] = useState(true); // 吸附在左侧还是右侧
   const [isInitialized, setIsInitialized] = useState(false);
+  const [mounted, setMounted] = useState(false); // 用于 Portal 挂载检测
   
   // 拖动相关的 ref（使用 ref 存储，避免闭包问题）
   const dragStateRef = useRef({
@@ -35,6 +37,11 @@ export default function FloatingBall({ children, onClick, className }) {
   const EDGE_MARGIN = 12;
   // 阻力系数 (0-1, 越小阻力越大)
   const DRAG_RESISTANCE = 0.85;
+  
+  // 挂载检测，确保只在客户端渲染 Portal
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   // 获取安全区域边界
   const getSafeArea = useCallback(() => {
@@ -238,9 +245,10 @@ export default function FloatingBall({ children, onClick, className }) {
     return () => window.removeEventListener('resize', handleResize);
   }, [clampPosition]);
   
-  if (!isInitialized) return null;
+  // 未初始化或未挂载时不渲染
+  if (!isInitialized || !mounted) return null;
   
-  return (
+  const ballElement = (
     <div
       ref={ballRef}
       className={cn(
@@ -264,4 +272,7 @@ export default function FloatingBall({ children, onClick, className }) {
       {children}
     </div>
   );
+  
+  // 使用 Portal 将悬浮球渲染到 body，脱离父组件的层叠上下文
+  return createPortal(ballElement, document.body);
 }
