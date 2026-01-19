@@ -16,12 +16,17 @@ export function AdsProvider({ preloadSlots = [], children }) {
   const [slotsData, setSlotsData] = useState({});
   // 已记录展示的广告 ID
   const impressionTracked = useRef(new Set());
+  // 已请求过的广告位（防止重复请求）
+  const requestedSlots = useRef(new Set());
 
   /**
    * 获取指定广告位的广告数据
    */
   const fetchSlotAds = useCallback(async (slotCode) => {
     if (!slotCode) return;
+
+    // 标记已请求
+    requestedSlots.current.add(slotCode);
 
     // 设置加载状态
     setSlotsData((prev) => ({
@@ -97,16 +102,24 @@ export function AdsProvider({ preloadSlots = [], children }) {
     return Promise.all(loadedSlots.map(fetchSlotAds));
   }, [slotsData, fetchSlotAds]);
 
-  // 预加载指定的广告位
+  // 预加载指定的广告位（仅在 mount 时执行一次）
   useEffect(() => {
     if (preloadSlots.length > 0) {
       preloadSlots.forEach((slotCode) => {
-        if (!slotsData[slotCode]) {
+        if (!requestedSlots.current.has(slotCode)) {
           fetchSlotAds(slotCode);
         }
       });
     }
-  }, [preloadSlots, fetchSlotAds, slotsData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);  // 仅在 mount 时执行
+
+  /**
+   * 检查广告位是否已请求
+   */
+  const isSlotRequested = useCallback((slotCode) => {
+    return requestedSlots.current.has(slotCode);
+  }, []);
 
   const value = {
     slotsData,
@@ -114,6 +127,7 @@ export function AdsProvider({ preloadSlots = [], children }) {
     recordClick,
     refreshSlot,
     refreshAll,
+    isSlotRequested,
   };
 
   return <AdsContext.Provider value={value}>{children}</AdsContext.Provider>;
@@ -136,7 +150,7 @@ export function useAdsContext() {
  * @returns {{ slot: Object|null, ads: Array, loading: boolean, error: Error|null, refresh: Function, recordClick: Function }}
  */
 export function useAds(slotCode) {
-  const { slotsData, fetchSlotAds, recordClick, refreshSlot } = useAdsContext();
+  const { slotsData, fetchSlotAds, recordClick, refreshSlot, isSlotRequested } = useAdsContext();
 
   const slotData = slotsData[slotCode] || {
     slot: null,
@@ -147,10 +161,10 @@ export function useAds(slotCode) {
 
   // 如果该广告位还没有数据，自动获取
   useEffect(() => {
-    if (slotCode && !slotsData[slotCode]) {
+    if (slotCode && !isSlotRequested(slotCode)) {
       fetchSlotAds(slotCode);
     }
-  }, [slotCode, slotsData, fetchSlotAds]);
+  }, [slotCode, fetchSlotAds, isSlotRequested]);
 
   const refresh = useCallback(() => {
     return refreshSlot(slotCode);

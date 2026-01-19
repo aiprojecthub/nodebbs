@@ -44,12 +44,13 @@ export function TopicItem({ topic }) {
   return (
     <div
       className={`
-        p-3 transition-colors duration-200 group relative
+        p-3 group relative
         ${isPinned
           ? 'bg-primary/[0.03] dark:bg-primary/[0.06] border-l-[3px] border-l-primary'
           : 'hover:bg-accent/50'
         }
       `}
+      style={{ contain: 'layout style' }}
     >
       <div className='flex items-start gap-4 w-full'>
         {/* 左侧：作者头像 */}
@@ -60,7 +61,6 @@ export function TopicItem({ topic }) {
               name={topic.userName || topic.username}
               size='md'
               className={`
-                transition duration-200
                 ${!topic.userAvatarFrame?.itemMetadata
                   ? isPinned
                     ? 'ring-2 ring-primary/20'
@@ -93,7 +93,7 @@ export function TopicItem({ topic }) {
             <Link
               href={`/topic/${topic.id}`}
               className={`
-                text-base sm:text-lg font-semibold transition-colors duration-200 align-middle break-all
+                text-base sm:text-lg font-semibold align-middle break-all
                 before:absolute before:inset-0 before:z-0
                 ${isPinned
                   ? 'text-foreground group-hover:text-primary'
@@ -126,7 +126,7 @@ export function TopicItem({ topic }) {
             {/* 作者名 */}
             <Link
               href={`/users/${topic.username}`}
-              className='font-medium text-foreground/70 hover:text-primary transition-colors duration-200'
+              className='font-medium text-foreground/70 hover:text-primary'
             >
               {topic.userName || topic.username}
             </Link>
@@ -193,14 +193,14 @@ export function TopicItem({ topic }) {
         {/* 右侧：统计信息 - 桌面端 */}
         <div className='hidden sm:flex flex-col items-end gap-2 shrink-0 min-w-[100px]'>
           <div className='flex items-center gap-4 text-xs text-muted-foreground/60'>
-            <div className='flex items-center gap-1.5 hover:text-muted-foreground transition-colors'>
+            <div className='flex items-center gap-1.5 hover:text-muted-foreground'>
               <MessageSquare className='h-3.5 w-3.5' />
               <span className='font-medium tabular-nums'>
                 {Math.max((topic.postCount || 1) - 1, 0)}
               </span>
             </div>
 
-            <div className='flex items-center gap-1.5 hover:text-muted-foreground transition-colors'>
+            <div className='flex items-center gap-1.5 hover:text-muted-foreground'>
               <Eye className='h-3.5 w-3.5' />
               <span className='font-medium tabular-nums'>
                 {topic.viewCount || 0}

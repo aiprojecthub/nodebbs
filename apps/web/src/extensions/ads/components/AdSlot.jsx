@@ -36,21 +36,17 @@ export default function AdSlot({ slotCode, className, showEmpty = false, imageFi
             <img
               src={ad.content}
               alt={ad.title}
+              loading="lazy"
+              decoding="async"
               className={cn(
-                'block mx-auto',
-                isBanner
-                  ? 'max-w-full' // Banner: 最大宽度 100%
-                  : 'w-full h-auto object-contain' // Rectangle: 宽度受限，高度自适应
+                'block mx-auto w-full h-auto',
+                isBanner ? 'object-cover' : 'object-contain'
               )}
-              style={
-                isBanner
-                  ? { 
-                      width: '100%', 
-                      height: `${slot.height}px`, // 固定高度
-                      objectFit: imageFit
-                    } 
-                  : { maxWidth: `${slot.width}px` } // Rectangle: 限制最大宽度
-              }
+              style={{
+                ...(isBanner ? { maxHeight: `${slot.height}px` } : { maxWidth: `${slot.width}px` }),
+                willChange: 'transform',
+                transform: 'translateZ(0)',
+              }}
             />
           </a>
         );
@@ -101,7 +97,15 @@ export default function AdSlot({ slotCode, className, showEmpty = false, imageFi
   }
 
   return (
-    <div className={cn('promo-slot rounded-lg overflow-hidden', className)} data-slot={slotCode}>
+    <div 
+      className={cn('promo-slot rounded-lg overflow-hidden', className)} 
+      data-slot={slotCode}
+      style={{ 
+        contain: 'layout style paint',
+        contentVisibility: 'auto',
+        containIntrinsicSize: slot ? `${slot.width}px ${slot.height}px` : 'auto',
+      }}
+    >
       {ads.map(renderAd)}
     </div>
   );
