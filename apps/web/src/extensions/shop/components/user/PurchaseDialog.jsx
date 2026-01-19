@@ -104,7 +104,7 @@ export function PurchaseDialog({ open, item, accounts = [], onConfirm, onCancel,
       title="购买商品"
       description={item.name}
       footer={
-        <DialogFooter>
+        <DialogFooter className="shrink-0 p-6 pt-4">
           <Button
             variant="outline"
             onClick={onCancel}

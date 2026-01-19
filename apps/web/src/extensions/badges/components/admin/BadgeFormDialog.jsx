@@ -154,7 +154,7 @@ export function BadgeFormDialog({ open, onOpenChange, mode, initialData, onSubmi
       open={open}
       onOpenChange={onOpenChange}
       title={mode === 'create' ? '新建勋章' : '编辑勋章'}
-      maxWidth="md:max-w-3xl max-h-[90vh] overflow-y-auto"
+      maxWidth="md:max-w-3xl"
       submitText={mode === 'create' ? '创建' : '保存'}
       onSubmit={handleSubmit(onFormSubmit)}
     >

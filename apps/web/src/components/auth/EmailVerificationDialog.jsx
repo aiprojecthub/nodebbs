@@ -92,7 +92,7 @@ export function EmailVerificationDialog({ open, onOpenChange, user, onVerified }
       description="我们将向您的邮箱发送验证码以确认邮箱所有权"
       maxWidth="sm:max-w-[425px]"
       footer={
-        <DialogFooter>
+        <DialogFooter className="shrink-0 p-6 pt-4">
           <Button
             type='button'
             variant='outline'

@@ -155,7 +155,7 @@ export function ShopItemFormDialog({ open, onOpenChange, mode, initialData, onSu
       onOpenChange={onOpenChange}
       title={mode === 'create' ? '新建商品' : '编辑商品'}
       description={mode === 'create' ? '创建一个新的商城商品' : '修改商品信息'}
-      maxWidth="max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden"
+      maxWidth="sm:max-w-2xl"
       submitText={mode === 'create' ? '创建' : '更新'}
       loading={submitting}
       onSubmit={handleSubmit}

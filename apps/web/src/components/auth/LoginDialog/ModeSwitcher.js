@@ -14,7 +14,7 @@ export function ModeSwitcher({
 
   if (isForgotPassword) {
     return (
-      <div className="text-center text-sm space-y-2">
+      <div className="text-center text-sm space-y-2 mt-2">
         <Button
           variant="link"
           className="p-0 h-auto font-normal"
@@ -30,7 +30,7 @@ export function ModeSwitcher({
   if (registrationMode === 'closed') {
     if (isLogin) {
       return (
-        <div className="text-center text-sm space-y-2">
+        <div className="text-center text-sm space-y-2 mt-2">
           <p className="text-muted-foreground text-xs">
             系统当前已关闭用户注册
           </p>
@@ -38,7 +38,7 @@ export function ModeSwitcher({
       );
     } else {
       return (
-        <div className="text-center text-sm space-y-2">
+        <div className="text-center text-sm space-y-2 mt-2">
           <Button
             variant="link"
             className="p-0 h-auto font-normal"
@@ -53,7 +53,7 @@ export function ModeSwitcher({
   }
 
   return (
-    <div className="text-center text-sm space-y-2">
+    <div className="text-center text-sm space-y-2 mt-2">
       <Button
         variant="link"
         className="p-0 h-auto font-normal"

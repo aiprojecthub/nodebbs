@@ -175,7 +175,7 @@ export function RewardDialog({ open, onOpenChange, postId, postAuthor, onSuccess
               }
               description="向优质内容的创作者表示感谢"
               footer={
-                <DialogFooter>
+                <DialogFooter className="shrink-0 p-6 pt-4">
                   <Button variant="outline" onClick={handleCancel} disabled={isSubmitting}>
                     取消
                   </Button>

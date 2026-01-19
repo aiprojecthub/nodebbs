@@ -132,7 +132,7 @@ export function EmailChangeDialog({
       description={getStepDescription()}
       maxWidth="sm:max-w-[500px]"
       footer={
-        <DialogFooter>
+        <DialogFooter className="shrink-0 p-6 pt-4">
           <Button
             variant='outline'
             onClick={() => {

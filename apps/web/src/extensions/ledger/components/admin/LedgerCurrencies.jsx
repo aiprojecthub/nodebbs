@@ -243,7 +243,7 @@ export function LedgerCurrencies() {
                 loading={submitting}
                 maxWidth="sm:max-w-[680px]"
             >
-                <div className="space-y-4 px-1 py-2 overflow-y-auto pr-2 max-h-[70vh]">
+                <div className="space-y-4 py-4">
                     <div className="grid gap-2">
                         <Label htmlFor="code">代码 (Code)</Label>
                         <Input 

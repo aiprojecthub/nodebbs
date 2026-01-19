@@ -241,7 +241,7 @@ export default function TopicSidebar() {
           onOpenChange={setIsEditDialogOpen}
           title="编辑话题"
           description="修改话题的标题、内容和分类"
-          maxWidth="sm:max-w-[95vw] lg:max-w-[1200px] max-h-[90vh] overflow-y-auto"
+          maxWidth="sm:max-w-[95vw] lg:max-w-[1200px]"
           footer={null}
       >
           <TopicForm
