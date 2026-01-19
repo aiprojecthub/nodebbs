@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { DatePicker } from '@/components/common/DatePicker';
 import { DataTable } from '@/components/common/DataTable';
 import { ActionMenu } from '@/components/common/ActionMenu';
 import { FormDialog } from '@/components/common/FormDialog';
@@ -69,8 +70,8 @@ export default function AdminAdsPage() {
     linkUrl: '',
     targetBlank: true,
     priority: 0,
-    startAt: '',
-    endAt: '',
+    startAt: null,
+    endAt: null,
     isActive: true,
     remark: '',
   });
@@ -213,8 +214,8 @@ export default function AdminAdsPage() {
       linkUrl: '',
       targetBlank: true,
       priority: 0,
-      startAt: '',
-      endAt: '',
+      startAt: null,
+      endAt: null,
       isActive: true,
       remark: '',
     });
@@ -232,8 +233,8 @@ export default function AdminAdsPage() {
       linkUrl: ad.linkUrl || '',
       targetBlank: ad.targetBlank,
       priority: ad.priority || 0,
-      startAt: ad.startAt ? new Date(ad.startAt).toISOString().slice(0, 16) : '',
-      endAt: ad.endAt ? new Date(ad.endAt).toISOString().slice(0, 16) : '',
+      startAt: ad.startAt ? new Date(ad.startAt) : null,
+      endAt: ad.endAt ? new Date(ad.endAt) : null,
       isActive: ad.isActive,
       remark: ad.remark || '',
     });
@@ -256,8 +257,8 @@ export default function AdminAdsPage() {
         ...adFormData,
         slotId: parseInt(adFormData.slotId),
         priority: parseInt(adFormData.priority) || 0,
-        startAt: adFormData.startAt || null,
-        endAt: adFormData.endAt || null,
+        startAt: adFormData.startAt ? adFormData.startAt.toISOString() : null,
+        endAt: adFormData.endAt ? adFormData.endAt.toISOString() : null,
       };
 
       if (adDialogMode === 'create') {
@@ -762,20 +763,26 @@ export default function AdminAdsPage() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="adStartAt">开始时间</Label>
-              <Input
+              <DatePicker
                 id="adStartAt"
-                type="datetime"
                 value={adFormData.startAt}
-                onChange={(e) => setAdFormData({ ...adFormData, startAt: e.target.value })}
+                onChange={(date) => setAdFormData({ ...adFormData, startAt: date })}
+                placeholder="选择开始时间"
+                calendarProps={{
+                  disabled: { before: new Date() }
+                }}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="adEndAt">结束时间</Label>
-              <Input
+              <DatePicker
                 id="adEndAt"
-                type="datetime"
                 value={adFormData.endAt}
-                onChange={(e) => setAdFormData({ ...adFormData, endAt: e.target.value })}
+                onChange={(date) => setAdFormData({ ...adFormData, endAt: date })}
+                placeholder="选择结束时间"
+                calendarProps={{
+                  disabled: { before: new Date() }
+                }}
               />
             </div>
           </div>
