@@ -725,7 +725,7 @@ export default function AdminAdsPage() {
       >
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="adSlotId">广告位 *</Label>
+            <Label htmlFor="creativeSlotId">广告位 *</Label>
             <Select
               value={adFormData.slotId}
               onValueChange={(value) => setAdFormData({ ...adFormData, slotId: value })}
@@ -744,9 +744,9 @@ export default function AdminAdsPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="adTitle">广告标题 *</Label>
+            <Label htmlFor="creativeTitle">广告标题 *</Label>
             <Input
-              id="adTitle"
+              id="creativeTitle"
               value={adFormData.title}
               onChange={(e) => setAdFormData({ ...adFormData, title: e.target.value })}
               placeholder="广告标题（仅管理员可见）"
@@ -754,7 +754,7 @@ export default function AdminAdsPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="adType">广告类型 *</Label>
+            <Label htmlFor="creativeType">广告类型 *</Label>
             <Select
               value={adFormData.type}
               onValueChange={(value) => setAdFormData({ ...adFormData, type: value })}
@@ -779,19 +779,19 @@ export default function AdminAdsPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="adContent">
+            <Label htmlFor="creativeContent">
               {adFormData.type === 'image' ? '图片 URL' : adFormData.type === 'html' ? 'HTML 代码' : '脚本代码'}
             </Label>
             {adFormData.type === 'image' ? (
               <Input
-                id="adContent"
+                id="creativeContent"
                 value={adFormData.content}
                 onChange={(e) => setAdFormData({ ...adFormData, content: e.target.value })}
                 placeholder="https://example.com/ad-banner.jpg"
               />
             ) : (
               <Textarea
-                id="adContent"
+                id="creativeContent"
                 value={adFormData.content}
                 onChange={(e) => setAdFormData({ ...adFormData, content: e.target.value })}
                 placeholder={adFormData.type === 'html' ? '<div>...</div>' : '<script>...</script>'}
@@ -803,9 +803,9 @@ export default function AdminAdsPage() {
 
           {adFormData.type === 'image' && (
             <div className="space-y-2">
-              <Label htmlFor="adLinkUrl">跳转链接</Label>
+              <Label htmlFor="creativeLinkUrl">跳转链接</Label>
               <Input
-                id="adLinkUrl"
+                id="creativeLinkUrl"
                 value={adFormData.linkUrl}
                 onChange={(e) => setAdFormData({ ...adFormData, linkUrl: e.target.value })}
                 placeholder="https://example.com"
@@ -814,9 +814,9 @@ export default function AdminAdsPage() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="adPriority">优先级</Label>
+            <Label htmlFor="creativePriority">优先级</Label>
             <Input
-              id="adPriority"
+              id="creativePriority"
               type="number"
               value={adFormData.priority}
               onChange={(e) => setAdFormData({ ...adFormData, priority: e.target.value })}
@@ -828,9 +828,9 @@ export default function AdminAdsPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="adStartAt">开始时间</Label>
+              <Label htmlFor="creativeStartAt">开始时间</Label>
               <DatePicker
-                id="adStartAt"
+                id="creativeStartAt"
                 value={adFormData.startAt}
                 onChange={(date) => setAdFormData({ ...adFormData, startAt: date })}
                 placeholder="选择开始时间"
@@ -840,9 +840,9 @@ export default function AdminAdsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="adEndAt">结束时间</Label>
+              <Label htmlFor="creativeEndAt">结束时间</Label>
               <DatePicker
-                id="adEndAt"
+                id="creativeEndAt"
                 value={adFormData.endAt}
                 onChange={(date) => setAdFormData({ ...adFormData, endAt: date })}
                 placeholder="选择结束时间"
@@ -854,9 +854,9 @@ export default function AdminAdsPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="adRemark">备注</Label>
+            <Label htmlFor="creativeRemark">备注</Label>
             <Textarea
-              id="adRemark"
+              id="creativeRemark"
               value={adFormData.remark}
               onChange={(e) => setAdFormData({ ...adFormData, remark: e.target.value })}
               placeholder="备注信息（仅管理员可见）"
@@ -867,13 +867,13 @@ export default function AdminAdsPage() {
           {adFormData.type === 'image' && (
             <div className="flex items-center justify-between space-x-2 rounded-lg border border-border p-4">
               <div className="space-y-0.5">
-                <Label htmlFor="adTargetBlank" className="text-base">新窗口打开</Label>
+                <Label htmlFor="creativeTargetBlank" className="text-base">新窗口打开</Label>
                 <p className="text-sm text-muted-foreground">
                   点击广告时在新标签页打开链接
                 </p>
               </div>
               <Switch
-                id="adTargetBlank"
+                id="creativeTargetBlank"
                 checked={adFormData.targetBlank}
                 onCheckedChange={(checked) => setAdFormData({ ...adFormData, targetBlank: checked })}
               />
@@ -882,13 +882,13 @@ export default function AdminAdsPage() {
 
           <div className="flex items-center justify-between space-x-2 rounded-lg border border-border p-4">
             <div className="space-y-0.5">
-              <Label htmlFor="adIsActive" className="text-base">启用广告</Label>
+              <Label htmlFor="creativeIsActive" className="text-base">启用广告</Label>
               <p className="text-sm text-muted-foreground">
                 禁用后该广告不会展示
               </p>
             </div>
             <Switch
-              id="adIsActive"
+              id="creativeIsActive"
               checked={adFormData.isActive}
               onCheckedChange={(checked) => setAdFormData({ ...adFormData, isActive: checked })}
             />
