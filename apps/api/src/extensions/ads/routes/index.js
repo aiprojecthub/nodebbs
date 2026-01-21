@@ -122,6 +122,7 @@ export default async function adsRoutes(fastify, options) {
 
   // 获取单个广告位
   fastify.get('/slots/:id', {
+    preHandler: [fastify.optionalAuth],
     schema: {
       tags: ['ads'],
       description: '获取单个广告位',
@@ -273,6 +274,7 @@ export default async function adsRoutes(fastify, options) {
 
   // 获取广告列表
   fastify.get('/', {
+    preHandler: [fastify.optionalAuth],
     schema: {
       tags: ['ads'],
       description: '获取广告列表',
@@ -327,6 +329,7 @@ export default async function adsRoutes(fastify, options) {
 
   // 获取单个广告
   fastify.get('/:id', {
+    preHandler: [fastify.optionalAuth],
     schema: {
       tags: ['ads'],
       description: '获取单个广告',

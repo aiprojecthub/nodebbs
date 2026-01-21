@@ -21,6 +21,7 @@ export default async function shopRoutes(fastify, options) {
 
   // 获取商店商品列表 (RESTful: GET /shop/items)
   fastify.get('/items', {
+    preHandler: [fastify.optionalAuth],
     schema: {
       tags: ['shop'],
       description: '获取商店商品列表',
@@ -136,7 +137,6 @@ export default async function shopRoutes(fastify, options) {
           stock: { type: ['integer', 'string', 'null'] }, // string 用于处理表单输入的情况
           isActive: { type: 'boolean' },
           displayOrder: { type: 'integer' },
-          displayOrder: { type: 'integer' }, // Keep existing duplication if intended, or remove one
           metadata: { type: 'string' },
           currencyCode: { type: 'string' },
         },
