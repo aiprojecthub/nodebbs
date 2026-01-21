@@ -35,7 +35,8 @@ export function LedgerCurrencies() {
 
     const fetchCurrencies = async () => {
         try {
-            const data = await ledgerApi.admin.getCurrencies();
+            // 使用更新后的 API 方法 (无 admin 命名空间)
+            const data = await ledgerApi.getCurrencies();
             setCurrencies(data);
         } catch (error) {
             toast.error('获取货币列表失败');
@@ -149,7 +150,8 @@ export function LedgerCurrencies() {
         };
         
         try {
-            await ledgerApi.admin.upsertCurrency(data);
+            // 使用更新后的 API 方法
+            await ledgerApi.upsertCurrency(data);
             toast.success('货币保存成功');
             setIsDialogOpen(false);
             fetchCurrencies();
@@ -164,6 +166,7 @@ export function LedgerCurrencies() {
     const handleOperationSubmit = async (data) => {
         setSubmitting(true);
         try {
+            // 使用 admin.operation 方法
             await ledgerApi.admin.operation(data);
             toast.success(data.type === 'grant' ? '发放成功' : '扣除成功');
             setOperationOpen(false);

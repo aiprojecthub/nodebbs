@@ -39,27 +39,27 @@ export const shopApi = {
 
   // 管理员 API
   admin: {
-    // 获取所有商品（含下架）
+    // 获取所有商品 (支持 include_inactive 参数)
     async getItems(params = {}) {
-      return apiClient.get('/shop/admin/items', params);
+      return apiClient.get('/shop/items', { ...params, include_inactive: true });
     },
 
-    // 创建商品
+    // 创建商品 (Admin Only)
     async createItem(data) {
-      return apiClient.post('/shop/admin/items', data);
+      return apiClient.post('/shop/items', data);
     },
 
-    // 更新商品
+    // 更新商品 (Admin Only)
     async updateItem(itemId, data) {
-      return apiClient.request(`/shop/admin/items/${itemId}`, {
+      return apiClient.request(`/shop/items/${itemId}`, {
         method: 'PATCH',
         body: JSON.stringify(data),
       });
     },
 
-    // 删除商品
+    // 删除商品 (Admin Only)
     async deleteItem(itemId) {
-      return apiClient.delete(`/shop/admin/items/${itemId}`);
+      return apiClient.delete(`/shop/items/${itemId}`);
     },
   },
 };

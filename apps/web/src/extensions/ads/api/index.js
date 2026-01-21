@@ -17,60 +17,60 @@ export const adsApi = {
     return apiClient.post(`/ads/${adId}/click`);
   },
 
-  // 管理员 API
+  // 管理员 API (现在是统一的 RESTful 接口)
   admin: {
     // ============ 广告位管理 ============
     slots: {
-      // 获取所有广告位
-      async getAll() {
-        return apiClient.get('/ads/admin/slots');
+      // 获取所有广告位 (支持 include_inactive 参数)
+      async getAll(params = {}) {
+        return apiClient.get('/ads/slots', { ...params, include_inactive: true });
       },
 
       // 获取单个广告位
       async getById(id) {
-        return apiClient.get(`/ads/admin/slots/${id}`);
+        return apiClient.get(`/ads/slots/${id}`);
       },
 
-      // 创建广告位
+      // 创建广告位 (Admin Only)
       async create(data) {
-        return apiClient.post('/ads/admin/slots', data);
+        return apiClient.post('/ads/slots', data);
       },
 
-      // 更新广告位
+      // 更新广告位 (Admin Only)
       async update(id, data) {
-        return apiClient.patch(`/ads/admin/slots/${id}`, data);
+        return apiClient.patch(`/ads/slots/${id}`, data);
       },
 
-      // 删除广告位
+      // 删除广告位 (Admin Only)
       async delete(id) {
-        return apiClient.delete(`/ads/admin/slots/${id}`);
+        return apiClient.delete(`/ads/slots/${id}`);
       },
     },
 
     // ============ 广告管理 ============
-    // 获取广告列表
+    // 获取广告列表 (支持 include_inactive 参数)
     async getAds(params = {}) {
-      return apiClient.get('/ads/admin/ads', params);
+      return apiClient.get('/ads', { ...params, include_inactive: true });
     },
 
     // 获取单个广告
     async getAdById(id) {
-      return apiClient.get(`/ads/admin/ads/${id}`);
+      return apiClient.get(`/ads/${id}`);
     },
 
-    // 创建广告
+    // 创建广告 (Admin Only)
     async createAd(data) {
-      return apiClient.post('/ads/admin/ads', data);
+      return apiClient.post('/ads', data);
     },
 
-    // 更新广告
+    // 更新广告 (Admin Only)
     async updateAd(id, data) {
-      return apiClient.patch(`/ads/admin/ads/${id}`, data);
+      return apiClient.patch(`/ads/${id}`, data);
     },
 
-    // 删除广告
+    // 删除广告 (Admin Only)
     async deleteAd(id) {
-      return apiClient.delete(`/ads/admin/ads/${id}`);
+      return apiClient.delete(`/ads/${id}`);
     },
   },
 };

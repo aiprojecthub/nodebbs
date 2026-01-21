@@ -16,7 +16,7 @@ import {
 } from '../services/adService.js';
 
 export default async function adsRoutes(fastify, options) {
-  // ============ 公开接口 ============
+  // ============ 公开接口 (保持不变) ============
 
   // 获取指定广告位的广告（用于前端展示）
   fastify.get('/display/:slotCode', {
@@ -90,33 +90,41 @@ export default async function adsRoutes(fastify, options) {
     }
   });
 
-  // ============ 管理员接口 - 广告位管理 ============
+  // ============ 广告位 (Ad Slots) - RESTful ============
 
-  // 获取所有广告位（管理员）
-  fastify.get('/admin/slots', {
-    preHandler: [fastify.authenticate, fastify.requireAdmin],
+  // 获取广告位列表
+  fastify.get('/slots', {
+    preHandler: [fastify.optionalAuth],
     schema: {
-      tags: ['ads', 'admin'],
-      description: '获取所有广告位（管理员）',
-      security: [{ bearerAuth: [] }],
+      tags: ['ads'],
+      description: '获取广告位列表',
+      querystring: {
+        type: 'object',
+        properties: {
+          include_inactive: { type: 'boolean' }
+        }
+      }
     },
   }, async (request, reply) => {
     try {
-      const slots = await getAdSlots({ includeInactive: true });
+      const { include_inactive } = request.query;
+      
+      const isAdmin = request.user?.role === 'admin';
+      const includeInactive = isAdmin && (include_inactive === true || include_inactive === 'true');
+      
+      const slots = await getAdSlots({ includeInactive });
       return slots;
     } catch (error) {
-      fastify.log.error('[广告管理] 获取广告位列表失败:', error);
+      fastify.log.error('[广告] 获取广告位列表失败:', error);
       return reply.code(500).send({ error: '获取失败' });
     }
   });
 
-  // 获取单个广告位（管理员）
-  fastify.get('/admin/slots/:id', {
-    preHandler: [fastify.authenticate, fastify.requireAdmin],
+  // 获取单个广告位
+  fastify.get('/slots/:id', {
     schema: {
-      tags: ['ads', 'admin'],
-      description: '获取单个广告位（管理员）',
-      security: [{ bearerAuth: [] }],
+      tags: ['ads'],
+      description: '获取单个广告位',
       params: {
         type: 'object',
         required: ['id'],
@@ -129,22 +137,31 @@ export default async function adsRoutes(fastify, options) {
     try {
       const { id } = request.params;
       const slot = await getAdSlotById(id);
+      
       if (!slot) {
         return reply.code(404).send({ error: '广告位不存在' });
       }
+
+      const isAdmin = request.user?.role === 'admin';
+      
+      // 如果未激活且非管理员，返回 404
+      if (!slot.isActive && !isAdmin) {
+        return reply.code(404).send({ error: '广告位不存在' });
+      }
+
       return slot;
     } catch (error) {
-      fastify.log.error('[广告管理] 获取广告位失败:', error);
+      fastify.log.error('[广告] 获取广告位失败:', error);
       return reply.code(500).send({ error: '获取失败' });
     }
   });
 
-  // 创建广告位（管理员）
-  fastify.post('/admin/slots', {
+  // 创建广告位 (Admin Only)
+  fastify.post('/slots', {
     preHandler: [fastify.authenticate, fastify.requireAdmin],
     schema: {
       tags: ['ads', 'admin'],
-      description: '创建广告位（管理员）',
+      description: '创建广告位',
       security: [{ bearerAuth: [] }],
       body: {
         type: 'object',
@@ -171,17 +188,17 @@ export default async function adsRoutes(fastify, options) {
       const slot = await createAdSlot(request.body);
       return slot;
     } catch (error) {
-      fastify.log.error('[广告管理] 创建广告位失败:', error);
+      fastify.log.error('[广告] 创建广告位失败:', error);
       return reply.code(500).send({ error: '创建失败' });
     }
   });
 
-  // 更新广告位（管理员）
-  fastify.patch('/admin/slots/:id', {
+  // 更新广告位 (Admin Only)
+  fastify.patch('/slots/:id', {
     preHandler: [fastify.authenticate, fastify.requireAdmin],
     schema: {
       tags: ['ads', 'admin'],
-      description: '更新广告位（管理员）',
+      description: '更新广告位',
       security: [{ bearerAuth: [] }],
       params: {
         type: 'object',
@@ -221,17 +238,17 @@ export default async function adsRoutes(fastify, options) {
       }
       return slot;
     } catch (error) {
-      fastify.log.error('[广告管理] 更新广告位失败:', error);
+      fastify.log.error('[广告] 更新广告位失败:', error);
       return reply.code(500).send({ error: '更新失败' });
     }
   });
 
-  // 删除广告位（管理员）
-  fastify.delete('/admin/slots/:id', {
+  // 删除广告位 (Admin Only)
+  fastify.delete('/slots/:id', {
     preHandler: [fastify.authenticate, fastify.requireAdmin],
     schema: {
       tags: ['ads', 'admin'],
-      description: '删除广告位（管理员）',
+      description: '删除广告位',
       security: [{ bearerAuth: [] }],
       params: {
         type: 'object',
@@ -247,20 +264,18 @@ export default async function adsRoutes(fastify, options) {
       await deleteAdSlot(id);
       return { success: true };
     } catch (error) {
-      fastify.log.error('[广告管理] 删除广告位失败:', error);
+      fastify.log.error('[广告] 删除广告位失败:', error);
       return reply.code(500).send({ error: '删除失败' });
     }
   });
 
-  // ============ 管理员接口 - 广告管理 ============
+  // ============ 广告 (Ads) - RESTful ============
 
-  // 获取广告列表（管理员）
-  fastify.get('/admin/ads', {
-    preHandler: [fastify.authenticate, fastify.requireAdmin],
+  // 获取广告列表
+  fastify.get('/', {
     schema: {
-      tags: ['ads', 'admin'],
-      description: '获取广告列表（管理员）',
-      security: [{ bearerAuth: [] }],
+      tags: ['ads'],
+      description: '获取广告列表',
       querystring: {
         type: 'object',
         properties: {
@@ -269,34 +284,52 @@ export default async function adsRoutes(fastify, options) {
           slotId: { type: 'integer' },
           type: { type: 'string' },
           isActive: { type: 'boolean' },
+          include_inactive: { type: 'boolean' }
         },
       },
     },
   }, async (request, reply) => {
     try {
-      const { page, limit, slotId, type, isActive } = request.query;
-      const result = await getAds({
+      const { page, limit, slotId, type, isActive, include_inactive } = request.query;
+      const isAdmin = request.user?.role === 'admin';
+      const includeInactive = isAdmin && (include_inactive === true || include_inactive === 'true');
+
+      const queryParams = {
         slotId,
         type,
-        isActive,
-        includeInactive: true,
         page,
         limit,
-      });
+        includeInactive
+      };
+
+      if (isAdmin) {
+        if (isActive !== undefined) queryParams.isActive = isActive;
+      } else {
+        // 非管理员：
+        // 1. 如果请求 isActive=false，返回空（不允许看非激活）
+        // 2. 如果请求 isActive=true，允许
+        // 3. 如果未指定，includeInactive=false 会确保只返回激活的
+        if (isActive === false) {
+          return { items: [], total: 0, page, limit, totalPages: 0 };
+        }
+        if (isActive === true) {
+          queryParams.isActive = true;
+        }
+      }
+
+      const result = await getAds(queryParams);
       return result;
     } catch (error) {
-      fastify.log.error('[广告管理] 获取广告列表失败:', error);
+      fastify.log.error('[广告] 获取广告列表失败:', error);
       return reply.code(500).send({ error: '获取失败' });
     }
   });
 
-  // 获取单个广告（管理员）
-  fastify.get('/admin/ads/:id', {
-    preHandler: [fastify.authenticate, fastify.requireAdmin],
+  // 获取单个广告
+  fastify.get('/:id', {
     schema: {
-      tags: ['ads', 'admin'],
-      description: '获取单个广告（管理员）',
-      security: [{ bearerAuth: [] }],
+      tags: ['ads'],
+      description: '获取单个广告',
       params: {
         type: 'object',
         required: ['id'],
@@ -309,22 +342,31 @@ export default async function adsRoutes(fastify, options) {
     try {
       const { id } = request.params;
       const ad = await getAdById(id);
+      
       if (!ad) {
         return reply.code(404).send({ error: '广告不存在' });
       }
+
+      const isAdmin = request.user?.role === 'admin';
+      
+      // 如果未激活且非管理员，返回 404
+      if (!ad.isActive && !isAdmin) {
+        return reply.code(404).send({ error: '广告不存在' });
+      }
+
       return ad;
     } catch (error) {
-      fastify.log.error('[广告管理] 获取广告失败:', error);
+      fastify.log.error('[广告] 获取广告失败:', error);
       return reply.code(500).send({ error: '获取失败' });
     }
   });
 
-  // 创建广告（管理员）
-  fastify.post('/admin/ads', {
+  // 创建广告 (Admin Only)
+  fastify.post('/', {
     preHandler: [fastify.authenticate, fastify.requireAdmin],
     schema: {
       tags: ['ads', 'admin'],
-      description: '创建广告（管理员）',
+      description: '创建广告',
       security: [{ bearerAuth: [] }],
       body: {
         type: 'object',
@@ -355,17 +397,17 @@ export default async function adsRoutes(fastify, options) {
       const ad = await createAd(request.body);
       return ad;
     } catch (error) {
-      fastify.log.error('[广告管理] 创建广告失败:', error);
+      fastify.log.error('[广告] 创建广告失败:', error);
       return reply.code(500).send({ error: '创建失败' });
     }
   });
 
-  // 更新广告（管理员）
-  fastify.patch('/admin/ads/:id', {
+  // 更新广告 (Admin Only)
+  fastify.patch('/:id', {
     preHandler: [fastify.authenticate, fastify.requireAdmin],
     schema: {
       tags: ['ads', 'admin'],
-      description: '更新广告（管理员）',
+      description: '更新广告',
       security: [{ bearerAuth: [] }],
       params: {
         type: 'object',
@@ -409,17 +451,17 @@ export default async function adsRoutes(fastify, options) {
       }
       return ad;
     } catch (error) {
-      fastify.log.error('[广告管理] 更新广告失败:', error);
+      fastify.log.error('[广告] 更新广告失败:', error);
       return reply.code(500).send({ error: '更新失败', details: error.message });
     }
   });
 
-  // 删除广告（管理员）
-  fastify.delete('/admin/ads/:id', {
+  // 删除广告 (Admin Only)
+  fastify.delete('/:id', {
     preHandler: [fastify.authenticate, fastify.requireAdmin],
     schema: {
       tags: ['ads', 'admin'],
-      description: '删除广告（管理员）',
+      description: '删除广告',
       security: [{ bearerAuth: [] }],
       params: {
         type: 'object',
@@ -435,7 +477,7 @@ export default async function adsRoutes(fastify, options) {
       await deleteAd(id);
       return { success: true };
     } catch (error) {
-      fastify.log.error('[广告管理] 删除广告失败:', error);
+      fastify.log.error('[广告] 删除广告失败:', error);
       return reply.code(500).send({ error: '删除失败' });
     }
   });

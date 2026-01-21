@@ -33,16 +33,21 @@ export const ledgerApi = {
     return apiClient.get('/ledger/balance', params);
   },
 
+  // 获取所有货币 (支持 RESTful: GET /ledger/currencies)
+  async getCurrencies() {
+    return apiClient.get('/ledger/currencies');
+  },
+
+  // 创建或更新货币 (Admin Only: POST /ledger/currencies)
+  async upsertCurrency(data) {
+    return apiClient.post('/ledger/currencies', data);
+  },
+
+  // 管理员 API
   admin: {
-      async getCurrencies() {
-          return apiClient.get('/ledger/currencies');
-      },
-      async upsertCurrency(data) {
-          return apiClient.post('/ledger/currencies', data);
-      },
+      // 保留纯管理操作 (保留 /admin 前缀)
       async operation(data) {
           return apiClient.post('/ledger/admin/operation', data);
       }
-      // getTransactions 已移除，请使用带 userId 的主 getTransactions 方法
   }
 };

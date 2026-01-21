@@ -237,17 +237,31 @@ export default async function ledgerRoutes(fastify, options) {
 
   // ============ 管理员配置 (重命名) ============
   
-  // 获取所有货币 - 从 /admin/currencies 重命名 (仍需管理员权限)
+  // 获取所有货币 (RESTful: GET /currencies - 公开，但仅管理员可看到全部)
   fastify.get('/currencies', {
-      preHandler: [fastify.authenticate, fastify.requireAdmin],
+      preHandler: [fastify.authenticate],
       schema: {
           tags: ['ledger'],
           description: '获取所有货币配置'
       }
   }, async (req, reply) => {
+      const isAdmin = req.user?.role === 'admin';
+      
+      if (!isAdmin) {
+        // 非管理员只能看到活跃货币，且字段有限 (与 active-currencies 类似，但保持结构一致)
+        return db.select({
+            code: sysCurrencies.code,
+            name: sysCurrencies.name,
+            symbol: sysCurrencies.symbol,
+            isActive: sysCurrencies.isActive,
+            // 隐藏 config
+        }).from(sysCurrencies).where(eq(sysCurrencies.isActive, true));
+      }
+
       return db.select().from(sysCurrencies).orderBy(sysCurrencies.id);
   });
 
+  // 创建/更新货币 (Admin Only: POST /currencies)
   fastify.post('/currencies', {
       preHandler: [fastify.authenticate, fastify.requireAdmin],
       schema: {
@@ -275,7 +289,7 @@ export default async function ledgerRoutes(fastify, options) {
       return { success: true };
   });
 
-  // 管理员操作：发放/扣除货币 (通用)
+  // 管理员操作：发放/扣除货币 (保留 /admin 前缀 - 纯管理操作)
   fastify.post('/admin/operation', {
     preHandler: [fastify.authenticate, fastify.requireAdmin],
     schema: {

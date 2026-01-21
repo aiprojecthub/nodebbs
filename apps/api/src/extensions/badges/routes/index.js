@@ -4,7 +4,7 @@ import { users, badges } from '../../../db/schema.js';
 import { eq } from 'drizzle-orm';
 
 export default async function badgeRoutes(fastify, options) {
-  // 获取所有可用勋章（支持登录用户状态增强）
+  // 获取勋章列表 (RESTful: GET /badges)
   fastify.get('/', {
     preHandler: [fastify.optionalAuth],
     schema: {
@@ -15,14 +15,20 @@ export default async function badgeRoutes(fastify, options) {
         properties: {
           page: { type: 'integer', default: 1 },
           limit: { type: 'integer', default: 20 },
-          category: { type: 'string' }
+          category: { type: 'string' },
+          include_inactive: { type: 'boolean' }
         }
       }
     }
   }, async (request, reply) => {
-    const { page, limit, category } = request.query;
-    // Public endpoint: always active badges only
-    const result = await getBadges({ page, limit, category, includeInactive: false });
+    const { page, limit, category, include_inactive } = request.query;
+    
+    const isAdmin = request.user?.role === 'admin';
+    // Non-admin users: ignore include_inactive, force false
+    const includeInactive = isAdmin && (include_inactive === true || include_inactive === 'true');
+
+    // Public endpoint logic with admin support
+    const result = await getBadges({ page, limit, category, includeInactive });
 
     if (request.user) {
         // 获取用户已拥有的勋章信息
@@ -61,35 +67,13 @@ export default async function badgeRoutes(fastify, options) {
     };
   });
 
-  // 管理员：获取所有勋章列表 (包含下架)
-  fastify.get('/admin', {
+  // 创建勋章 (Admin Only: POST /badges)
+  fastify.post('/', {
     preHandler: [fastify.authenticate, fastify.requireAdmin],
     schema: {
-        tags: ['badges', 'admin'],
-        description: '获取所有勋章列表（管理员），包含下架勋章',
-        querystring: {
-            type: 'object',
-            properties: {
-                page: { type: 'integer', default: 1 },
-                limit: { type: 'integer', default: 20 },
-                category: { type: 'string' }
-            }
-        }
-    }
-  }, async (request, reply) => {
-      const { page, limit, category } = request.query;
-      const result = await getBadges({ page, limit, category, includeInactive: true });
-      return result;
-  });
-
-  // Route removed: /users/:userId (Data consolidated into /api/users/:username)
-
-  // 管理员：创建勋章
-  fastify.post('/admin', {
-    preHandler: [fastify.requireAdmin],
-    schema: {
-      tags: ['badges'],
+      tags: ['badges', 'admin'],
       description: '创建新勋章',
+      security: [{ bearerAuth: [] }],
       body: {
         type: 'object',
         required: ['name', 'slug', 'iconUrl'],
@@ -112,12 +96,13 @@ export default async function badgeRoutes(fastify, options) {
     return badge;
   });
 
-  // 管理员：更新勋章
-  fastify.patch('/admin/:id', {
-    preHandler: [fastify.requireAdmin],
+  // 更新勋章 (Admin Only: PATCH /badges/:id)
+  fastify.patch('/:id', {
+    preHandler: [fastify.authenticate, fastify.requireAdmin],
     schema: {
-      tags: ['badges'],
+      tags: ['badges', 'admin'],
       description: '更新勋章',
+      security: [{ bearerAuth: [] }],
       params: {
         type: 'object',
         required: ['id'],
@@ -147,12 +132,49 @@ export default async function badgeRoutes(fastify, options) {
     return badge;
   });
 
+  // 删除勋章 (Admin Only: DELETE /badges/:id)
+  fastify.delete('/:id', {
+    preHandler: [fastify.authenticate, fastify.requireAdmin],
+    schema: {
+      tags: ['badges', 'admin'],
+      description: '删除勋章',
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'integer' }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    // 检查是否是第一个管理员（创始人）
+    const [firstAdmin] = await db
+      .select()
+      .from(users)
+      .where(eq(users.role, 'admin'))
+      .orderBy(users.createdAt)
+      .limit(1);
+
+    if (!firstAdmin || firstAdmin.id !== request.user.id) {
+      return reply.code(403).send({ error: '只有创始人（第一个管理员）可以删除勋章' });
+    }
+
+    const { deleteBadge } = await import('../services/badgeService.js');
+    const { id } = request.params;
+    await deleteBadge(id);
+    return { success: true };
+  });
+
+  // ============ 纯管理操作 (保留 /admin 前缀) ============
+
   // 管理员：授予徽章给用户
   fastify.post('/admin/grant', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.authenticate, fastify.requireAdmin],
     schema: {
-      tags: ['badges'],
+      tags: ['badges', 'admin'],
       description: '手动授予用户徽章',
+      security: [{ bearerAuth: [] }],
       body: {
         type: 'object',
         required: ['userId', 'badgeId'],
@@ -210,10 +232,11 @@ export default async function badgeRoutes(fastify, options) {
 
   // 管理员：撤销用户徽章
   fastify.post('/admin/revoke', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.authenticate, fastify.requireAdmin],
     schema: {
-      tags: ['badges'],
+      tags: ['badges', 'admin'],
       description: '手动撤销用户徽章',
+      security: [{ bearerAuth: [] }],
       body: {
         type: 'object',
         required: ['userId', 'badgeId'],
@@ -234,38 +257,7 @@ export default async function badgeRoutes(fastify, options) {
     return { success: true, message: '徽章撤销成功' };
   });
 
-  // 管理员：删除勋章
-  fastify.delete('/admin/:id', {
-    preHandler: [fastify.requireAdmin],
-    schema: {
-      tags: ['badges'],
-      description: '删除勋章',
-      params: {
-        type: 'object',
-        required: ['id'],
-        properties: {
-          id: { type: 'integer' }
-        }
-      }
-    }
-  }, async (request, reply) => {
-    // 检查是否是第一个管理员（创始人）
-    const [firstAdmin] = await db
-      .select()
-      .from(users)
-      .where(eq(users.role, 'admin'))
-      .orderBy(users.createdAt)
-      .limit(1);
-
-    if (!firstAdmin || firstAdmin.id !== request.user.id) {
-      return reply.code(403).send({ error: '只有创始人（第一个管理员）可以删除勋章' });
-    }
-
-    const { deleteBadge } = await import('../services/badgeService.js');
-    const { id } = request.params;
-    await deleteBadge(id);
-    return { success: true };
-  });
+  // ============ 用户操作 ============
 
   // 用户：更新自己的勋章展示设置
   fastify.patch('/user/:userBadgeId', {
@@ -273,6 +265,7 @@ export default async function badgeRoutes(fastify, options) {
     schema: {
       tags: ['badges'],
       description: '更新用户勋章展示设置',
+      security: [{ bearerAuth: [] }],
       params: {
         type: 'object',
         required: ['userBadgeId'],
