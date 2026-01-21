@@ -29,7 +29,7 @@ export function LedgerTransactions() {
     useEffect(() => {
         const loadCurrencies = async () => {
             try {
-                const data = await ledgerApi.admin.getCurrencies();
+                const data = await ledgerApi.getCurrencies();
                 setCurrencies(data);
             } catch (error) {
                 console.error('Failed to load currencies for filter', error);

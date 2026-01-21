@@ -44,6 +44,11 @@ async function docsPlugin(fastify, opts) {
         { name: 'rewards', description: '积分奖励' },
         { name: 'shop', description: '积分商城' },
         { name: 'badges', description: '勋章系统' },
+        { name: 'ads', description: '广告管理' },
+        { name: 'captcha', description: '验证码服务' },
+        { name: 'dashboard', description: '管理仪表盘' },
+        { name: 'message-providers', description: '消息服务提供商（邮件、短信）' },
+        { name: 'upload', description: '文件上传' },
       ],
       components: {
         securitySchemes: {

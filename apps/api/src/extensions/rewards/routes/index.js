@@ -212,7 +212,10 @@ export default async function rewardsRoutes(fastify, options) {
 
   // 获取积分排行榜
   fastify.get('/rank', {
-      schema: { tags: ['rewards'] }
+      schema: { 
+        tags: ['rewards'],
+        description: '获取积分排行榜'
+      }
   }, async (request, reply) => {
       const { limit = 50, type = 'balance' } = request.query;
       const items = await getCreditRanking({ limit, type });
@@ -223,7 +226,11 @@ export default async function rewardsRoutes(fastify, options) {
   
   fastify.post('/admin/grant', {
     preHandler: [fastify.requireAdmin],
-    schema: { tags: ['rewards'], security: [{ bearerAuth: [] }] }
+    schema: { 
+      tags: ['rewards', 'admin'], 
+      description: '发放奖励（仅管理员）',
+      security: [{ bearerAuth: [] }] 
+    }
   }, async (request, reply) => {
       const { userId, amount, description } = request.body;
       const tx = await fastify.ledger.grant({
@@ -241,7 +248,11 @@ export default async function rewardsRoutes(fastify, options) {
   
    fastify.post('/admin/deduct', {
     preHandler: [fastify.requireAdmin],
-    schema: { tags: ['rewards'], security: [{ bearerAuth: [] }] }
+    schema: { 
+      tags: ['rewards', 'admin'], 
+      description: '扣除奖励（仅管理员）',
+      security: [{ bearerAuth: [] }] 
+    }
   }, async (request, reply) => {
       const { userId, amount, description } = request.body;
       const tx = await fastify.ledger.deduct({

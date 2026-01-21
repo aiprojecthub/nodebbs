@@ -159,10 +159,10 @@ export default async function adsRoutes(fastify, options) {
 
   // 创建广告位 (Admin Only)
   fastify.post('/slots', {
-    preHandler: [fastify.authenticate, fastify.requireAdmin],
+    preHandler: [fastify.requireAdmin],
     schema: {
       tags: ['ads', 'admin'],
-      description: '创建广告位',
+      description: '创建广告位（仅管理员）',
       security: [{ bearerAuth: [] }],
       body: {
         type: 'object',
@@ -196,10 +196,10 @@ export default async function adsRoutes(fastify, options) {
 
   // 更新广告位 (Admin Only)
   fastify.patch('/slots/:id', {
-    preHandler: [fastify.authenticate, fastify.requireAdmin],
+    preHandler: [fastify.requireAdmin],
     schema: {
       tags: ['ads', 'admin'],
-      description: '更新广告位',
+      description: '更新广告位（仅管理员）',
       security: [{ bearerAuth: [] }],
       params: {
         type: 'object',
@@ -246,10 +246,10 @@ export default async function adsRoutes(fastify, options) {
 
   // 删除广告位 (Admin Only)
   fastify.delete('/slots/:id', {
-    preHandler: [fastify.authenticate, fastify.requireAdmin],
+    preHandler: [fastify.requireAdmin],
     schema: {
       tags: ['ads', 'admin'],
-      description: '删除广告位',
+      description: '删除广告位（仅管理员）',
       security: [{ bearerAuth: [] }],
       params: {
         type: 'object',
@@ -366,10 +366,10 @@ export default async function adsRoutes(fastify, options) {
 
   // 创建广告 (Admin Only)
   fastify.post('/', {
-    preHandler: [fastify.authenticate, fastify.requireAdmin],
+    preHandler: [fastify.requireAdmin],
     schema: {
       tags: ['ads', 'admin'],
-      description: '创建广告',
+      description: '创建广告（仅管理员）',
       security: [{ bearerAuth: [] }],
       body: {
         type: 'object',
@@ -407,10 +407,10 @@ export default async function adsRoutes(fastify, options) {
 
   // 更新广告 (Admin Only)
   fastify.patch('/:id', {
-    preHandler: [fastify.authenticate, fastify.requireAdmin],
+    preHandler: [fastify.requireAdmin],
     schema: {
       tags: ['ads', 'admin'],
-      description: '更新广告',
+      description: '更新广告（仅管理员）',
       security: [{ bearerAuth: [] }],
       params: {
         type: 'object',
@@ -461,10 +461,10 @@ export default async function adsRoutes(fastify, options) {
 
   // 删除广告 (Admin Only)
   fastify.delete('/:id', {
-    preHandler: [fastify.authenticate, fastify.requireAdmin],
+    preHandler: [fastify.requireAdmin],
     schema: {
       tags: ['ads', 'admin'],
-      description: '删除广告',
+      description: '删除广告（仅管理员）',
       security: [{ bearerAuth: [] }],
       params: {
         type: 'object',

@@ -104,7 +104,7 @@ export function ShopItemFormDialog({ open, onOpenChange, mode, initialData, onSu
   // Fetch currencies on mount/open
   useEffect(() => {
     if (open) {
-      ledgerApi.admin.getCurrencies()
+      ledgerApi.getCurrencies()
         .then(items => {
            setCurrencies(items.filter(c => c.isActive));
         })

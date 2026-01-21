@@ -9,7 +9,7 @@ export default async function categoryRoutes(fastify, options) {
   fastify.patch('/batch-reorder', {
     preHandler: [fastify.requireAdmin],
     schema: {
-      tags: ['categories'],
+      tags: ['categories', 'admin'],
       description: '批量更新分类排序（仅管理员）',
       security: [{ bearerAuth: [] }],
       body: {
@@ -271,7 +271,7 @@ export default async function categoryRoutes(fastify, options) {
   fastify.post('/', {
     preHandler: [fastify.requireAdmin],
     schema: {
-      tags: ['categories'],
+      tags: ['categories', 'admin'],
       description: '创建新分类（仅管理员）',
       security: [{ bearerAuth: [] }],
       body: {
@@ -332,7 +332,7 @@ export default async function categoryRoutes(fastify, options) {
   fastify.patch('/:id', {
     preHandler: [fastify.requireAdmin],
     schema: {
-      tags: ['categories'],
+      tags: ['categories', 'admin'],
       description: '更新分类（仅管理员）',
       security: [{ bearerAuth: [] }],
       params: {
@@ -385,7 +385,7 @@ export default async function categoryRoutes(fastify, options) {
   fastify.delete('/:id', {
     preHandler: [fastify.requireAdmin],
     schema: {
-      tags: ['categories'],
+      tags: ['categories', 'admin'],
       description: '删除分类（仅管理员）',
       security: [{ bearerAuth: [] }],
       params: {

@@ -80,10 +80,10 @@ export default async function shopRoutes(fastify, options) {
 
   // 创建商品 (Admin Only: POST /shop/items)
   fastify.post('/items', {
-    preHandler: [fastify.authenticate, fastify.requireAdmin],
+    preHandler: [fastify.requireAdmin],
     schema: {
       tags: ['shop', 'admin'],
-      description: '创建商品（管理员）',
+      description: '创建商品（仅管理员）',
       security: [{ bearerAuth: [] }],
       body: {
         type: 'object',
@@ -114,10 +114,10 @@ export default async function shopRoutes(fastify, options) {
 
   // 更新商品 (Admin Only: PATCH /shop/items/:itemId)
   fastify.patch('/items/:itemId', {
-    preHandler: [fastify.authenticate, fastify.requireAdmin],
+    preHandler: [fastify.requireAdmin],
     schema: {
       tags: ['shop', 'admin'],
-      description: '更新商品（管理员）',
+      description: '更新商品（仅管理员）',
       security: [{ bearerAuth: [] }],
       params: {
         type: 'object',
@@ -155,10 +155,10 @@ export default async function shopRoutes(fastify, options) {
 
   // 删除商品 (Admin Only: DELETE /shop/items/:itemId)
   fastify.delete('/items/:itemId', {
-    preHandler: [fastify.authenticate, fastify.requireAdmin],
+    preHandler: [fastify.requireAdmin],
     schema: {
       tags: ['shop', 'admin'],
-      description: '删除商品（管理员）',
+      description: '删除商品（仅创始人）',
       security: [{ bearerAuth: [] }],
       params: {
         type: 'object',

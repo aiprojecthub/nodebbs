@@ -181,7 +181,7 @@ export default async function tagRoutes(fastify, options) {
   fastify.patch('/:id', {
     preHandler: [fastify.requireAdmin],
     schema: {
-      tags: ['tags'],
+      tags: ['tags', 'admin'],
       description: '更新标签（仅管理员）',
       security: [{ bearerAuth: [] }],
       params: {
@@ -229,7 +229,7 @@ export default async function tagRoutes(fastify, options) {
   fastify.delete('/:id', {
     preHandler: [fastify.requireAdmin],
     schema: {
-      tags: ['tags'],
+      tags: ['tags', 'admin'],
       description: '删除标签（仅管理员）',
       security: [{ bearerAuth: [] }],
       params: {

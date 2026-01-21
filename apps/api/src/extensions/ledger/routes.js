@@ -10,10 +10,10 @@ export default async function ledgerRoutes(fastify, options) {
   
   // 1. 获取统计数据 (仪表盘) - 仅限管理员
   fastify.get('/stats', {
-    preHandler: [fastify.authenticate, fastify.requireAdmin],
+    preHandler: [fastify.requireAdmin],
     schema: {
-      tags: ['ledger'],
-      description: '获取账本统计数据（仅限管理员）。返回每种货币的列表。',
+      tags: ['ledger', 'admin'],
+      description: '获取账本统计数据（仅管理员）',
     }
   }, async (req, reply) => {
     // 获取所有货币，按 isActive 降序（启用在前）、创建时间升序排列
@@ -87,6 +87,7 @@ export default async function ledgerRoutes(fastify, options) {
     preHandler: [fastify.authenticate],
     schema: {
         tags: ['ledger'],
+        description: '获取交易记录（管理员可查看所有用户）',
         querystring: {
             type: 'object',
             properties: {
@@ -160,6 +161,7 @@ export default async function ledgerRoutes(fastify, options) {
       preHandler: [fastify.authenticate],
       schema: {
           tags: ['ledger'],
+          description: '获取用户账户余额',
           querystring: {
               type: 'object',
               properties: {
@@ -263,9 +265,10 @@ export default async function ledgerRoutes(fastify, options) {
 
   // 创建/更新货币 (Admin Only: POST /currencies)
   fastify.post('/currencies', {
-      preHandler: [fastify.authenticate, fastify.requireAdmin],
+      preHandler: [fastify.requireAdmin],
       schema: {
-          tags: ['ledger']
+          tags: ['ledger', 'admin'],
+          description: '创建或更新货币配置（仅管理员）'
           // ... 剩余 schema
       }
   }, async (req, reply) => {
@@ -291,10 +294,10 @@ export default async function ledgerRoutes(fastify, options) {
 
   // 管理员操作：发放/扣除货币 (保留 /admin 前缀 - 纯管理操作)
   fastify.post('/admin/operation', {
-    preHandler: [fastify.authenticate, fastify.requireAdmin],
+    preHandler: [fastify.requireAdmin],
     schema: {
-        tags: ['ledger'],
-        description: '管理员发放或扣除用户货币',
+        tags: ['ledger', 'admin'],
+        description: '发放或扣除用户货币（仅管理员）',
         body: {
             type: 'object',
             required: ['userId', 'currency', 'amount', 'type'],

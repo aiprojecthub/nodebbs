@@ -7,7 +7,7 @@ export default async function dashboardRoutes(fastify, options) {
   fastify.get('/stats', {
     preHandler: [fastify.requireAdmin],
     schema: {
-      tags: ['dashboard'],
+      tags: ['dashboard', 'admin'],
       description: '获取管理后台统计数据（仅管理员）',
       security: [{ bearerAuth: [] }],
       response: {

@@ -59,10 +59,10 @@ export default async function captchaRoutes(fastify, options) {
   fastify.get(
     '/providers',
     {
-      preHandler: [fastify.authenticate, fastify.requireAdmin],
+      preHandler: [fastify.requireAdmin],
       schema: {
-        tags: ['captcha'],
-        description: '获取所有 CAPTCHA 提供商配置（管理员）',
+        tags: ['captcha', 'admin'],
+        description: '获取所有 CAPTCHA 提供商配置（仅管理员）',
         security: [{ bearerAuth: [] }],
       },
     },
@@ -101,10 +101,10 @@ export default async function captchaRoutes(fastify, options) {
   fastify.put(
     '/providers/:provider',
     {
-      preHandler: [fastify.authenticate, fastify.requireAdmin],
+      preHandler: [fastify.requireAdmin],
       schema: {
-        tags: ['captcha'],
-        description: '更新 CAPTCHA 提供商配置（管理员）',
+        tags: ['captcha', 'admin'],
+        description: '更新 CAPTCHA 提供商配置（仅管理员）',
         security: [{ bearerAuth: [] }],
         params: {
           type: 'object',
