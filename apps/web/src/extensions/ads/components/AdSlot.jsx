@@ -83,7 +83,7 @@ function AdItem({ ad, slot, isBanner, recordClick, recordImpression }) {
   }
 
   return (
-    <div ref={observerRef} className="ad-item-wrapper w-full h-full">
+    <div ref={observerRef} className="promo-item w-full h-full">
       {content}
     </div>
   );
