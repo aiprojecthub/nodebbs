@@ -35,7 +35,6 @@ export default async function adsRoutes(fastify, options) {
       description: '批量获取广告位的有效广告',
       querystring: {
         type: 'object',
-        required: ['slots'],
         properties: {
           slots: { type: 'string', description: '逗号分隔的广告位代码' },
         },
@@ -482,7 +481,7 @@ export default async function adsRoutes(fastify, options) {
       return ad;
     } catch (error) {
       fastify.log.error('[广告] 更新广告失败:', error);
-      return reply.code(500).send({ error: '更新失败', details: error.message });
+      return reply.code(500).send({ error: '更新失败' });
     }
   });
 
