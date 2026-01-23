@@ -826,32 +826,50 @@ export default function AdminAdsPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="creativeStartAt">开始时间</Label>
-              <DatePicker
-                id="creativeStartAt"
-                value={adFormData.startAt}
-                onChange={(date) => setAdFormData({ ...adFormData, startAt: date })}
-                placeholder="选择开始时间"
-                calendarProps={{
-                  disabled: { before: new Date() }
-                }}
-              />
+          <div className="flex items-center justify-between space-x-2 rounded-lg border border-border p-4">
+            <div className="space-y-0.5">
+              <Label htmlFor="isLongTerm" className="text-base">长期投放</Label>
+              <p className="text-sm text-muted-foreground">
+                开启后广告将立即生效且无结束日期
+              </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="creativeEndAt">结束时间</Label>
-              <DatePicker
-                id="creativeEndAt"
-                value={adFormData.endAt}
-                onChange={(date) => setAdFormData({ ...adFormData, endAt: date })}
-                placeholder="选择结束时间"
-                calendarProps={{
-                  disabled: { before: new Date() }
-                }}
-              />
-            </div>
+            <Switch
+              id="isLongTerm"
+              checked={!adFormData.startAt && !adFormData.endAt}
+              onCheckedChange={(checked) => {
+                if (checked) {
+                  setAdFormData({ ...adFormData, startAt: null, endAt: null });
+                } else {
+                  const nextMonth = new Date();
+                  nextMonth.setDate(nextMonth.getDate() + 30);
+                  setAdFormData({ ...adFormData, startAt: new Date(), endAt: nextMonth });
+                }
+              }}
+            />
           </div>
+
+          {(adFormData.startAt || adFormData.endAt) && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="creativeStartAt">开始时间</Label>
+                <DatePicker
+                  id="creativeStartAt"
+                  value={adFormData.startAt}
+                  onChange={(date) => setAdFormData({ ...adFormData, startAt: date })}
+                  placeholder="选择开始时间"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="creativeEndAt">结束时间</Label>
+                <DatePicker
+                  id="creativeEndAt"
+                  value={adFormData.endAt}
+                  onChange={(date) => setAdFormData({ ...adFormData, endAt: date })}
+                  placeholder="选择结束时间"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="creativeRemark">备注</Label>
