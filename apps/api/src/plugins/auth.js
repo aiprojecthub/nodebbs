@@ -6,6 +6,7 @@ import { users } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import ms from 'ms';
 import { isProd } from '../utils/env.js';
+import { ROLE_ADMIN, ROLE_MODERATOR } from '../constants/roles.js';
 
 async function authPlugin(fastify) {
   // 注册 Cookie 插件
@@ -55,6 +56,19 @@ async function authPlugin(fastify) {
   // 用户信息缓存 TTL（秒）- 默认 2 分钟
   const USER_CACHE_TTL = parseInt(process.env.USER_CACHE_TTL || '120', 10);
   
+  // 增强用户对象，添加权限辅助属性
+  function enhanceUser(user) {
+    if (!user) return null;
+    
+    // 添加 getter 属性，避免 JSON 序列化时包含这些字段（如果需要的话）
+    // 或者直接添加属性，方便查看
+    // 这里直接添加属性，因为 request.user 通常只在内部使用
+    user.isAdmin = user.role === ROLE_ADMIN;
+    user.isModerator = [ROLE_ADMIN, ROLE_MODERATOR].includes(user.role);
+    
+    return user;
+  }
+
   // 获取用户信息（带缓存）
   async function getUserInfo(userId) {
     const cacheKey = `user:${userId}`;
@@ -101,7 +115,7 @@ async function authPlugin(fastify) {
       }
       
       // 更新 request.user 为最新的用户信息
-      request.user = user;
+      request.user = enhanceUser(user);
     } catch (err) {
       reply.code(401).send({ error: '未授权', message: '令牌无效或已过期' });
     }
@@ -144,12 +158,12 @@ async function authPlugin(fastify) {
         return reply.code(403).send({ error: '访问被拒绝', message: '你的账号已被封禁' });
       }
       
-      if (user.role !== 'admin') {
+      if (user.role !== ROLE_ADMIN) {
         return reply.code(403).send({ error: '禁止访问', message: '需要管理员权限' });
       }
       
       // 更新 request.user 为最新的用户信息
-      request.user = user;
+      request.user = enhanceUser(user);
     } catch (err) {
       reply.code(401).send({ error: '未授权', message: '令牌无效或已过期' });
     }
@@ -175,12 +189,12 @@ async function authPlugin(fastify) {
         return reply.code(403).send({ error: '访问被拒绝', message: '你的账号已被封禁' });
       }
       
-      if (!['moderator', 'admin'].includes(user.role)) {
+      if (![ROLE_MODERATOR, ROLE_ADMIN].includes(user.role)) {
         return reply.code(403).send({ error: '禁止访问', message: '需要版主或管理员权限' });
       }
       
       // 更新 request.user 为最新的用户信息
-      request.user = user;
+      request.user = enhanceUser(user);
     } catch (err) {
       reply.code(401).send({ error: '未授权', message: '令牌无效或已过期' });
     }
@@ -196,7 +210,7 @@ async function authPlugin(fastify) {
       
       if (user) {
         // 更新 request.user 为最新的用户信息
-        request.user = user;
+        request.user = enhanceUser(user);
       } else {
         request.user = null;
       }

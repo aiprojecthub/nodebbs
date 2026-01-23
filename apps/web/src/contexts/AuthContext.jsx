@@ -4,8 +4,20 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 import { authApi } from '@/lib/api';
 import LoginDialog from '@/components/auth/LoginDialog';
 import { useSettings } from '@/contexts/SettingsContext';
+import { ROLE_ADMIN, ROLE_MODERATOR } from '@/constants/roles';
 
 const AuthContext = createContext(null);
+
+// 增强用户对象，添加权限辅助属性
+function enhanceUser(user) {
+  if (!user) return null;
+  
+  return {
+    ...user,
+    isAdmin: user.role === ROLE_ADMIN,
+    isModerator: [ROLE_ADMIN, ROLE_MODERATOR].includes(user.role)
+  };
+}
 
 export function AuthProvider({ children, initialUser }) {
   // 如果 initialUser 被传递（无论是 null 还是对象），说明服务端已经检查过了
@@ -14,7 +26,7 @@ export function AuthProvider({ children, initialUser }) {
   
   const { refreshSettings } = useSettings();
   
-  const [user, setUser] = useState(initialUser || null);
+  const [user, setUser] = useState(enhanceUser(initialUser) || null);
   const [loading, setLoading] = useState(!isHydrated);
   const [error, setError] = useState(null);
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
@@ -45,7 +57,7 @@ export function AuthProvider({ children, initialUser }) {
     try {
       setLoading(true);
       const currentUser = await authApi.getCurrentUser();
-      setUser(currentUser);
+      setUser(enhanceUser(currentUser));
       setError(null);
     } catch (err) {
       setUser(null);
@@ -60,7 +72,7 @@ export function AuthProvider({ children, initialUser }) {
     try {
       setError(null);
       const response = await authApi.login(identifier, password, captchaToken);
-      setUser(response.user);
+      setUser(enhanceUser(response.user));
       // 登录成功刷新设置 (因为设置可能依赖用户角色)
       refreshSettings();
       // 登录成功后关闭对话框
@@ -77,7 +89,7 @@ export function AuthProvider({ children, initialUser }) {
     try {
       setError(null);
       const response = await authApi.register(data);
-      setUser(response.user);
+      setUser(enhanceUser(response.user));
       // 注册成功刷新设置
       refreshSettings();
       // 注册成功后关闭对话框
@@ -99,14 +111,14 @@ export function AuthProvider({ children, initialUser }) {
 
   // 更新用户信息
   const updateUser = useCallback((userData) => {
-    setUser((prev) => ({ ...prev, ...userData }));
+    setUser((prev) => enhanceUser({ ...prev, ...userData }));
   }, []);
 
   // 刷新用户信息
   const refreshUser = useCallback(async () => {
     try {
       const currentUser = await authApi.getCurrentUser();
-      setUser(currentUser);
+      setUser(enhanceUser(currentUser));
       return currentUser;
     } catch (err) {
       console.error('Failed to refresh user:', err);
@@ -117,7 +129,7 @@ export function AuthProvider({ children, initialUser }) {
   // 设置认证数据（用于扫码登录等外部认证成功后）
   const setAuthData = useCallback((userData) => {
     // 设置用户数据
-    setUser(userData);
+    setUser(enhanceUser(userData));
     // 刷新设置
     refreshSettings();
     // 关闭登录对话框

@@ -309,7 +309,7 @@ export default async function userRoutes(fastify, options) {
     }
 
     // 检查用户权限
-    const isModerator = request.user && ['moderator', 'admin'].includes(request.user.role);
+    const isModerator = request.user?.isModerator;
     
     // 如果用户已被删除且访问者不是管理员/版主，返回 404
     if (user.isDeleted && !isModerator) {
@@ -876,7 +876,7 @@ export default async function userRoutes(fastify, options) {
       .offset(offset);
 
     // 检查用户权限
-    const isModerator = request.user && ['moderator', 'admin'].includes(request.user.role);
+    const isModerator = request.user?.isModerator;
     
     // 如果用户被封禁且访问者不是管理员/版主，隐藏头像
     followers.forEach(follower => {
@@ -948,7 +948,7 @@ export default async function userRoutes(fastify, options) {
       .offset(offset);
 
     // 检查用户权限
-    const isModerator = request.user && ['moderator', 'admin'].includes(request.user.role);
+    const isModerator = request.user?.isModerator;
     
     // 如果用户被封禁且访问者不是管理员/版主，隐藏头像
     following.forEach(followedUser => {
@@ -1014,7 +1014,7 @@ export default async function userRoutes(fastify, options) {
     const currentUser = request.user;
     const isOwner = currentUser && currentUser.id === user.id;
     const isModerator =
-      currentUser && ['moderator', 'admin'].includes(currentUser.role);
+      currentUser?.isModerator;
 
     if (!isOwner && !isModerator) {
       return reply.code(403).send({ error: '无权查看该用户的收藏列表' });

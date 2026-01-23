@@ -50,8 +50,7 @@ export default async function emailProvidersRoutes(fastify, options) {
     },
     async (request, reply) => {
       try {
-        const isAdmin =
-          request.user && ['admin', 'moderator'].includes(request.user.role);
+        const isAdmin = request.user?.isAdmin;
 
         let items;
 

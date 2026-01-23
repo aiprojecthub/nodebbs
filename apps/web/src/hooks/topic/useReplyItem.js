@@ -72,7 +72,7 @@ export function useReplyItem({
   const isPending = localReply.approvalStatus === 'pending';
   const isRejected = localReply.approvalStatus === 'rejected';
   const isOwnReply = user?.id === localReply.userId;
-  const isModerator = user?.role === 'admin' || user?.role === 'moderator';
+  const isModerator = user?.isModerator;
   const canInteract = !isPending && !isRejected;
   // 编辑权限：作者本人 或 版主/管理员
   const canEdit = isAuthenticated && (isOwnReply || isModerator);

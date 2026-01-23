@@ -15,7 +15,7 @@ export default function RequireAdmin({ children }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && (!isAuthenticated || user?.role !== 'admin')) {
+    if (!loading && (!isAuthenticated || !user?.isAdmin)) {
       router.push('/');
     }
   }, [user, isAuthenticated, loading, router]);
@@ -25,7 +25,7 @@ export default function RequireAdmin({ children }) {
     return <Loading variant='overlay' />;
   }
 
-  if (!isAuthenticated || user?.role !== 'admin') {
+  if (!isAuthenticated || !user?.isAdmin) {
     return null;
   }
 

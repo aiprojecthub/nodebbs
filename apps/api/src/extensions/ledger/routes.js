@@ -103,7 +103,7 @@ export default async function ledgerRoutes(fastify, options) {
        const offset = (page - 1) * limit;
        
        let filterUserId = req.user.id;
-       const isAdmin = req.user.role === 'admin';
+       const isAdmin = req.user.isAdmin;
 
        if (isAdmin) {
            if (userId) {
@@ -247,7 +247,7 @@ export default async function ledgerRoutes(fastify, options) {
           description: '获取所有货币配置'
       }
   }, async (req, reply) => {
-      const isAdmin = req.user?.role === 'admin';
+      const isAdmin = req.user?.isAdmin;
       
       if (!isAdmin) {
         // 非管理员只能看到活跃货币，且字段有限 (与 active-currencies 类似，但保持结构一致)

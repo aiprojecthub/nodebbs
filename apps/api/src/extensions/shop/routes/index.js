@@ -39,7 +39,7 @@ export default async function shopRoutes(fastify, options) {
     try {
       const { page, limit, type, includeInactive: includeInactiveParam } = request.query;
       
-      const isAdmin = request.user?.role === 'admin';
+      const isAdmin = request.user?.isAdmin;
       // Non-admin users: ignore includeInactive, force false
       const includeInactive = isAdmin && (includeInactiveParam === true || includeInactiveParam === 'true');
       

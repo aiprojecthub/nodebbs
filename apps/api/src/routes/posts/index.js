@@ -66,11 +66,11 @@ export default async function postRoutes(fastify, options) {
     const offset = (page - 1) * limit;
 
     // 检查是否为管理员
-    const isAdmin = request.user && request.user.role === 'admin';
+    const isAdmin = request.user?.isAdmin;
     
     // 判断是否为管理员模式：管理员且没有提供 topicId 或 userId
     const isAdminMode = isAdmin && !topicId && !userId;
-    const isModerator = request.user && ['moderator', 'admin'].includes(request.user.role);
+    const isModerator = request.user?.isModerator;
 
     // 非管理员必须提供 topicId 或 userId
     if (!isAdmin && !topicId && !userId) {
@@ -212,7 +212,7 @@ export default async function postRoutes(fastify, options) {
       // 管理员/版主：不添加过滤条件，显示所有回复
 
       // 过滤已封禁用户的回复（非管理员）
-      const isAdmin = request.user && request.user.role === 'admin';
+      const isAdmin = request.user?.isAdmin;
       if (!isAdmin) {
         whereConditions.push(eq(users.isBanned, false));
       }
@@ -440,7 +440,7 @@ export default async function postRoutes(fastify, options) {
     ];
 
     // 3. 应用审核状态过滤 (与列表逻辑一致)
-    const isModerator = request.user && ['moderator', 'admin'].includes(request.user.role);
+    const isModerator = request.user?.isModerator;
     if (!isModerator) {
       if (request.user) {
         whereConditions.push(
@@ -557,7 +557,7 @@ export default async function postRoutes(fastify, options) {
     }
 
     // 检查用户权限
-    const isModerator = request.user && ['moderator', 'admin'].includes(request.user.role);
+    const isModerator = request.user?.isModerator;
     
     // 如果用户被封禁且访问者不是管理员/版主，隐藏头像
     if (shouldHideUserInfo({ isBanned: post.userIsBanned }, isModerator)) {
@@ -847,7 +847,7 @@ export default async function postRoutes(fastify, options) {
     }
 
     // 检查权限
-    const isModerator = ['moderator', 'admin'].includes(request.user.role);
+    const isModerator = request.user?.isModerator;
     const isOwner = post.userId === request.user.id;
 
     if (!isModerator && !isOwner) {
@@ -966,7 +966,7 @@ export default async function postRoutes(fastify, options) {
     }
 
     // 检查权限
-    const isModerator = ['moderator', 'admin'].includes(request.user.role);
+    const isModerator = request.user?.isModerator;
     const isOwner = post.userId === request.user.id;
 
     if (!isModerator && !isOwner) {

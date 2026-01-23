@@ -23,7 +23,7 @@ export default async function badgeRoutes(fastify, options) {
   }, async (request, reply) => {
     const { page, limit, category, includeInactive: includeInactiveParam } = request.query;
     
-    const isAdmin = request.user?.role === 'admin';
+    const isAdmin = request.user?.isAdmin;
     // Non-admin users: ignore includeInactive, force false
     const includeInactive = isAdmin && (includeInactiveParam === true || includeInactiveParam === 'true');
 

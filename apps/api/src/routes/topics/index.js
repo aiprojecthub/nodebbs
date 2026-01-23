@@ -135,7 +135,7 @@ export default async function topicRoutes(fastify, options) {
       }
 
       // 管理员可以查看已删除的话题
-      const isAdmin = request.user && request.user.role === 'admin';
+      const isAdmin = request.user?.isAdmin;
       if (isDeleted !== undefined) {
         // 明确指定查询已删除或未删除的话题
         conditions.push(eq(topics.isDeleted, isDeleted));
@@ -146,8 +146,7 @@ export default async function topicRoutes(fastify, options) {
 
       // 如果不是版主/管理员，只显示已批准的内容
       // 如果是查看自己的话题，显示所有状态
-      const isModerator =
-        request.user && ['moderator', 'admin'].includes(request.user.role);
+      const isModerator = request.user?.isModerator;
       const isOwnTopics = userId && request.user && userId === request.user.id;
 
       if (!isModerator && !isOwnTopics) {
@@ -391,8 +390,7 @@ export default async function topicRoutes(fastify, options) {
     async (request, reply) => {
       const { id } = request.params;
 
-      const isModerator =
-        request.user && ['moderator', 'admin'].includes(request.user.role);
+      const isModerator = request.user?.isModerator;
 
       // 构建查询条件：管理员和版主可以查看已删除的话题
       const conditions = [eq(topics.id, id)];
@@ -614,7 +612,7 @@ export default async function topicRoutes(fastify, options) {
       }
 
       // 检查私有分类权限
-      const isModerator = ['moderator', 'admin'].includes(request.user.role);
+      const isModerator = request.user?.isModerator;
       if (category.isPrivate && !isModerator) {
         return reply.code(403).send({
           error: '访问被拒绝',
@@ -756,7 +754,7 @@ export default async function topicRoutes(fastify, options) {
       }
 
       // 检查权限
-      const isModerator = ['moderator', 'admin'].includes(request.user.role);
+      const isModerator = request.user?.isModerator;
       const isOwner = topic.userId === request.user.id;
 
       if (!isModerator && !isOwner) {
@@ -985,7 +983,7 @@ export default async function topicRoutes(fastify, options) {
       }
 
       // 检查权限
-      const isModerator = ['moderator', 'admin'].includes(request.user.role);
+      const isModerator = request.user?.isModerator;
       const isOwner = topic.userId === request.user.id;
 
       if (!isModerator && !isOwner) {
