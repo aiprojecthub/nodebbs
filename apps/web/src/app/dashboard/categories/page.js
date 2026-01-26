@@ -13,7 +13,7 @@ import { ActionMenu } from '@/components/common/ActionMenu';
 import { confirm } from '@/components/common/ConfirmPopover';
 import { FormDialog } from '@/components/common/FormDialog';
 import { PageHeader } from '@/components/common/PageHeader';
-import { Plus, Edit, Trash2, Loader2, Lock, Shield } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, Lock } from 'lucide-react';
 import { categoryApi } from '@/lib/api';
 import { toast } from 'sonner';
 import CategorySelector from '@/components/topic/CategorySelector';
@@ -375,11 +375,6 @@ export default function CategoriesManagement() {
                     label: '编辑',
                     icon: Edit,
                     onClick: () => openEditDialog(category),
-                  },
-                  {
-                    label: '权限配置',
-                    icon: Shield,
-                    href: `/dashboard/categories/${category.id}/permissions`,
                   },
                   {
                     label: '删除',

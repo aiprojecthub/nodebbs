@@ -3,9 +3,9 @@
  * 仅管理员可访问
  */
 
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import db from '../../db/index.js';
-import { roles, permissions, rolePermissions, userRoles, users, categoryPermissions, categories } from '../../db/schema.js';
+import { roles, permissions, rolePermissions, userRoles, users } from '../../db/schema.js';
 import { getPermissionService } from '../../services/permissionService.js';
 
 // ============ RBAC 配置定义 ============
@@ -166,7 +166,7 @@ const PERMISSION_CONDITIONS = {
   'post.manage': ['categories'],
   'post.approve': ['categories'],
 
-  // 用户相关 - 通常无条件限制或只有等级限制
+  // 用户相关
   'user.read': [],
   'user.update': ['own'],
   'user.delete': [],
@@ -192,13 +192,13 @@ const PERMISSION_CONDITIONS = {
   'invitation.read': ['own'],
   'invitation.manage': [],
 
-  // 审核相关 - 通常无条件限制
+  // 审核相关
   'moderation.reports': [],
   'moderation.content': ['categories'],
   'moderation.approve': ['categories'],
   'moderation.manage': [],
 
-  // 系统相关 - 无条件限制
+  // 系统相关
   'system.settings': [],
   'system.dashboard': [],
   'system.logs': [],
@@ -877,303 +877,6 @@ export default async function rolesRoutes(fastify, options) {
       await db.delete(permissions).where(eq(permissions.id, id));
 
       return { success: true, message: '权限已删除' };
-    }
-  );
-
-  // ============ 分类权限管理 ============
-
-  // 获取分类的权限配置
-  fastify.get(
-    '/categories/:categoryId/permissions',
-    {
-      preHandler: [fastify.requireAdmin],
-      schema: {
-        tags: ['roles'],
-        description: '获取分类的权限配置',
-        params: {
-          type: 'object',
-          properties: {
-            categoryId: { type: 'number' },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      const { categoryId } = request.params;
-
-      // 检查分类是否存在
-      const [category] = await db.select().from(categories).where(eq(categories.id, categoryId)).limit(1);
-      if (!category) {
-        return reply.code(404).send({ error: '分类不存在' });
-      }
-
-      // 获取该分类的所有权限配置
-      const perms = await db
-        .select({
-          id: categoryPermissions.id,
-          roleId: categoryPermissions.roleId,
-          roleName: roles.name,
-          roleSlug: roles.slug,
-          canView: categoryPermissions.canView,
-          canCreate: categoryPermissions.canCreate,
-          canReply: categoryPermissions.canReply,
-          canModerate: categoryPermissions.canModerate,
-        })
-        .from(categoryPermissions)
-        .innerJoin(roles, eq(categoryPermissions.roleId, roles.id))
-        .where(eq(categoryPermissions.categoryId, categoryId));
-
-      return {
-        category: {
-          id: category.id,
-          name: category.name,
-          slug: category.slug,
-        },
-        permissions: perms,
-      };
-    }
-  );
-
-  // 设置分类的权限配置
-  fastify.put(
-    '/categories/:categoryId/permissions',
-    {
-      preHandler: [fastify.requireAdmin],
-      schema: {
-        tags: ['roles'],
-        description: '设置分类的权限配置',
-        params: {
-          type: 'object',
-          properties: {
-            categoryId: { type: 'number' },
-          },
-        },
-        body: {
-          type: 'object',
-          required: ['permissions'],
-          properties: {
-            permissions: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['roleId'],
-                properties: {
-                  roleId: { type: 'number' },
-                  canView: { type: 'boolean' },
-                  canCreate: { type: 'boolean' },
-                  canReply: { type: 'boolean' },
-                  canModerate: { type: 'boolean' },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      const { categoryId } = request.params;
-      const { permissions: permConfigs } = request.body;
-
-      // 检查分类是否存在
-      const [category] = await db.select().from(categories).where(eq(categories.id, categoryId)).limit(1);
-      if (!category) {
-        return reply.code(404).send({ error: '分类不存在' });
-      }
-
-      // 删除现有权限
-      await db.delete(categoryPermissions).where(eq(categoryPermissions.categoryId, categoryId));
-
-      // 插入新权限
-      if (permConfigs.length > 0) {
-        await db.insert(categoryPermissions).values(
-          permConfigs.map(config => ({
-            categoryId,
-            roleId: config.roleId,
-            canView: config.canView !== false,
-            canCreate: config.canCreate !== false,
-            canReply: config.canReply !== false,
-            canModerate: config.canModerate || false,
-          }))
-        );
-      }
-
-      return { success: true, message: '分类权限已更新' };
-    }
-  );
-
-  // 获取分类的版主列表
-  fastify.get(
-    '/categories/:categoryId/moderators',
-    {
-      preHandler: [fastify.requireAdmin],
-      schema: {
-        tags: ['roles'],
-        description: '获取分类的版主列表',
-        params: {
-          type: 'object',
-          properties: {
-            categoryId: { type: 'number' },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      const { categoryId } = request.params;
-
-      // 检查分类是否存在
-      const [category] = await db.select().from(categories).where(eq(categories.id, categoryId)).limit(1);
-      if (!category) {
-        return reply.code(404).send({ error: '分类不存在' });
-      }
-
-      // 获取有 canModerate 权限的用户（通过角色关联）
-      const moderators = await db
-        .select({
-          userId: users.id,
-          username: users.username,
-          name: users.name,
-          avatar: users.avatar,
-          roleId: roles.id,
-          roleName: roles.name,
-        })
-        .from(categoryPermissions)
-        .innerJoin(roles, eq(categoryPermissions.roleId, roles.id))
-        .innerJoin(userRoles, eq(roles.id, userRoles.roleId))
-        .innerJoin(users, eq(userRoles.userId, users.id))
-        .where(
-          and(
-            eq(categoryPermissions.categoryId, categoryId),
-            eq(categoryPermissions.canModerate, true)
-          )
-        );
-
-      return {
-        category: {
-          id: category.id,
-          name: category.name,
-          slug: category.slug,
-        },
-        moderators,
-      };
-    }
-  );
-
-  // 为分类添加版主（通过设置分类权限）
-  fastify.post(
-    '/categories/:categoryId/moderators',
-    {
-      preHandler: [fastify.requireAdmin],
-      schema: {
-        tags: ['roles'],
-        description: '为分类添加版主权限（需要先为用户分配版主角色）',
-        params: {
-          type: 'object',
-          properties: {
-            categoryId: { type: 'number' },
-          },
-        },
-        body: {
-          type: 'object',
-          required: ['roleId'],
-          properties: {
-            roleId: { type: 'number' },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      const { categoryId } = request.params;
-      const { roleId } = request.body;
-
-      // 检查分类是否存在
-      const [category] = await db.select().from(categories).where(eq(categories.id, categoryId)).limit(1);
-      if (!category) {
-        return reply.code(404).send({ error: '分类不存在' });
-      }
-
-      // 检查角色是否存在
-      const [role] = await db.select().from(roles).where(eq(roles.id, roleId)).limit(1);
-      if (!role) {
-        return reply.code(404).send({ error: '角色不存在' });
-      }
-
-      // 检查是否已存在
-      const [existing] = await db
-        .select()
-        .from(categoryPermissions)
-        .where(
-          and(
-            eq(categoryPermissions.categoryId, categoryId),
-            eq(categoryPermissions.roleId, roleId)
-          )
-        )
-        .limit(1);
-
-      if (existing) {
-        // 更新权限
-        await db
-          .update(categoryPermissions)
-          .set({ canModerate: true })
-          .where(eq(categoryPermissions.id, existing.id));
-      } else {
-        // 创建新权限
-        await db.insert(categoryPermissions).values({
-          categoryId,
-          roleId,
-          canView: true,
-          canCreate: true,
-          canReply: true,
-          canModerate: true,
-        });
-      }
-
-      return { success: true, message: '版主权限已添加' };
-    }
-  );
-
-  // 移除分类的版主权限
-  fastify.delete(
-    '/categories/:categoryId/moderators/:roleId',
-    {
-      preHandler: [fastify.requireAdmin],
-      schema: {
-        tags: ['roles'],
-        description: '移除分类的版主权限',
-        params: {
-          type: 'object',
-          properties: {
-            categoryId: { type: 'number' },
-            roleId: { type: 'number' },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      const { categoryId, roleId } = request.params;
-
-      // 检查权限是否存在
-      const [existing] = await db
-        .select()
-        .from(categoryPermissions)
-        .where(
-          and(
-            eq(categoryPermissions.categoryId, categoryId),
-            eq(categoryPermissions.roleId, roleId)
-          )
-        )
-        .limit(1);
-
-      if (!existing) {
-        return reply.code(404).send({ error: '权限配置不存在' });
-      }
-
-      // 移除版主权限（但保留其他权限）
-      await db
-        .update(categoryPermissions)
-        .set({ canModerate: false })
-        .where(eq(categoryPermissions.id, existing.id));
-
-      return { success: true, message: '版主权限已移除' };
     }
   );
 }

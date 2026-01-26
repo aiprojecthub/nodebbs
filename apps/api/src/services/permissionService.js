@@ -10,8 +10,7 @@ import {
   permissions,
   rolePermissions,
   userRoles,
-  categoryPermissions,
-  userStatus,
+  users,
 } from '../db/schema.js';
 
 // 权限缓存 TTL（秒）
@@ -280,42 +279,44 @@ class PermissionService {
 
   /**
    * 获取用户在某个分类的权限
+   * 基于统一的 role_permissions.conditions.categories 配置
    * @param {number} userId - 用户 ID
    * @param {number} categoryId - 分类 ID
    * @returns {Promise<Object>}
    */
   async getCategoryPermissions(userId, categoryId) {
-    const userRolesList = await this.getUserRoles(userId);
-    if (!userRolesList.length) {
+    // 获取用户的所有权限（含条件）
+    const userPermissions = await this._fetchUserPermissions(userId);
+
+    if (!userPermissions.length) {
       return { canView: false, canCreate: false, canReply: false, canModerate: false };
     }
 
-    const roleIds = userRolesList.map(r => r.id);
+    // 检查权限是否在指定分类内生效
+    const checkCategoryPermission = (permissionSlug) => {
+      const perm = userPermissions.find(p => p.slug === permissionSlug);
+      if (!perm) return false;
 
-    const results = await db
-      .select()
-      .from(categoryPermissions)
-      .where(
-        and(
-          eq(categoryPermissions.categoryId, categoryId),
-          inArray(categoryPermissions.roleId, roleIds)
-        )
-      );
+      // 解析条件
+      const conditions = typeof perm.conditions === 'string'
+        ? JSON.parse(perm.conditions || '{}')
+        : (perm.conditions || {});
 
-    // 合并权限（任一角色有权限即可）
-    const merged = {
-      canView: results.some(r => r.canView),
-      canCreate: results.some(r => r.canCreate),
-      canReply: results.some(r => r.canReply),
-      canModerate: results.some(r => r.canModerate),
+      // 如果没有 categories 条件，则不限制分类（全部分类有效）
+      if (!conditions.categories || conditions.categories.length === 0) {
+        return true;
+      }
+
+      // 检查 categoryId 是否在允许的分类列表中
+      return conditions.categories.includes(categoryId);
     };
 
-    // 如果没有针对该分类的配置，使用默认权限（全部允许查看）
-    if (results.length === 0) {
-      return { canView: true, canCreate: true, canReply: true, canModerate: false };
-    }
-
-    return merged;
+    return {
+      canView: checkCategoryPermission('topic.read') || checkCategoryPermission('category.read'),
+      canCreate: checkCategoryPermission('topic.create'),
+      canReply: checkCategoryPermission('post.create'),
+      canModerate: checkCategoryPermission('topic.manage') || checkCategoryPermission('post.manage'),
+    };
   }
 
   /**
@@ -473,204 +474,90 @@ class PermissionService {
     }
   }
 
-  // ============ 用户状态管理方法 ============
+  // ============ 用户封禁管理方法 ============
 
   /**
-   * 获取用户状态
-   * @param {number} userId - 用户 ID
-   * @returns {Promise<Object|null>} 用户状态对象
-   */
-  async getUserStatus(userId) {
-    const cacheKey = `user:${userId}:status`;
-
-    if (this.fastify?.cache) {
-      return await this.fastify.cache.remember(cacheKey, PERMISSION_CACHE_TTL, async () => {
-        return this._fetchUserStatus(userId);
-      });
-    }
-
-    return this._fetchUserStatus(userId);
-  }
-
-  async _fetchUserStatus(userId) {
-    const [status] = await db
-      .select()
-      .from(userStatus)
-      .where(eq(userStatus.userId, userId))
-      .limit(1);
-
-    if (!status) {
-      return { status: 'active', isMuted: false, isBanned: false };
-    }
-
-    const now = new Date();
-
-    // 检查禁言是否已过期
-    const isMuted = status.status === 'muted' &&
-      (!status.mutedUntil || new Date(status.mutedUntil) > now);
-
-    // 检查封禁是否已过期
-    const isBanned = status.status === 'banned' &&
-      (!status.bannedUntil || new Date(status.bannedUntil) > now);
-
-    return {
-      ...status,
-      isMuted,
-      isBanned,
-      effectiveStatus: isBanned ? 'banned' : (isMuted ? 'muted' : status.status),
-    };
-  }
-
-  /**
-   * 禁言用户
+   * 封禁用户（更新 users 表）
    * @param {number} userId - 用户 ID
    * @param {Object} options - 选项
    */
-  async muteUser(userId, options = {}) {
-    const { until, reason, mutedBy } = options;
-
-    await db
-      .insert(userStatus)
-      .values({
-        userId,
-        status: 'muted',
-        mutedUntil: until || null,
-        mutedReason: reason || null,
-        mutedBy: mutedBy || null,
-      })
-      .onConflictDoUpdate({
-        target: [userStatus.userId],
-        set: {
-          status: 'muted',
-          mutedUntil: until || null,
-          mutedReason: reason || null,
-          mutedBy: mutedBy || null,
-          updatedAt: new Date(),
-        },
-      });
-
-    await this.clearUserStatusCache(userId);
-  }
-
-  /**
-   * 解除禁言
-   * @param {number} userId - 用户 ID
-   */
-  async unmuteUser(userId) {
-    const [current] = await db
-      .select()
-      .from(userStatus)
-      .where(eq(userStatus.userId, userId))
-      .limit(1);
-
-    if (current) {
-      // 如果用户已被封禁，保持封禁状态；否则设为 active
-      const newStatus = current.bannedUntil || current.status === 'banned' ? 'banned' : 'active';
-
-      await db
-        .update(userStatus)
-        .set({
-          status: newStatus,
-          mutedUntil: null,
-          mutedReason: null,
-          mutedBy: null,
-          updatedAt: new Date(),
-        })
-        .where(eq(userStatus.userId, userId));
-    }
-
-    await this.clearUserStatusCache(userId);
-  }
-
-  /**
-   * 封禁用户（通过状态表）
-   * @param {number} userId - 用户 ID
-   * @param {Object} options - 选项
-   */
-  async banUserStatus(userId, options = {}) {
+  async banUser(userId, options = {}) {
     const { until, reason, bannedBy } = options;
 
     await db
-      .insert(userStatus)
-      .values({
-        userId,
-        status: 'banned',
+      .update(users)
+      .set({
+        isBanned: true,
         bannedUntil: until || null,
         bannedReason: reason || null,
         bannedBy: bannedBy || null,
       })
-      .onConflictDoUpdate({
-        target: [userStatus.userId],
-        set: {
-          status: 'banned',
-          bannedUntil: until || null,
-          bannedReason: reason || null,
-          bannedBy: bannedBy || null,
-          updatedAt: new Date(),
-        },
-      });
+      .where(eq(users.id, userId));
 
-    await this.clearUserStatusCache(userId);
+    // 清除用户缓存
+    if (this.fastify?.clearUserCache) {
+      await this.fastify.clearUserCache(userId);
+    }
   }
 
   /**
-   * 解除封禁（通过状态表）
+   * 解除封禁
    * @param {number} userId - 用户 ID
    */
-  async unbanUserStatus(userId) {
-    const [current] = await db
-      .select()
-      .from(userStatus)
-      .where(eq(userStatus.userId, userId))
+  async unbanUser(userId) {
+    await db
+      .update(users)
+      .set({
+        isBanned: false,
+        bannedUntil: null,
+        bannedReason: null,
+        bannedBy: null,
+      })
+      .where(eq(users.id, userId));
+
+    // 清除用户缓存
+    if (this.fastify?.clearUserCache) {
+      await this.fastify.clearUserCache(userId);
+    }
+  }
+
+  /**
+   * 检查用户封禁状态（从 users 表检查）
+   * @param {number} userId - 用户 ID
+   * @returns {Promise<{isBanned: boolean, reason?: string, until?: Date}>}
+   */
+  async checkBanStatus(userId) {
+    const [user] = await db
+      .select({
+        isBanned: users.isBanned,
+        bannedUntil: users.bannedUntil,
+        bannedReason: users.bannedReason,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
       .limit(1);
 
-    if (current) {
-      // 如果用户仍被禁言，保持禁言状态；否则设为 active
-      const isMuted = current.mutedUntil && new Date(current.mutedUntil) > new Date();
-      const newStatus = isMuted ? 'muted' : 'active';
-
-      await db
-        .update(userStatus)
-        .set({
-          status: newStatus,
-          bannedUntil: null,
-          bannedReason: null,
-          bannedBy: null,
-          updatedAt: new Date(),
-        })
-        .where(eq(userStatus.userId, userId));
+    if (!user) {
+      return { isBanned: false };
     }
 
-    await this.clearUserStatusCache(userId);
-  }
+    // 检查封禁是否已过期
+    if (user.isBanned) {
+      const now = new Date();
+      if (user.bannedUntil && new Date(user.bannedUntil) <= now) {
+        // 封禁已过期，自动解除
+        await this.unbanUser(userId);
+        return { isBanned: false };
+      }
 
-  /**
-   * 清除用户状态缓存
-   * @param {number} userId - 用户 ID
-   */
-  async clearUserStatusCache(userId) {
-    if (this.fastify?.cache) {
-      await this.fastify.cache.invalidate([`user:${userId}:status`]);
-    }
-  }
-
-  /**
-   * 检查用户是否被禁言
-   * @param {number} userId - 用户 ID
-   * @returns {Promise<{isMuted: boolean, reason?: string, until?: Date}>}
-   */
-  async checkMuteStatus(userId) {
-    const status = await this.getUserStatus(userId);
-
-    if (status.isMuted) {
       return {
-        isMuted: true,
-        reason: status.mutedReason,
-        until: status.mutedUntil,
+        isBanned: true,
+        reason: user.bannedReason,
+        until: user.bannedUntil,
       };
     }
 
-    return { isMuted: false };
+    return { isBanned: false };
   }
 
   /**

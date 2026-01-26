@@ -64,14 +64,69 @@ async function authPlugin(fastify) {
   // 增强用户对象，添加权限辅助属性
   function enhanceUser(user) {
     if (!user) return null;
-    
+
     // 添加 getter 属性，避免 JSON 序列化时包含这些字段（如果需要的话）
     // 或者直接添加属性，方便查看
     // 这里直接添加属性，因为 request.user 通常只在内部使用
     user.isAdmin = user.role === ROLE_ADMIN;
     user.isModerator = [ROLE_ADMIN, ROLE_MODERATOR].includes(user.role);
-    
+
     return user;
+  }
+
+  /**
+   * 检查用户封禁状态（支持临时封禁）
+   * @param {Object} user - 用户对象
+   * @returns {{ isBanned: boolean, reason?: string, until?: Date }}
+   */
+  async function checkUserBanStatus(user) {
+    if (!user.isBanned) {
+      return { isBanned: false };
+    }
+
+    // 检查封禁是否已过期
+    if (user.bannedUntil) {
+      const now = new Date();
+      if (new Date(user.bannedUntil) <= now) {
+        // 封禁已过期，自动解除
+        await db
+          .update(users)
+          .set({
+            isBanned: false,
+            bannedUntil: null,
+            bannedReason: null,
+            bannedBy: null,
+          })
+          .where(eq(users.id, user.id));
+
+        // 清除缓存
+        await fastify.cache.invalidate([`user:${user.id}`]);
+
+        return { isBanned: false };
+      }
+    }
+
+    return {
+      isBanned: true,
+      reason: user.bannedReason,
+      until: user.bannedUntil,
+    };
+  }
+
+  /**
+   * 生成封禁错误消息
+   * @param {{ reason?: string, until?: Date }} banInfo
+   * @returns {string}
+   */
+  function getBanMessage(banInfo) {
+    let message = '你的账号已被封禁';
+    if (banInfo.until) {
+      message += `，解封时间: ${new Date(banInfo.until).toLocaleString('zh-CN')}`;
+    }
+    if (banInfo.reason) {
+      message += `，原因: ${banInfo.reason}`;
+    }
+    return message;
   }
 
   // 获取用户信息（带缓存）
@@ -129,80 +184,19 @@ async function authPlugin(fastify) {
   });
 
   // Check if user is banned (use after authenticate)
-  // 注意：authenticate 已经会检查封禁状态，这个装饰器保留用于向后兼容
+  // 支持临时封禁自动解除
   fastify.decorate('checkBanned', async function(request, reply) {
     // Ensure user is authenticated first
     if (!request.user || !request.user.id) {
       return reply.code(401).send({ error: '未授权', message: '请先登录' });
     }
 
-    // authenticate 已经从数据库获取了最新的 isBanned 状态
-    if (request.user.isBanned) {
+    const banStatus = await checkUserBanStatus(request.user);
+    if (banStatus.isBanned) {
       return reply.code(403).send({
         error: '访问被拒绝',
-        message: '你的账号已被封禁',
+        message: getBanMessage(banStatus),
       });
-    }
-  });
-
-  // Check if user is muted (用于写入操作如发帖、回复)
-  fastify.decorate('checkMuted', async function(request, reply) {
-    // Ensure user is authenticated first
-    if (!request.user || !request.user.id) {
-      return reply.code(401).send({ error: '未授权', message: '请先登录' });
-    }
-
-    // 检查用户禁言状态
-    const muteStatus = await permissionService.checkMuteStatus(request.user.id);
-    if (muteStatus.isMuted) {
-      const untilMsg = muteStatus.until
-        ? `禁言至 ${new Date(muteStatus.until).toLocaleString()}`
-        : '永久禁言';
-      return reply.code(403).send({
-        error: '禁言中',
-        message: `你已被禁言，${untilMsg}`,
-        reason: muteStatus.reason,
-        until: muteStatus.until,
-      });
-    }
-  });
-
-  // 增强的权限检查：同时检查禁言状态
-  fastify.decorate('requireNotMuted', async function(request, reply) {
-    try {
-      await request.jwtVerify();
-
-      const user = await getUserInfo(request.user.id);
-
-      if (!user) {
-        return reply.code(401).send({ error: '未授权', message: '用户不存在' });
-      }
-
-      if (user.isDeleted) {
-        return reply.code(403).send({ error: '访问被拒绝', message: '该账号已被删除' });
-      }
-
-      if (user.isBanned) {
-        return reply.code(403).send({ error: '访问被拒绝', message: '你的账号已被封禁' });
-      }
-
-      // 检查禁言状态
-      const muteStatus = await permissionService.checkMuteStatus(user.id);
-      if (muteStatus.isMuted) {
-        const untilMsg = muteStatus.until
-          ? `禁言至 ${new Date(muteStatus.until).toLocaleString()}`
-          : '永久禁言';
-        return reply.code(403).send({
-          error: '禁言中',
-          message: `你已被禁言，${untilMsg}`,
-          reason: muteStatus.reason,
-          until: muteStatus.until,
-        });
-      }
-
-      request.user = enhanceUser(user);
-    } catch (err) {
-      reply.code(401).send({ error: '未授权', message: '令牌无效或已过期' });
     }
   });
 
@@ -210,26 +204,28 @@ async function authPlugin(fastify) {
   fastify.decorate('requireAdmin', async function(request, reply) {
     try {
       await request.jwtVerify();
-      
+
       // 从缓存或数据库获取最新的用户信息
       const user = await getUserInfo(request.user.id);
-      
+
       if (!user) {
         return reply.code(401).send({ error: '未授权', message: '用户不存在' });
       }
-      
+
       if (user.isDeleted) {
         return reply.code(403).send({ error: '访问被拒绝', message: '该账号已被删除' });
       }
-      
-      if (user.isBanned) {
-        return reply.code(403).send({ error: '访问被拒绝', message: '你的账号已被封禁' });
+
+      // 检查封禁状态（支持临时封禁）
+      const banStatus = await checkUserBanStatus(user);
+      if (banStatus.isBanned) {
+        return reply.code(403).send({ error: '访问被拒绝', message: getBanMessage(banStatus) });
       }
-      
+
       if (user.role !== ROLE_ADMIN) {
         return reply.code(403).send({ error: '禁止访问', message: '需要管理员权限' });
       }
-      
+
       // 更新 request.user 为最新的用户信息
       request.user = enhanceUser(user);
     } catch (err) {
@@ -241,22 +237,24 @@ async function authPlugin(fastify) {
   fastify.decorate('requireModerator', async function(request, reply) {
     try {
       await request.jwtVerify();
-      
+
       // 从缓存或数据库获取最新的用户信息
       const user = await getUserInfo(request.user.id);
-      
+
       if (!user) {
         return reply.code(401).send({ error: '未授权', message: '用户不存在' });
       }
-      
+
       if (user.isDeleted) {
         return reply.code(403).send({ error: '访问被拒绝', message: '该账号已被删除' });
       }
-      
-      if (user.isBanned) {
-        return reply.code(403).send({ error: '访问被拒绝', message: '你的账号已被封禁' });
+
+      // 检查封禁状态（支持临时封禁）
+      const banStatus = await checkUserBanStatus(user);
+      if (banStatus.isBanned) {
+        return reply.code(403).send({ error: '访问被拒绝', message: getBanMessage(banStatus) });
       }
-      
+
       if (![ROLE_MODERATOR, ROLE_ADMIN].includes(user.role)) {
         return reply.code(403).send({ error: '禁止访问', message: '需要版主或管理员权限' });
       }
@@ -290,8 +288,10 @@ async function authPlugin(fastify) {
           return reply.code(403).send({ error: '访问被拒绝', message: '该账号已被删除' });
         }
 
-        if (user.isBanned) {
-          return reply.code(403).send({ error: '访问被拒绝', message: '你的账号已被封禁' });
+        // 检查封禁状态（支持临时封禁）
+        const banStatus = await checkUserBanStatus(user);
+        if (banStatus.isBanned) {
+          return reply.code(403).send({ error: '访问被拒绝', message: getBanMessage(banStatus) });
         }
 
         // 检查权限
@@ -337,8 +337,10 @@ async function authPlugin(fastify) {
           return reply.code(403).send({ error: '访问被拒绝', message: '该账号已被删除' });
         }
 
-        if (user.isBanned) {
-          return reply.code(403).send({ error: '访问被拒绝', message: '你的账号已被封禁' });
+        // 检查封禁状态（支持临时封禁）
+        const banStatus = await checkUserBanStatus(user);
+        if (banStatus.isBanned) {
+          return reply.code(403).send({ error: '访问被拒绝', message: getBanMessage(banStatus) });
         }
 
         // 从请求中获取分类 ID

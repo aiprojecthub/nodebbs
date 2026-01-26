@@ -46,6 +46,9 @@ export const users = pgTable(
     avatar: varchar('avatar', { length: 500 }),
     role: varchar('role', { length: 20 }).notNull().default('user'), // user (用户), vip (会员), moderator (版主), admin (管理员)
     isBanned: boolean('is_banned').notNull().default(false),
+    bannedUntil: timestamp('banned_until', { withTimezone: true }), // 封禁到期时间（null=永久）
+    bannedReason: text('banned_reason'), // 封禁原因
+    bannedBy: integer('banned_by'), // 封禁操作者 ID
     isEmailVerified: boolean('is_email_verified').notNull().default(false),
     isDeleted: boolean('is_deleted').notNull().default(false),
     deletedAt: timestamp('deleted_at'),

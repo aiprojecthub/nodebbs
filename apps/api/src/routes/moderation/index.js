@@ -1,8 +1,7 @@
 import db from '../../db/index.js';
-import { reports, posts, topics, users, moderationLogs, userStatus } from '../../db/schema.js';
+import { reports, posts, topics, users, moderationLogs } from '../../db/schema.js';
 import { eq, sql, desc, and, ne, like, or, inArray, count } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import { getPermissionService } from '../../services/permissionService.js';
 
 // 生成举报通知消息
 function getReportNotificationMessage(reportType, action) {
@@ -309,7 +308,7 @@ export default async function moderationRoutes(fastify, options) {
     preHandler: [fastify.requireAdmin],
     schema: {
       tags: ['moderation'],
-      description: '封禁用户（仅管理员）',
+      description: '封禁用户（仅管理员），支持临时封禁',
       security: [{ bearerAuth: [] }],
       params: {
         type: 'object',
@@ -317,10 +316,18 @@ export default async function moderationRoutes(fastify, options) {
         properties: {
           id: { type: 'number' }
         }
+      },
+      body: {
+        type: 'object',
+        properties: {
+          duration: { type: 'number', description: '封禁时长（分钟），不填则永久封禁' },
+          reason: { type: 'string', maxLength: 500 }
+        }
       }
     }
   }, async (request, reply) => {
     const { id } = request.params;
+    const { duration, reason } = request.body || {};
 
     const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
 
@@ -347,16 +354,47 @@ export default async function moderationRoutes(fastify, options) {
       }
     }
 
+    // 计算封禁到期时间
+    let bannedUntil = null;
+    if (duration && duration > 0) {
+      bannedUntil = new Date(Date.now() + duration * 60 * 1000);
+    }
+
     const [updated] = await db
       .update(users)
-      .set({ isBanned: true, updatedAt: new Date() })
+      .set({
+        isBanned: true,
+        bannedUntil,
+        bannedReason: reason || null,
+        bannedBy: request.user.id,
+        updatedAt: new Date(),
+      })
       .where(eq(users.id, id))
       .returning();
+
+    // 记录审核日志
+    await db.insert(moderationLogs).values({
+      action: 'ban',
+      targetType: 'user',
+      targetId: id,
+      moderatorId: request.user.id,
+      reason,
+      previousStatus: 'active',
+      newStatus: 'banned',
+      metadata: JSON.stringify({ duration, bannedUntil }),
+    });
 
     // 清除用户缓存，使封禁立即生效
     await fastify.clearUserCache(id);
 
-    return { message: '用户已封禁', user: updated };
+    return {
+      message: bannedUntil
+        ? `用户已封禁至 ${bannedUntil.toLocaleString()}`
+        : '用户已永久封禁',
+      bannedUntil,
+      reason,
+      user: updated,
+    };
   });
 
   // Unban user (admin only)
@@ -385,133 +423,30 @@ export default async function moderationRoutes(fastify, options) {
 
     const [updated] = await db
       .update(users)
-      .set({ isBanned: false, updatedAt: new Date() })
+      .set({
+        isBanned: false,
+        bannedUntil: null,
+        bannedReason: null,
+        bannedBy: null,
+        updatedAt: new Date(),
+      })
       .where(eq(users.id, id))
       .returning();
+
+    // 记录审核日志
+    await db.insert(moderationLogs).values({
+      action: 'unban',
+      targetType: 'user',
+      targetId: id,
+      moderatorId: request.user.id,
+      previousStatus: 'banned',
+      newStatus: 'active',
+    });
 
     // 清除用户缓存，使解封立即生效
     await fastify.clearUserCache(id);
 
     return { message: '用户已解封', user: updated };
-  });
-
-  // ============= 禁言管理接口 =============
-
-  // Mute user (管理员/版主)
-  fastify.post('/users/:id/mute', {
-    preHandler: [fastify.requireModerator],
-    schema: {
-      tags: ['moderation'],
-      description: '禁言用户（管理员/版主）',
-      security: [{ bearerAuth: [] }],
-      params: {
-        type: 'object',
-        required: ['id'],
-        properties: {
-          id: { type: 'number' }
-        }
-      },
-      body: {
-        type: 'object',
-        properties: {
-          duration: { type: 'number', description: '禁言时长（分钟），不填则永久禁言' },
-          reason: { type: 'string', maxLength: 500 }
-        }
-      }
-    }
-  }, async (request, reply) => {
-    const { id } = request.params;
-    const { duration, reason } = request.body || {};
-
-    const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
-
-    if (!user) {
-      return reply.code(404).send({ error: '用户不存在' });
-    }
-
-    // 检查权限：管理员可以禁言任何人，版主不能禁言管理员
-    if (user.role === 'admin' && !request.user.isAdmin) {
-      return reply.code(403).send({ error: '版主不能禁言管理员' });
-    }
-
-    // 计算禁言到期时间
-    let mutedUntil = null;
-    if (duration && duration > 0) {
-      mutedUntil = new Date(Date.now() + duration * 60 * 1000);
-    }
-
-    const permissionService = getPermissionService();
-    await permissionService.muteUser(id, {
-      until: mutedUntil,
-      reason,
-      mutedBy: request.user.id,
-    });
-
-    // 记录审核日志
-    await db.insert(moderationLogs).values({
-      action: 'mute',
-      targetType: 'user',
-      targetId: id,
-      moderatorId: request.user.id,
-      reason,
-      previousStatus: 'active',
-      newStatus: 'muted',
-      metadata: JSON.stringify({ duration, mutedUntil }),
-    });
-
-    // 清除用户缓存
-    await fastify.clearUserCache(id);
-
-    return {
-      message: mutedUntil
-        ? `用户已禁言至 ${mutedUntil.toLocaleString()}`
-        : '用户已永久禁言',
-      mutedUntil,
-      reason,
-    };
-  });
-
-  // Unmute user (管理员/版主)
-  fastify.post('/users/:id/unmute', {
-    preHandler: [fastify.requireModerator],
-    schema: {
-      tags: ['moderation'],
-      description: '解除用户禁言（管理员/版主）',
-      security: [{ bearerAuth: [] }],
-      params: {
-        type: 'object',
-        required: ['id'],
-        properties: {
-          id: { type: 'number' }
-        }
-      }
-    }
-  }, async (request, reply) => {
-    const { id } = request.params;
-
-    const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
-
-    if (!user) {
-      return reply.code(404).send({ error: '用户不存在' });
-    }
-
-    const permissionService = getPermissionService();
-    await permissionService.unmuteUser(id);
-
-    // 记录审核日志
-    await db.insert(moderationLogs).values({
-      action: 'unmute',
-      targetType: 'user',
-      targetId: id,
-      moderatorId: request.user.id,
-      previousStatus: 'muted',
-      newStatus: 'active',
-    });
-
-    // 清除用户缓存
-    await fastify.clearUserCache(id);
-
-    return { message: '用户禁言已解除' };
   });
 
   // Get user status (管理员/版主)
@@ -532,45 +467,49 @@ export default async function moderationRoutes(fastify, options) {
   }, async (request, reply) => {
     const { id } = request.params;
 
-    const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    const [user] = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        name: users.name,
+        role: users.role,
+        isBanned: users.isBanned,
+        bannedUntil: users.bannedUntil,
+        bannedReason: users.bannedReason,
+        bannedBy: users.bannedBy,
+      })
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
 
     if (!user) {
       return reply.code(404).send({ error: '用户不存在' });
     }
 
-    const permissionService = getPermissionService();
-    const status = await permissionService.getUserStatus(id);
-
-    // 获取操作者信息
-    let mutedByUser = null;
+    // 获取封禁操作者信息
     let bannedByUser = null;
 
-    if (status.mutedBy) {
-      const [mutedBy] = await db
-        .select({ id: users.id, username: users.username })
-        .from(users)
-        .where(eq(users.id, status.mutedBy))
-        .limit(1);
-      mutedByUser = mutedBy;
-    }
-
-    if (status.bannedBy) {
+    if (user.bannedBy) {
       const [bannedBy] = await db
         .select({ id: users.id, username: users.username })
         .from(users)
-        .where(eq(users.id, status.bannedBy))
+        .where(eq(users.id, user.bannedBy))
         .limit(1);
       bannedByUser = bannedBy;
     }
 
     return {
-      ...status,
       user: {
         id: user.id,
         username: user.username,
-        isBanned: user.isBanned,
+        name: user.name,
+        role: user.role,
       },
-      mutedByUser,
+      ban: {
+        isBanned: user.isBanned,
+        until: user.bannedUntil,
+        reason: user.bannedReason,
+      },
       bannedByUser,
     };
   });

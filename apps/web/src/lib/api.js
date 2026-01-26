@@ -609,8 +609,8 @@ export const moderationApi = {
   },
 
   // 封禁用户 (管理员)
-  async banUser(id) {
-    return apiClient.post(`/moderation/users/${id}/ban`);
+  async banUser(id, options = {}) {
+    return apiClient.post(`/moderation/users/${id}/ban`, options);
   },
 
   // 解封用户 (管理员)
@@ -621,16 +621,6 @@ export const moderationApi = {
   // 修改用户角色 (管理员)
   async changeUserRole(id, role) {
     return apiClient.patch(`/moderation/users/${id}/role`, { role });
-  },
-
-  // 禁言用户 (管理员/版主)
-  async muteUser(id, options = {}) {
-    return apiClient.post(`/moderation/users/${id}/mute`, options);
-  },
-
-  // 解除禁言 (管理员/版主)
-  async unmuteUser(id) {
-    return apiClient.post(`/moderation/users/${id}/unmute`);
   },
 
   // 获取用户状态 (管理员/版主)
@@ -1064,32 +1054,6 @@ export const rbacApi = {
     // 移除用户角色
     async removeRole(userId, roleId) {
       return apiClient.delete(`/roles/users/${userId}/roles/${roleId}`);
-    },
-
-    // ============= 分类权限管理 =============
-    // 获取分类的权限配置
-    async getCategoryPermissions(categoryId) {
-      return apiClient.get(`/roles/categories/${categoryId}/permissions`);
-    },
-
-    // 设置分类的权限配置
-    async setCategoryPermissions(categoryId, permissions) {
-      return apiClient.put(`/roles/categories/${categoryId}/permissions`, { permissions });
-    },
-
-    // 获取分类的版主列表
-    async getCategoryModerators(categoryId) {
-      return apiClient.get(`/roles/categories/${categoryId}/moderators`);
-    },
-
-    // 为分类添加版主权限
-    async addCategoryModerator(categoryId, roleId) {
-      return apiClient.post(`/roles/categories/${categoryId}/moderators`, { roleId });
-    },
-
-    // 移除分类的版主权限
-    async removeCategoryModerator(categoryId, roleId) {
-      return apiClient.delete(`/roles/categories/${categoryId}/moderators/${roleId}`);
     },
   },
 };

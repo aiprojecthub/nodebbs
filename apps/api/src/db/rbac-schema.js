@@ -9,7 +9,7 @@ import {
   unique,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { users, categories } from './schema.js';
+import { users } from './schema.js';
 
 // ============ Common Fields (Duplicated to avoid circular dep) ============
 const $id = integer('id').primaryKey().generatedAlwaysAsIdentity();
@@ -69,7 +69,6 @@ export const rolesRelations = relations(roles, ({ one, many }) => ({
   childRoles: many(roles, { relationName: 'childRoles' }),
   rolePermissions: many(rolePermissions),
   userRoles: many(userRoles),
-  categoryPermissions: many(categoryPermissions),
 }));
 
 // ============ Permissions (权限) ============
@@ -170,81 +169,3 @@ export const userRolesRelations = relations(userRoles, ({ one }) => ({
   }),
 }));
 
-// ============ Category Permissions (分类权限) ============
-export const categoryPermissions = pgTable(
-  'category_permissions',
-  {
-    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-    categoryId: integer('category_id')
-      .notNull()
-      .references(() => categories.id, { onDelete: 'cascade' }),
-    roleId: integer('role_id')
-      .notNull()
-      .references(() => roles.id, { onDelete: 'cascade' }),
-    canView: boolean('can_view').notNull().default(true), // 是否可以查看分类
-    canCreate: boolean('can_create').notNull().default(true), // 是否可以创建话题
-    canReply: boolean('can_reply').notNull().default(true), // 是否可以回复
-    canModerate: boolean('can_moderate').notNull().default(false), // 是否可以管理（删除、编辑他人内容等）
-    createdAt: $createdAt,
-  },
-  (table) => [
-    unique('category_permissions_unique').on(table.categoryId, table.roleId),
-    index('category_permissions_category_idx').on(table.categoryId),
-    index('category_permissions_role_idx').on(table.roleId),
-  ]
-);
-
-export const categoryPermissionsRelations = relations(categoryPermissions, ({ one }) => ({
-  category: one(categories, {
-    fields: [categoryPermissions.categoryId],
-    references: [categories.id],
-  }),
-  role: one(roles, {
-    fields: [categoryPermissions.roleId],
-    references: [roles.id],
-  }),
-}));
-
-// ============ User Status (用户状态) ============
-export const userStatus = pgTable(
-  'user_status',
-  {
-    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-    userId: integer('user_id')
-      .notNull()
-      .unique()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    status: varchar('status', { length: 20 }).notNull().default('active'), // active, muted, banned, pending
-    mutedUntil: timestamp('muted_until', { withTimezone: true }), // 禁言到期时间
-    mutedReason: text('muted_reason'), // 禁言原因
-    mutedBy: integer('muted_by').references(() => users.id, { onDelete: 'set null' }), // 禁言操作者
-    bannedUntil: timestamp('banned_until', { withTimezone: true }), // 封禁到期时间（null=永久）
-    bannedReason: text('banned_reason'), // 封禁原因
-    bannedBy: integer('banned_by').references(() => users.id, { onDelete: 'set null' }), // 封禁操作者
-    createdAt: $createdAt,
-    updatedAt: $updatedAt,
-  },
-  (table) => [
-    index('user_status_user_id_idx').on(table.userId),
-    index('user_status_status_idx').on(table.status),
-    index('user_status_muted_until_idx').on(table.mutedUntil),
-    index('user_status_banned_until_idx').on(table.bannedUntil),
-  ]
-);
-
-export const userStatusRelations = relations(userStatus, ({ one }) => ({
-  user: one(users, {
-    fields: [userStatus.userId],
-    references: [users.id],
-  }),
-  mutedByUser: one(users, {
-    fields: [userStatus.mutedBy],
-    references: [users.id],
-    relationName: 'mutedByUser',
-  }),
-  bannedByUser: one(users, {
-    fields: [userStatus.bannedBy],
-    references: [users.id],
-    relationName: 'bannedByUser',
-  }),
-}));
