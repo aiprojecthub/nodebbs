@@ -219,7 +219,7 @@ export default function PermissionsManagement() {
         description="管理系统权限定义"
         actions={
           <Button onClick={openCreateDialog}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4" />
             创建权限
           </Button>
         }

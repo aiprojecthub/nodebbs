@@ -547,7 +547,7 @@ export default function RolesManagement() {
         description="管理用户角色和权限配置"
         actions={
           <Button onClick={openCreateDialog}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4" />
             创建角色
           </Button>
         }
