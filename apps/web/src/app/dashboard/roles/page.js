@@ -208,13 +208,32 @@ function ConditionEditor({ conditions, permission, onChange, disabled, hasConfig
       );
     }
 
+    // 字段过滤类型
+    if (type === 'fieldFilter') {
+      return (
+        <div key={key} className="space-y-1.5">
+          <Label className="text-sm">{label}</Label>
+          <Input
+            placeholder="如: *, !passwordHash, !email"
+            value={localConditions[key]?.join(', ') || ''}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (!val) {
+                updateCondition(key, undefined);
+              } else {
+                const items = val.split(',').map(s => s.trim()).filter(Boolean);
+                updateCondition(key, items.length > 0 ? items : undefined);
+              }
+            }}
+            className="h-8 font-mono text-xs"
+          />
+          <p className="text-xs text-muted-foreground">{description}</p>
+        </div>
+      );
+    }
+
     return null;
   };
-
-  // 如果没有可用的条件类型，不显示配置按钮
-  if (conditionTypes.length === 0) {
-    return null;
-  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -236,7 +255,7 @@ function ConditionEditor({ conditions, permission, onChange, disabled, hasConfig
           <div className="space-y-1">
             <h4 className="font-medium text-sm">条件配置</h4>
             <p className="text-xs text-muted-foreground">
-              为 "{permission.name}" 设置生效条件
+              为 &quot;{permission.name}&quot; 设置生效条件
             </p>
           </div>
 
@@ -749,7 +768,7 @@ export default function RolesManagement() {
         submitText="保存"
         onSubmit={handleSavePermissions}
         loading={submitting}
-        maxWidth="sm:max-w-[600px]"
+        maxWidth="sm:max-w-[700px]"
       >
         <div className="space-y-4 py-4 max-h-[400px] overflow-y-auto">
           {Object.entries(groupedPermissions).map(([module, perms]) => (
@@ -760,6 +779,7 @@ export default function RolesManagement() {
                   const selected = isPermissionSelected(perm.id);
                   const conditions = getPermissionConditions(perm.id);
                   const hasConfig = hasConditions(perm.id);
+                  const filterRules = conditions?.fieldFilter;
 
                   return (
                     <div key={perm.id} className="flex items-center gap-1.5 h-8 px-2 hover:bg-muted/50">
@@ -771,12 +791,17 @@ export default function RolesManagement() {
                       />
                       <Label
                         htmlFor={`perm-${perm.id}`}
-                        className="text-sm font-normal cursor-pointer truncate"
+                        className="text-sm font-normal cursor-pointer w-28 flex-shrink-0 truncate"
                         title={perm.slug}
                       >
                         {perm.name}
                       </Label>
-                      <div className="w-8 flex-shrink-0 flex justify-center">
+                      {selected && filterRules && (
+                        <span className="text-xs text-muted-foreground font-mono truncate" title={filterRules.join(', ')}>
+                          {filterRules.join(', ')}
+                        </span>
+                      )}
+                      <div className="ml-auto w-8 flex-shrink-0 flex justify-center">
                         {selected && (
                           <ConditionEditor
                             conditions={conditions}

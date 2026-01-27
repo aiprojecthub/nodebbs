@@ -82,7 +82,6 @@ export const permissions = pgTable(
     module: varchar('module', { length: 50 }).notNull(), // 所属模块（topic, post, user, system 等）
     action: varchar('action', { length: 50 }).notNull(), // 操作类型（create, read, update, delete 等）
     resourceType: varchar('resource_type', { length: 50 }), // 资源类型（可选，用于更细粒度控制）
-    fieldFilter: text('field_filter'), // 字段过滤规则（JSON，控制可访问的字段）
     isSystem: boolean('is_system').notNull().default(false), // 是否系统内置权限
   },
   (table) => [
@@ -108,7 +107,7 @@ export const rolePermissions = pgTable(
     permissionId: integer('permission_id')
       .notNull()
       .references(() => permissions.id, { onDelete: 'cascade' }),
-    conditions: text('conditions'), // 条件限制（JSON，如 { "own": true } 表示只能操作自己的资源）
+    conditions: text('conditions'), // 条件限制（JSON，如 { "own": true, "fieldFilter": ["*", "!password"] }）
     createdAt: $createdAt,
   },
   (table) => [

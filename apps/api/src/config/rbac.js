@@ -139,6 +139,13 @@ export const CONDITION_TYPES = {
     description: '权限生效的时间段',
     schema: { start: 'string', end: 'string' }, // HH:mm 格式
   },
+  // 字段过滤
+  fieldFilter: {
+    key: 'fieldFilter',
+    label: '字段过滤',
+    type: 'fieldFilter',
+    description: '控制返回字段，* 表示全部，!field 表示排除',
+  },
 };
 
 // ============ 权限与条件的映射 ============
@@ -147,10 +154,10 @@ export const CONDITION_TYPES = {
 export const PERMISSION_CONDITIONS = {
   // 话题相关
   'topic.create': ['categories', 'rateLimit', 'level', 'minCredits', 'minPosts', 'accountAge', 'timeRange'],
-  'topic.read': ['categories'],
+  'topic.read': ['categories', 'fieldFilter'],
   'topic.update': ['own', 'categories'],
   'topic.delete': ['own', 'categories'],
-  'topic.manage': ['categories'],
+  'topic.manage': ['categories', 'fieldFilter'],
   'topic.pin': ['categories'],
   'topic.close': ['categories'],
   'topic.move': ['categories'],
@@ -158,27 +165,27 @@ export const PERMISSION_CONDITIONS = {
 
   // 回复相关
   'post.create': ['categories', 'rateLimit', 'level', 'minCredits', 'accountAge', 'timeRange'],
-  'post.read': ['categories'],
+  'post.read': ['categories', 'fieldFilter'],
   'post.update': ['own'],
   'post.delete': ['own', 'categories'],
-  'post.manage': ['categories'],
+  'post.manage': ['categories', 'fieldFilter'],
   'post.approve': ['categories'],
 
   // 用户相关
-  'user.read': [],
+  'user.read': ['fieldFilter'],
   'user.update': ['own'],
   'user.delete': [],
-  'user.manage': [],
+  'user.manage': ['fieldFilter'],
   'user.ban': [],
   'user.mute': [],
   'user.role.assign': [],
 
   // 分类相关
   'category.create': [],
-  'category.read': [],
+  'category.read': ['fieldFilter'],
   'category.update': [],
   'category.delete': [],
-  'category.manage': [],
+  'category.manage': ['fieldFilter'],
 
   // 上传相关
   'upload.create': ['maxFileSize', 'maxFilesPerDay', 'allowedFileTypes', 'rateLimit'],
@@ -187,19 +194,19 @@ export const PERMISSION_CONDITIONS = {
 
   // 邀请相关
   'invitation.create': ['rateLimit', 'level', 'minCredits'],
-  'invitation.read': ['own'],
-  'invitation.manage': [],
+  'invitation.read': ['own', 'fieldFilter'],
+  'invitation.manage': ['fieldFilter'],
 
   // 审核相关
-  'moderation.reports': [],
-  'moderation.content': ['categories'],
+  'moderation.reports': ['fieldFilter'],
+  'moderation.content': ['categories', 'fieldFilter'],
   'moderation.approve': ['categories'],
-  'moderation.manage': [],
+  'moderation.manage': ['fieldFilter'],
 
   // 系统相关
   'system.settings': [],
   'system.dashboard': [],
-  'system.logs': [],
+  'system.logs': ['fieldFilter'],
   'system.manage': [],
 };
 
