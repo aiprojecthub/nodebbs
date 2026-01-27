@@ -802,7 +802,7 @@ export default function RolesManagement() {
                         </span>
                       )}
                       <div className="ml-auto w-8 flex-shrink-0 flex justify-center">
-                        {selected && (
+                        {selected && getPermissionConditionTypes(perm.slug).length > 0 && (
                           <ConditionEditor
                             conditions={conditions}
                             permission={perm}
