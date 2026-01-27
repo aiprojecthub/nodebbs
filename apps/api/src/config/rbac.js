@@ -462,13 +462,14 @@ export const SYSTEM_PERMISSIONS = [
   },
 
   // ========== 邀请权限 ==========
+  // 注：邀请码的业务规则（每日限制、过期天数、积分消耗等）由 invitationRules 表控制
   {
     slug: 'invitation.create',
     name: '创建邀请码',
     module: 'invitation',
     action: 'create',
     isSystem: true,
-    conditions: ['rateLimit', 'level', 'minCredits'],
+    conditions: [],  // 业务参数由 invitationRules 按角色配置
   },
   {
     slug: 'invitation.read',
