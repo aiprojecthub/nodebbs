@@ -4,6 +4,8 @@
 
 import { oauthProviders } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
+import { BaseSeeder } from './base.js';
+import chalk from 'chalk';
 
 // OAuth 提供商默认配置
 export const OAUTH_PROVIDERS = [
@@ -78,26 +80,24 @@ export const OAUTH_PROVIDERS = [
   },
 ];
 
-/**
- * 初始化 OAuth 提供商配置
- */
-export async function initOAuthProviders(db, reset = false) {
-  console.log('\n🔐 初始化 OAuth 提供商配置...\n');
+export class OAuthSeeder extends BaseSeeder {
+  constructor() {
+    super('oauth');
+  }
 
-  let addedCount = 0;
-  let updatedCount = 0;
-  let skippedCount = 0;
+  /**
+   * 初始化 OAuth 提供商配置
+   */
+  async init(db, reset = false) {
+    this.logger.header('初始化 OAuth 提供商配置');
 
-  for (const provider of OAUTH_PROVIDERS) {
-    if (reset) {
-      // 重置模式：删除后重新插入
-      await db.delete(oauthProviders).where(eq(oauthProviders.provider, provider.provider));
-      await db.insert(oauthProviders).values(provider);
-      console.log(`🔄 重置 OAuth 提供商: ${provider.displayName} (${provider.provider})`);
-      updatedCount++;
-    } else {
-      // 默认模式：只添加缺失的配置
-      // 先检查是否已存在
+    let addedCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
+
+    const skippedProviders = [];
+    for (const provider of OAUTH_PROVIDERS) {
+      // 检查是否已存在
       const [existing] = await db
         .select()
         .from(oauthProviders)
@@ -105,33 +105,55 @@ export async function initOAuthProviders(db, reset = false) {
         .limit(1);
 
       if (existing) {
-        console.log(`⊙ 跳过 OAuth 提供商: ${provider.displayName} (已存在)`);
-        skippedCount++;
+        if (reset) {
+          // 重置模式：更新现有配置
+          await db
+            .update(oauthProviders)
+            .set(provider)
+            .where(eq(oauthProviders.id, existing.id));
+          updatedCount++;
+          this.logger.success(`重置 OAuth 提供商: ${provider.displayName} (${provider.provider})`);
+        } else {
+          // 默认模式：跳过
+          skippedProviders.push(provider.displayName);
+          skippedCount++;
+        }
       } else {
         // 不存在则插入
         await db.insert(oauthProviders).values(provider);
-        console.log(`✓ 添加 OAuth 提供商: ${provider.displayName} (${provider.provider})`);
+        this.logger.success(`添加 OAuth 提供商: ${provider.displayName} (${provider.provider})`);
         addedCount++;
       }
     }
+    if (skippedProviders.length > 0) {
+      this.logger.info(`跳过 OAuth 提供商: ${skippedProviders.join(', ')} (已存在)`);
+    }
+
+    this.logger.summary({ addedCount, updatedCount, skippedCount, total: OAUTH_PROVIDERS.length });
+    return { addedCount, updatedCount, skippedCount, total: OAUTH_PROVIDERS.length };
   }
 
-  return { addedCount, updatedCount, skippedCount, total: OAUTH_PROVIDERS.length };
-}
+  async list() {
+    this.logger.header('OAuth 提供商配置');
 
-/**
- * 列出 OAuth 提供商配置
- */
-export function listOAuthProviders() {
-  console.log('\n🔐 OAuth 提供商配置\n');
-  console.log('='.repeat(80));
-  OAUTH_PROVIDERS.forEach((provider) => {
-    console.log(`  ${provider.displayName} (${provider.provider})`);
-    console.log(`    默认状态: ${provider.isEnabled ? '启用' : '禁用'}`);
-    console.log(`    权限范围: ${provider.scope}`);
-    console.log(`    显示顺序: ${provider.displayOrder}`);
-    console.log();
-  });
-  console.log('='.repeat(80));
-  console.log(`\n总计: ${OAUTH_PROVIDERS.length} 个 OAuth 提供商\n`);
+    OAUTH_PROVIDERS.forEach((provider) => {
+      this.logger.item(`${chalk.bold(provider.displayName)} (${provider.provider})`, '🔐');
+      this.logger.detail(`默认状态: ${provider.isEnabled ? '启用' : '禁用'}`);
+      this.logger.detail(`权限范围: ${provider.scope}`);
+      this.logger.detail(`显示顺序: ${provider.displayOrder}`);
+    });
+    
+    this.logger.divider();
+    this.logger.result(`Total: ${OAUTH_PROVIDERS.length} items`);
+  }
+
+  /**
+   * 清空 OAuth 提供商配置
+   * @param {import('drizzle-orm').NodePgDatabase} db
+   */
+  async clean(db) {
+    this.logger.warn('正在清空 OAuth 提供商配置...');
+    await db.delete(oauthProviders);
+    this.logger.success('已清空 OAuth 提供商配置 (oauthProviders)');
+  }
 }

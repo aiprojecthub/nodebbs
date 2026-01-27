@@ -3,6 +3,8 @@
  */
 import { eq } from 'drizzle-orm';
 import { captchaProviders } from '../../db/schema.js';
+import { BaseSeeder } from './base.js';
+import chalk from 'chalk';
 
 // 预定义的 CAPTCHA 提供商
 const CAPTCHA_PROVIDERS = [
@@ -73,64 +75,90 @@ const CAPTCHA_PROVIDERS = [
   },
 ];
 
-/**
- * 初始化 CAPTCHA 提供商配置
- * @param {*} db - 数据库连接
- * @param {boolean} reset - 是否重置配置
- */
-export async function initCaptchaProviders(db, reset = false) {
-  console.log('📋 初始化 CAPTCHA 提供商配置...');
-
-  let addedCount = 0;
-  let updatedCount = 0;
-  let skippedCount = 0;
-
-  for (const provider of CAPTCHA_PROVIDERS) {
-    const [existing] = await db
-      .select()
-      .from(captchaProviders)
-      .where(eq(captchaProviders.provider, provider.provider))
-      .limit(1);
-
-    if (existing) {
-      if (reset) {
-        // 重置模式：更新配置但保留用户设置的密钥
-        await db
-          .update(captchaProviders)
-          .set({
-            displayName: provider.displayName,
-            displayOrder: provider.displayOrder,
-          })
-          .where(eq(captchaProviders.provider, provider.provider));
-        updatedCount++;
-        console.log(`  ✓ 更新: ${provider.displayName}`);
-      } else {
-        skippedCount++;
-        console.log(`  - 跳过: ${provider.displayName}（已存在）`);
-      }
-    } else {
-      // 新增
-      await db.insert(captchaProviders).values(provider);
-      addedCount++;
-      console.log(`  ✓ 新增: ${provider.displayName}`);
-    }
+export class CaptchaSeeder extends BaseSeeder {
+  constructor() {
+    super('captcha');
   }
 
-  return {
-    addedCount,
-    updatedCount,
-    skippedCount,
-    total: CAPTCHA_PROVIDERS.length,
-  };
-}
+  /**
+   * 初始化 CAPTCHA 提供商配置
+   * @param {*} db - 数据库连接
+   * @param {boolean} reset - 是否重置配置
+   */
+  async init(db, reset = false) {
+    this.logger.header('初始化 CAPTCHA 提供商配置');
 
-/**
- * 列出所有 CAPTCHA 提供商
- */
-export function listCaptchaProviders() {
-  console.log('\n=== CAPTCHA 提供商列表 ===\n');
-  CAPTCHA_PROVIDERS.forEach((provider, index) => {
-    console.log(`${index + 1}. ${provider.displayName} (${provider.provider})`);
-  });
-  console.log();
+    let addedCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
+
+    const skippedProviders = [];
+    for (const provider of CAPTCHA_PROVIDERS) {
+      const [existing] = await db
+        .select()
+        .from(captchaProviders)
+        .where(eq(captchaProviders.provider, provider.provider))
+        .limit(1);
+
+      if (existing) {
+        if (reset) {
+          // 重置模式：更新配置但保留用户设置的密钥
+          await db
+            .update(captchaProviders)
+            .set({
+              displayName: provider.displayName,
+              displayOrder: provider.displayOrder,
+            })
+            .where(eq(captchaProviders.provider, provider.provider));
+          updatedCount++;
+          this.logger.success(`更新: ${provider.displayName}`);
+        } else {
+          skippedCount++;
+          skippedProviders.push(provider.displayName);
+        }
+      } else {
+        // 新增
+        await db.insert(captchaProviders).values(provider);
+        addedCount++;
+        this.logger.success(`新增: ${provider.displayName}`);
+      }
+    }
+    if (skippedProviders.length > 0) {
+      this.logger.info(`跳过: ${skippedProviders.join(', ')} (已存在)`);
+    }
+
+    this.logger.summary({
+      addedCount,
+      updatedCount,
+      skippedCount,
+      total: CAPTCHA_PROVIDERS.length,
+    });
+    return {
+      addedCount,
+      updatedCount,
+      skippedCount,
+      total: CAPTCHA_PROVIDERS.length,
+    };
+  }
+
+  /**
+   * 列出所有 CAPTCHA 提供商
+   */
+  async list() {
+    this.logger.header('CAPTCHA 提供商列表');
+    CAPTCHA_PROVIDERS.forEach((provider, index) => {
+      this.logger.item(`${chalk.bold(provider.displayName)} (${provider.provider})`, '🛡️');
+    });
+    this.logger.divider();
+    this.logger.result(`Total: ${CAPTCHA_PROVIDERS.length} providers`);
+  }
+
+  /**
+   * 清空 CAPTCHA 配置
+   */
+  async clean(db) {
+    this.logger.warn('正在清空 CAPTCHA 提供商配置...');
+    await db.delete(captchaProviders);
+    this.logger.success('已清空 CAPTCHA 提供商 (captchaProviders)');
+  }
 }

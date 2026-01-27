@@ -4,6 +4,8 @@
 
 import { adSlots, ads } from '../../extensions/ads/schema.js';
 import { eq } from 'drizzle-orm';
+import { BaseSeeder } from './base.js';
+import chalk from 'chalk';
 
 /**
  * 默认广告位列表
@@ -92,94 +94,108 @@ export const DEFAULT_AD_SLOTS = [
   },
 ];
 
-/**
- * 列出所有默认广告位
- */
-export function listAdSlots() {
-  console.log('\n📢 默认广告位:');
-  console.log('='.repeat(80));
-
-  DEFAULT_AD_SLOTS.forEach((slot, index) => {
-    console.log(`\n${index + 1}. ${slot.name} (${slot.code})`);
-    console.log(`   描述: ${slot.description}`);
-    console.log(`   尺寸: ${slot.width} × ${slot.height}`);
-    console.log(`   最大广告数: ${slot.maxAds}`);
-  });
-
-  console.log('\n' + '='.repeat(80));
-}
-
-/**
- * 初始化广告位数据
- * @param {Object} db - Drizzle 数据库实例
- * @param {boolean} reset - 是否重置现有数据
- */
-export async function initAdSlots(db, reset = false) {
-  console.log('📢 初始化广告位数据...');
-
-  let addedCount = 0;
-  let updatedCount = 0;
-  let skippedCount = 0;
-
-  for (const slot of DEFAULT_AD_SLOTS) {
-    try {
-      // 检查广告位是否已存在 (根据 code)
-      const [existing] = await db
-        .select()
-        .from(adSlots)
-        .where(eq(adSlots.code, slot.code))
-        .limit(1);
-
-      if (existing) {
-        if (reset) {
-          // 重置模式：更新广告位信息
-          await db
-            .update(adSlots)
-            .set({
-              ...slot,
-              updatedAt: new Date(),
-            })
-            .where(eq(adSlots.id, existing.id));
-          updatedCount++;
-          console.log(`  ✓ 重置: ${slot.name}`);
-        } else {
-          // 非重置模式：跳过
-          skippedCount++;
-          console.log(`  - 跳过: ${slot.name} (已存在)`);
-        }
-      } else {
-        // 插入新广告位
-        await db.insert(adSlots).values(slot);
-        addedCount++;
-        console.log(`  + 新增: ${slot.name}`);
-      }
-    } catch (error) {
-      console.error(`  ✗ 失败: ${slot.name}`, error.message);
-    }
+export class AdsSeeder extends BaseSeeder {
+  constructor() {
+    super('ads');
   }
 
-  return {
-    total: DEFAULT_AD_SLOTS.length,
-    addedCount,
-    updatedCount,
-    skippedCount,
-  };
-}
+  /**
+   * 初始化广告位数据
+   * @param {Object} db - Drizzle 数据库实例
+   * @param {boolean} reset - 是否重置现有数据
+   */
+  async init(db, reset = false) {
+    this.logger.header('初始化广告位数据');
 
-/**
- * 清空广告相关数据
- * @param {import('drizzle-orm').NodePgDatabase} db
- */
-export async function cleanAds(db) {
-  console.log('正在清空广告相关数据...');
+    let addedCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
 
-  // 1. Delete ads (dependent on adSlots)
-  await db.delete(ads);
-  console.log('- 已清空广告 (ads)');
+    const skippedSlots = [];
+    for (const slot of DEFAULT_AD_SLOTS) {
+      try {
+        // 检查广告位是否已存在 (根据 code)
+        const [existing] = await db
+          .select()
+          .from(adSlots)
+          .where(eq(adSlots.code, slot.code))
+          .limit(1);
 
-  // 2. Delete ad slots
-  await db.delete(adSlots);
-  console.log('- 已清空广告位 (adSlots)');
+        if (existing) {
+          if (reset) {
+            // 重置模式：更新广告位信息
+            await db
+              .update(adSlots)
+              .set({
+                ...slot,
+                updatedAt: new Date(),
+              })
+              .where(eq(adSlots.id, existing.id));
+            updatedCount++;
+            this.logger.success(`重置: ${slot.name}`);
+          } else {
+            // 非重置模式：跳过
+            skippedCount++;
+            skippedSlots.push(slot.name);
+          }
+        } else {
+          // 插入新广告位
+          await db.insert(adSlots).values(slot);
+          addedCount++;
+          this.logger.success(`新增: ${slot.name}`);
+        }
+      } catch (error) {
+        this.logger.error(`失败: ${slot.name}`, error);
+      }
+    }
+    if (skippedSlots.length > 0) {
+      this.logger.info(`跳过: ${skippedSlots.join(', ')} (已存在)`);
+    }
 
-  return { success: true };
+    this.logger.summary({
+      total: DEFAULT_AD_SLOTS.length,
+      addedCount,
+      updatedCount,
+      skippedCount,
+    });
+    return {
+      total: DEFAULT_AD_SLOTS.length,
+      addedCount,
+      updatedCount,
+      skippedCount,
+    };
+  }
+
+  /**
+   * 列出所有默认广告位
+   */
+  async list() {
+    this.logger.header('默认广告位');
+
+    DEFAULT_AD_SLOTS.forEach((slot, index) => {
+      this.logger.item(`${chalk.bold(slot.name)} (${slot.code})`, '📢');
+      this.logger.detail(`描述: ${slot.description}`);
+      this.logger.detail(`尺寸: ${slot.width} × ${slot.height}`);
+      this.logger.detail(`最大广告数: ${slot.maxAds}`);
+    });
+
+    this.logger.divider();
+    this.logger.result(`Total: ${DEFAULT_AD_SLOTS.length} ad slots`);
+  }
+
+  /**
+   * 清空广告相关数据
+   * @param {import('drizzle-orm').NodePgDatabase} db
+   */
+  async clean(db) {
+    this.logger.warn('正在清空广告相关数据...');
+
+    // 1. Delete ads (dependent on adSlots)
+    await db.delete(ads);
+    this.logger.success('已清空广告 (ads)');
+
+    // 2. Delete ad slots
+    await db.delete(adSlots);
+    this.logger.success('已清空广告位 (adSlots)');
+  }
 }

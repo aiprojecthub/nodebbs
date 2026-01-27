@@ -4,6 +4,8 @@
 
 import { shopItems, userItems } from '../../extensions/shop/schema.js';
 import { eq, and } from 'drizzle-orm';
+import { BaseSeeder } from './base.js';
+import chalk from 'chalk';
 
 /**
  * 默认商城商品列表
@@ -135,82 +137,113 @@ export const DEFAULT_SHOP_ITEMS = [
   }
 ];
 
-/**
- * 初始化商城数据
- * @param {Object} db - Drizzle 数据库实例
- * @param {boolean} reset - 是否重置现有数据
- */
-export async function initShopItems(db, reset = false) {
-  console.log('🛍️  初始化商城数据...');
-
-  let addedCount = 0;
-  let updatedCount = 0;
-  let skippedCount = 0;
-
-  for (const item of DEFAULT_SHOP_ITEMS) {
-    try {
-      // 检查商品是否已存在 (根据名称和类型)
-      const [existing] = await db
-        .select()
-        .from(shopItems)
-        .where(
-            and(
-                eq(shopItems.name, item.name),
-                eq(shopItems.type, item.type)
-            )
-        )
-        .limit(1);
-
-      if (existing) {
-        if (reset) {
-          // 重置模式：更新商品信息
-          await db
-            .update(shopItems)
-            .set({
-              ...item,
-              updatedAt: new Date(),
-            })
-            .where(eq(shopItems.id, existing.id));
-          updatedCount++;
-          console.log(`  ✓ 重置: ${item.name}`);
-        } else {
-          // 非重置模式：跳过
-          skippedCount++;
-          console.log(`  - 跳过: ${item.name} (已存在)`);
-        }
-      } else {
-        // 插入新商品
-        await db.insert(shopItems).values(item);
-        addedCount++;
-        console.log(`  + 新增: ${item.name}`);
-      }
-    } catch (error) {
-      console.error(`  ✗ 失败: ${item.name}`, error.message);
-    }
+export class ShopSeeder extends BaseSeeder {
+  constructor() {
+    super('shop');
   }
 
-  return {
-    total: DEFAULT_SHOP_ITEMS.length,
-    addedCount,
-    updatedCount,
-    skippedCount,
-  };
-}
+  /**
+   * 初始化商城数据
+   * @param {Object} db - Drizzle 数据库实例
+   * @param {boolean} reset - 是否重置现有数据
+   */
+  async init(db, reset = false) {
+    this.logger.header('初始化商城数据');
 
-/**
- * 清空商城相关数据
- * @param {import('drizzle-orm').NodePgDatabase} db
- */
-export async function cleanShopItems(db) {
-  console.log('正在清空商城相关数据...');
+    let addedCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
 
-  // 1. Delete user items (dependent on shopItems)
-  await db.delete(userItems);
-  console.log('- 已清空用户道具 (userItems)');
+    const skippedItems = [];
+    for (const item of DEFAULT_SHOP_ITEMS) {
+      try {
+        // 检查商品是否已存在 (根据名称和类型)
+        const [existing] = await db
+          .select()
+          .from(shopItems)
+          .where(
+              and(
+                  eq(shopItems.name, item.name),
+                  eq(shopItems.type, item.type)
+              )
+          )
+          .limit(1);
 
-  // 2. Delete shop items
-  await db.delete(shopItems);
-  console.log('- 已清空商城商品 (shopItems)');
+        if (existing) {
+          if (reset) {
+            // 重置模式：更新商品信息
+            await db
+              .update(shopItems)
+              .set({
+                ...item,
+                updatedAt: new Date(),
+              })
+              .where(eq(shopItems.id, existing.id));
+            updatedCount++;
+            this.logger.success(`重置: ${item.name}`);
+          } else {
+            // 非重置模式：跳过
+            skippedCount++;
+            skippedItems.push(item.name);
+          }
+        } else {
+          // 插入新商品
+          await db.insert(shopItems).values(item);
+          addedCount++;
+          this.logger.success(`新增: ${item.name}`);
+        }
+      } catch (error) {
+        this.logger.error(`失败: ${item.name}`, error);
+      }
+    }
+    if (skippedItems.length > 0) {
+      this.logger.info(`跳过: ${skippedItems.join(', ')} (已存在)`);
+    }
 
-  return { success: true };
+    this.logger.summary({
+      total: DEFAULT_SHOP_ITEMS.length,
+      addedCount,
+      updatedCount,
+      skippedCount,
+    });
+    return {
+      total: DEFAULT_SHOP_ITEMS.length,
+      addedCount,
+      updatedCount,
+      skippedCount,
+    };
+  }
+
+  /**
+   * 列出商城商品
+   */
+  async list() {
+    this.logger.header('默认商城商品列表');
+
+    DEFAULT_SHOP_ITEMS.forEach((item) => {
+      this.logger.item(`${chalk.bold(item.name)}`, '🛍️');
+      this.logger.detail(`类型: ${item.type}`);
+      this.logger.detail(`描述: ${item.description}`);
+      this.logger.detail(`价格: ${item.price}`);
+    });
+
+    this.logger.divider();
+    this.logger.result(`Total: ${DEFAULT_SHOP_ITEMS.length} shop items`);
+  }
+
+  /**
+   * 清空商城相关数据
+   * @param {import('drizzle-orm').NodePgDatabase} db
+   */
+  async clean(db) {
+    this.logger.warn('正在清空商城相关数据...');
+
+    // 1. Delete user items (dependent on shopItems)
+    await db.delete(userItems);
+    this.logger.success('已清空用户道具 (userItems)');
+
+    // 2. Delete shop items
+    await db.delete(shopItems);
+    this.logger.success('已清空商城商品 (shopItems)');
+  }
 }

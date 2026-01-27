@@ -1,346 +1,251 @@
 #!/usr/bin/env node
 /**
- * 系统配置初始化脚本
- * 用于初始化或还原系统配置到默认值
- *
- * 使用方法:
- *   node api/src/scripts/init/index.js [选项]
- *
- * 选项:
- *   --reset    重置所有配置到默认值（会覆盖现有配置）
- *   --missing  只添加缺失的配置（默认行为）
- *   --list     列出所有配置项
+ * 系统配置初始化脚本 (Seeder Manager)
+ * 
+ * 统一管理系统配置、初始数据和基础数据的初始化、重置与清理。
  */
 
 import pg from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import {
-  initSystemSettings,
-  listSystemSettings,
-  SETTING_KEYS,
-  SETTINGS_BY_CATEGORY,
-  CATEGORY_NAMES,
-} from './settings.js';
-import { initOAuthProviders, listOAuthProviders } from './oauth.js';
-import { initInvitationRules, listInvitationRules } from './invitation.js';
-import { initMessageProviders, listMessageProviders } from './message.js';
-import { initRewardConfigs, cleanRewards } from './rewards.js';
-import { initBadges, listBadges, cleanBadges } from './badges.js';
-import { initLedger, listCurrencies, cleanLedger } from './ledger.js';
-import { initShopItems, cleanShopItems } from './shop.js';
-import { initCaptchaProviders, listCaptchaProviders } from './captcha.js';
-import { initAdSlots, listAdSlots, cleanAds } from './ads.js';
-import { initRBAC, listRBACConfig, migrateExistingUsers, cleanRBAC } from './roles.js';
+import { BaseSeeder } from './base.js';
+
+// Import New Seeders
+import { SettingsSeeder } from './settings.js';
+import { OAuthSeeder } from './oauth.js';
+import { MessageSeeder } from './message.js';
+import { InvitationSeeder } from './invitation.js';
+import { RewardsSeeder } from './rewards.js';
+import { LedgerSeeder } from './ledger.js';
+
+import { BadgesSeeder } from './badges.js';
+import { ShopSeeder } from './shop.js';
+import { CaptchaSeeder } from './captcha.js';
+import { AdsSeeder } from './ads.js';
+import { RBACSeeder } from './rbac.js';
 
 const { Pool } = pg;
 
-// 解析命令行参数
-const args = process.argv.slice(2);
-const options = {
-  reset: args.includes('--reset'),
-  missing: args.includes('--missing') || args.length === 0,
-  list: args.includes('--list'),
-  clean: args.includes('--clean'),
-  help: args.includes('--help') || args.includes('-h'),
-};
+
 
 /**
- * 显示帮助信息
+ * SeederManager
+ * 管理所有 Seeder 的注册与执行
  */
-function showHelp() {
-  console.log(`
-系统配置初始化脚本
+class SeederManager {
+  constructor() {
+    this.seeders = new Map();
+    this.pool = null;
+    this.db = null;
+  }
 
-使用方法:
-  node api/src/scripts/init/index.js [选项]
-
-选项:
-  --reset     重置所有配置到默认值（会覆盖现有配置）
-  --missing   只添加缺失的配置（默认行为）
-  --list      列出所有配置项及其默认值
-  --help, -h  显示此帮助信息
-
-功能:
-  - 初始化系统设置（站点名称、注册模式、访问限速等）
-  - 初始化 OAuth 提供商配置（GitHub、Google、Apple）
-  - 初始化邮件服务提供商配置（SMTP、SendGrid、Resend、阿里云）
-  - 初始化消息提供商配置（Email 和 SMS 统一表）
-  - 初始化邀请规则配置（user、vip、moderator、admin）
-  - 初始化奖励系统配置（系统开关、获取规则、消费规则）
-  - 初始化 Ledger 系统（默认货币）
-  - 初始化广告位数据（预设广告位）
-
-示例:
-  # 添加缺失的配置（不覆盖现有配置）
-  node api/src/scripts/init/index.js
-
-  # 重置所有配置到默认值
-  node api/src/scripts/init/index.js --reset
-
-  # 列出所有配置项
-  node api/src/scripts/init/index.js --list
-`);
-}
-
-/**
- * 列出所有配置
- */
-function listAllSettings() {
-  listSystemSettings();
-  listOAuthProviders();
-  listMessageProviders();
-  listCaptchaProviders();
-  listInvitationRules();
-  listCurrencies();
-  listBadges();
-  listAdSlots();
-  listRBACConfig();
-}
-
-/**
- * 初始化所有配置
- */
-async function initAllSettings(reset = false) {
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-  });
-
-  const db = drizzle(pool);
-
-  try {
-    console.log('\n🚀 开始初始化系统配置...\n');
-
-    // 1. 初始化系统设置
-    const settingsResult = await initSystemSettings(db, reset);
-
-    // 2. 初始化 OAuth 提供商配置
-    const oauthResult = await initOAuthProviders(db, reset);
-
-    // 3.5 初始化消息提供商配置（Email + SMS 统一表）
-    const messageResult = await initMessageProviders(db, reset);
-
-    // 4. 初始化邀请规则配置
-    const invitationResult = await initInvitationRules(db, reset);
-
-    // 5. 初始化奖励系统配置
-    const rewardsResult = await initRewardConfigs(db, reset);
-
-    // 6. 初始化 Ledger 系统 (货币)
-    // 必须在 Shop 和 Rewards 之前 (如果它们依赖货币 ID，虽目前 Rewards config 不依赖，但 Shop buy item 依赖)
-    const ledgerResult = await initLedger(db, reset);
-
-    // 7. 初始化勋章数据
-    const badgesResult = await initBadges(db, reset);
-
-    // 8. 初始化商城数据
-    const shopResult = await initShopItems(db, reset);
-
-    // 9. 初始化 CAPTCHA 提供商配置
-    const captchaResult = await initCaptchaProviders(db, reset);
-
-    // 10. 初始化广告位数据
-    const adsResult = await initAdSlots(db, reset);
-
-    // 11. 初始化 RBAC 系统（角色和权限）
-    const rbacResult = await initRBAC(db, reset);
-
-    // 12. 迁移现有用户角色
-    const userMigrationResult = await migrateExistingUsers(db);
-
-    // 显示统计信息
-    console.log('\n' + '='.repeat(80));
-    console.log('\n✅ 配置初始化完成！\n');
-
-    // 系统设置统计
-    console.log(`系统设置统计:`);
-    if (reset) {
-      console.log(`  - 重置: ${settingsResult.updatedCount} 个配置`);
-    } else {
-      console.log(`  - 新增: ${settingsResult.addedCount} 个配置`);
-      console.log(`  - 跳过: ${settingsResult.skippedCount} 个配置（已存在）`);
+  register(seeder) {
+    if (!(seeder instanceof BaseSeeder)) {
+      throw new Error(`Seeder '${seeder.constructor.name}' must extend BaseSeeder`);
     }
-    console.log(`  - 总计: ${settingsResult.total} 个配置\n`);
+    this.seeders.set(seeder.key, seeder);
+  }
 
-    // OAuth 提供商统计
-    console.log(`OAuth 提供商统计:`);
-    if (reset) {
-      console.log(`  - 重置: ${oauthResult.updatedCount} 个提供商`);
-    } else {
-      console.log(`  - 新增: ${oauthResult.addedCount} 个提供商`);
-      console.log(`  - 跳过: ${oauthResult.skippedCount} 个提供商（已存在）`);
+  async connect() {
+    if (!this.pool) {
+      this.pool = new Pool({ connectionString: process.env.DATABASE_URL });
+      this.db = drizzle(this.pool);
     }
-    console.log(`  - 总计: ${oauthResult.total} 个提供商\n`);
+    return this.db;
+  }
 
-    // 消息提供商统计
-    console.log(`消息提供商统计:`);
-    if (reset) {
-      console.log(`  - 重置: ${messageResult.updatedCount} 个提供商`);
-    } else {
-      console.log(`  - 新增: ${messageResult.addedCount} 个提供商`);
-      console.log(`  - 跳过: ${messageResult.skippedCount} 个提供商（已存在）`);
+  async disconnect() {
+    if (this.pool) {
+      await this.pool.end();
+      this.pool = null;
+      this.db = null;
     }
-    console.log(`  - 总计: ${messageResult.total} 个提供商\n`);
+  }
 
-    // 邀请规则统计
-    console.log(`邀请规则统计:`);
-    if (reset) {
-      console.log(`  - 重置: ${invitationResult.updatedCount} 个规则`);
-    } else {
-      console.log(`  - 新增: ${invitationResult.addedCount} 个规则`);
-      console.log(`  - 跳过: ${invitationResult.skippedCount} 个规则（已存在）`);
+  getOrderedSeeders(filterKey = null) {
+    // 简单的拓扑排序或依赖顺序
+    // 这里简单实现：如果指定了 filterKey，只返回该 Seeder
+    // 否则按注册顺序返回（假设注册顺序已经满足依赖）
+    // TODO: 实现真正的拓扑排序
+    
+    if (filterKey) {
+      const seeder = this.seeders.get(filterKey);
+      if (!seeder) {
+        throw new Error(`Seeder '${filterKey}' not found. Available: ${Array.from(this.seeders.keys()).join(', ')}`);
+      }
+      return [seeder];
     }
-    console.log(`  - 总计: ${invitationResult.total} 个规则\n`);
+    return Array.from(this.seeders.values());
+  }
 
-    // 奖励系统配置统计
-    console.log(`奖励系统配置统计:`);
-    if (reset) {
-      console.log(`  - 重置: ${rewardsResult.updatedCount} 个配置`);
-    } else {
-      console.log(`  - 新增: ${rewardsResult.addedCount} 个配置`);
-      console.log(`  - 跳过: ${rewardsResult.skippedCount} 个配置（已存在）`);
+  async init(filterKey = null, reset = false) {
+    const db = await this.connect();
+    const seeders = this.getOrderedSeeders(filterKey);
+    
+    console.log(`\n🚀 开始执行初始化 (共 ${seeders.length} 个模块)...\n`);
+    
+    for (const seeder of seeders) {
+      try {
+        await seeder.init(db, reset);
+      } catch (error) {
+        console.error(`❌ [${seeder.key}] 初始化失败:`, error);
+        throw error;
+      }
     }
-    console.log(`  - 总计: ${rewardsResult.total} 个配置\n`);
+    
+    console.log('\n✅ 所有任务完成！\n');
+  }
 
-    // Ledger 系统统计
-    console.log(`Ledger 系统统计:`);
-    if (reset) {
-      console.log(`  - 重置: ${ledgerResult.updatedCount} 个货币`);
-    } else {
-      console.log(`  - 新增: ${ledgerResult.addedCount} 个货币`);
-      console.log(`  - 跳过: ${ledgerResult.skippedCount} 个货币（已存在）`);
+  async list(filterKey = null) {
+    const seeders = this.getOrderedSeeders(filterKey);
+    for (const seeder of seeders) {
+      await seeder.list();
     }
-    console.log(`  - 总计: ${ledgerResult.total} 个货币\n`);
+  }
 
-    // 勋章数据统计
-    console.log(`勋章数据统计:`);
-    if (reset) {
-      console.log(`  - 重置: ${badgesResult.updatedCount} 个勋章`);
+  async clean(filterKey = null) {
+    console.log('\n⚠️  警告: Clean 操作是破坏性的！');
+    if (!filterKey) {
+        console.log('即将清空所有支持清理的模块数据...');
     } else {
-      console.log(`  - 新增: ${badgesResult.addedCount} 个勋章`);
-      console.log(`  - 跳过: ${badgesResult.skippedCount} 个勋章（已存在）`);
+        console.log(`即将清空模块 '${filterKey}' 的数据...`);
     }
-    console.log(`  - 总计: ${badgesResult.total} 个勋章\n`);
+    console.log('按 Ctrl+C 取消，或等待 3 秒后继续...\n');
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    // 商城数据统计
-    console.log(`商城数据统计:`);
-    if (reset) {
-      console.log(`  - 重置: ${shopResult.updatedCount} 个商品`);
-    } else {
-      console.log(`  - 新增: ${shopResult.addedCount} 个商品`);
-      console.log(`  - 跳过: ${shopResult.skippedCount} 个商品（已存在）`);
-    }
-    console.log(`  - 总计: ${shopResult.total} 个商品\n`);
+    const db = await this.connect();
+    // Clean 顺序通常与 Init 相反，或者需要根据外键依赖
+    // 这里简单反转顺序
+    const seeders = this.getOrderedSeeders(filterKey).reverse();
 
-    // CAPTCHA 提供商统计
-    console.log(`CAPTCHA 提供商统计:`);
-    if (reset) {
-      console.log(`  - 重置: ${captchaResult.updatedCount} 个提供商`);
-    } else {
-      console.log(`  - 新增: ${captchaResult.addedCount} 个提供商`);
-      console.log(`  - 跳过: ${captchaResult.skippedCount} 个提供商（已存在）`);
+    for (const seeder of seeders) {
+      await seeder.clean(db);
     }
-    console.log(`  - 总计: ${captchaResult.total} 个提供商\n`);
-
-    // 广告位统计
-    console.log(`广告位统计:`);
-    if (reset) {
-      console.log(`  - 重置: ${adsResult.updatedCount} 个广告位`);
-    } else {
-      console.log(`  - 新增: ${adsResult.addedCount} 个广告位`);
-      console.log(`  - 跳过: ${adsResult.skippedCount} 个广告位（已存在）`);
-    }
-    console.log(`  - 总计: ${adsResult.total} 个广告位\n`);
-
-    // RBAC 系统统计
-    console.log(`RBAC 系统统计:`);
-    console.log(`  角色:`);
-    if (reset) {
-      console.log(`    - 重置: ${rbacResult.roles.updatedCount} 个角色`);
-    } else {
-      console.log(`    - 新增: ${rbacResult.roles.addedCount} 个角色`);
-      console.log(`    - 跳过: ${rbacResult.roles.skippedCount} 个角色（已存在）`);
-    }
-    console.log(`    - 总计: ${rbacResult.roles.total} 个角色`);
-    console.log(`  权限:`);
-    if (reset) {
-      console.log(`    - 重置: ${rbacResult.permissions.updatedCount} 个权限`);
-    } else {
-      console.log(`    - 新增: ${rbacResult.permissions.addedCount} 个权限`);
-      console.log(`    - 跳过: ${rbacResult.permissions.skippedCount} 个权限（已存在）`);
-    }
-    console.log(`    - 总计: ${rbacResult.permissions.total} 个权限`);
-    console.log(`  用户角色迁移:`);
-    console.log(`    - 迁移: ${userMigrationResult.migratedCount} 个用户`);
-    console.log(`    - 跳过: ${userMigrationResult.skippedCount} 个用户\n`);
-
-    // 显示按分类的统计
-    console.log('系统设置按分类统计:');
-    Object.entries(SETTINGS_BY_CATEGORY).forEach(([category, settings]) => {
-      console.log(`  - ${CATEGORY_NAMES[category] || category}: ${settings.length} 个配置`);
-    });
-    console.log();
-  } catch (error) {
-    console.error('\n❌ 初始化失败:', error);
-    throw error;
-  } finally {
-    await pool.end();
+    
+    console.log('\n✅ 清理完成！\n');
   }
 }
 
-/**
- * 主函数
- */
-async function main() {
-  if (options.help) {
+// --- Main Execution ---
+
+const manager = new SeederManager();
+
+// 1. Register New Seeders
+manager.register(new SettingsSeeder());
+manager.register(new OAuthSeeder());
+manager.register(new MessageSeeder());
+manager.register(new InvitationSeeder());
+manager.register(new RewardsSeeder());
+manager.register(new LedgerSeeder());
+
+manager.register(new BadgesSeeder());
+manager.register(new ShopSeeder());
+manager.register(new CaptchaSeeder());
+manager.register(new AdsSeeder());
+manager.register(new RBACSeeder());
+
+// Parse Arguments
+const args = process.argv.slice(2);
+const help = args.includes('--help') || args.includes('-h');
+
+function showHelp() {
+  console.log(`
+初始化脚本管理器
+
+用法:
+  node api/src/scripts/init/index.js <command> [module] [options]
+
+命令:
+  init [module]   初始化/更新数据
+  list [module]   查看当前配置
+  clean [module]  清理/删除数据
+  reset [module]  重置数据 (强制覆盖)
+
+选项:
+  --help, -h      显示帮助
+
+模块:
+  ${Array.from(manager.seeders.keys()).join(', ')}
+
+示例:
+  pnpm seed                 # 初始化所有
+  pnpm seed init settings   # 只初始化 settings
+  pnpm seed list oauth      # 查看 oauth 配置
+  pnpm seed reset ads       # 重置广告位
+`);
+}
+
+async function run() {
+  if (help) {
     showHelp();
     return;
   }
 
-  if (options.list) {
-    listAllSettings();
-    return;
+  // Improved Argument Parsing
+  // pattern: action [module]
+  // actions: init (default implies init if no action matches), list, clean, reset (implies init --reset)
+  
+  let action = 'init';
+  let moduleKey = null;
+  let reset = false;
+
+  // Handle flags
+  if (args.includes('--reset')) {
+    reset = true;
   }
 
-  if (options.clean) {
-    console.log('\n⚠️  警告: 此操作将清空所有商城商品、用户道具、勋章及用户勋章数据！');
-    console.log('这是破坏性操作，请谨慎使用。');
-    console.log('按 Ctrl+C 取消，或等待 3 秒后继续...\n');
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-    
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    const db = drizzle(pool);
-    try {
-      // 0. Clean Transactions/Ledger/Rewards first (foreign keys)
-      await cleanRewards(db);
-      await cleanLedger(db);
-
-      // 1. Clean Shop Items (and User Items)
-      await cleanShopItems(db);
-      // 2. Clean Badges (and User Badges)
-      await cleanBadges(db);
-      // 3. Clean Ads (and Ad Slots)
-      await cleanAds(db);
-      // 4. Clean RBAC (roles, permissions, user_roles)
-      await cleanRBAC(db);
-    } catch (error) {
-      console.error('清空失败:', error);
-    } finally {
-      await pool.end();
+  // Detect simple legacy mapping
+  // node index.js --list -> action=list
+  if (args.includes('--list')) action = 'list';
+  if (args.includes('--clean')) action = 'clean';
+  
+  // Detect structured commands: init, list, clean, reset
+  const commandArg = args.find(a => ['init', 'list', 'clean', 'reset'].includes(a));
+  if (commandArg) {
+    action = commandArg;
+    if (action === 'reset') {
+        action = 'init';
+        reset = true;
     }
-    return;
   }
 
-  if (options.reset) {
-    console.log('\n⚠️  警告: 此操作将重置所有配置到默认值！');
-    console.log('按 Ctrl+C 取消，或等待 3 秒后继续...\n');
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+  // Find module key
+  const availableKeys = Array.from(manager.seeders.keys());
+  
+  // Identify potential module argument (any argument that is NOT a command or flag)
+  const potentialModuleArg = args.find(a => 
+      !['init', 'list', 'clean', 'reset'].includes(a) && 
+      !a.startsWith('-')
+  );
+
+  if (potentialModuleArg) {
+      if (availableKeys.includes(potentialModuleArg)) {
+          moduleKey = potentialModuleArg;
+      } else {
+          console.error(`❌ 错误: 未知的模块名称 '${potentialModuleArg}'`);
+          console.log(`ℹ 可用模块: ${availableKeys.join(', ')}`);
+          process.exit(1);
+      }
   }
 
-  await initAllSettings(options.reset);
+  try {
+    switch (action) {
+      case 'list':
+        await manager.list(moduleKey);
+        break;
+      case 'clean':
+        await manager.clean(moduleKey);
+        break;
+      case 'init':
+      default:
+        await manager.init(moduleKey, reset);
+        break;
+    }
+  } catch (error) {
+    console.error('执行出错:', error);
+    process.exit(1);
+  } finally {
+    await manager.disconnect();
+  }
 }
 
-// 执行
-main().catch((error) => {
-  console.error('执行失败:', error);
-  process.exit(1);
-});
+run();

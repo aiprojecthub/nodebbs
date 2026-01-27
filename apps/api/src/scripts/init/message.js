@@ -5,6 +5,8 @@
 
 import { messageProviders } from '../../plugins/message/schema.js';
 import { eq, and } from 'drizzle-orm';
+import { BaseSeeder } from './base.js';
+import chalk from 'chalk';
 
 /**
  * 消息提供商默认配置
@@ -124,32 +126,26 @@ export const MESSAGE_PROVIDERS = [
   },
 ];
 
-/**
- * 初始化消息提供商配置
- * @param {object} db - 数据库实例
- * @param {boolean} reset - 是否重置（删除后重新插入）
- */
-export async function initMessageProviders(db, reset = false) {
-  console.log('\n📧 初始化消息提供商配置...\n');
+export class MessageSeeder extends BaseSeeder {
+  constructor() {
+    super('message');
+  }
 
-  let addedCount = 0;
-  let updatedCount = 0;
-  let skippedCount = 0;
+  /**
+   * 初始化消息提供商配置
+   * @param {object} db - 数据库实例
+   * @param {boolean} reset - 是否重置（删除后重新插入）
+   */
+  async init(db, reset = false) {
+    this.logger.header('初始化消息提供商配置');
 
-  for (const provider of MESSAGE_PROVIDERS) {
-    if (reset) {
-      // 重置模式：删除后重新插入
-      await db.delete(messageProviders).where(
-        and(
-          eq(messageProviders.channel, provider.channel),
-          eq(messageProviders.provider, provider.provider)
-        )
-      );
-      await db.insert(messageProviders).values(provider);
-      console.log(`🔄 重置消息提供商: [${provider.channel}] ${provider.displayName} (${provider.provider})`);
-      updatedCount++;
-    } else {
-      // 默认模式：只添加缺失的配置
+    let addedCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
+
+    const skippedProviders = [];
+    for (const provider of MESSAGE_PROVIDERS) {
+      // 检查是否已存在
       const [existing] = await db
         .select()
         .from(messageProviders)
@@ -162,45 +158,67 @@ export async function initMessageProviders(db, reset = false) {
         .limit(1);
 
       if (existing) {
-        console.log(`⊙ 跳过消息提供商: [${provider.channel}] ${provider.displayName} (已存在)`);
-        skippedCount++;
+        if (reset) {
+          // 重置模式：更新现有配置
+          await db
+            .update(messageProviders)
+            .set(provider)
+            .where(eq(messageProviders.id, existing.id));
+          updatedCount++;
+          this.logger.success(`重置消息提供商: [${provider.channel}] ${provider.displayName} (${provider.provider})`);
+        } else {
+          // 默认模式：跳过
+          skippedProviders.push(`${provider.displayName}`);
+          skippedCount++;
+        }
       } else {
+        // 不存在则插入
         await db.insert(messageProviders).values(provider);
-        console.log(`✓ 添加消息提供商: [${provider.channel}] ${provider.displayName} (${provider.provider})`);
+        this.logger.success(`添加消息提供商: [${provider.channel}] ${provider.displayName} (${provider.provider})`);
         addedCount++;
       }
     }
+    if (skippedProviders.length > 0) {
+      this.logger.info(`跳过消息提供商: ${skippedProviders.join(', ')} (已存在)`);
+    }
+
+    this.logger.summary({ addedCount, updatedCount, skippedCount, total: MESSAGE_PROVIDERS.length });
+    return { addedCount, updatedCount, skippedCount, total: MESSAGE_PROVIDERS.length };
   }
 
-  return { addedCount, updatedCount, skippedCount, total: MESSAGE_PROVIDERS.length };
-}
+  async list() {
+    this.logger.header('消息提供商配置');
+    
+    const emailProviders = MESSAGE_PROVIDERS.filter(p => p.channel === 'email');
+    const smsProviders = MESSAGE_PROVIDERS.filter(p => p.channel === 'sms');
 
-/**
- * 列出消息提供商配置
- */
-export function listMessageProviders() {
-  console.log('\n📧 消息提供商配置\n');
-  console.log('='.repeat(80));
+    this.logger.subHeader('📮 Email 提供商:');
+    console.log(chalk.dim('-'.repeat(40)));
+    emailProviders.forEach((provider) => {
+      this.logger.item(`${chalk.bold(provider.displayName)} (${provider.provider})`, '📧');
+      this.logger.detail(`默认状态: ${provider.isEnabled ? '启用' : '禁用'}`);
+      this.logger.detail(`显示顺序: ${provider.displayOrder}`);
+    });
 
-  const emailProviders = MESSAGE_PROVIDERS.filter(p => p.channel === 'email');
-  const smsProviders = MESSAGE_PROVIDERS.filter(p => p.channel === 'sms');
+    this.logger.subHeader('📱 SMS 提供商:');
+    console.log(chalk.dim('-'.repeat(40)));
+    smsProviders.forEach((provider) => {
+      this.logger.item(`${chalk.bold(provider.displayName)} (${provider.provider})`, '💬');
+      this.logger.detail(`默认状态: ${provider.isEnabled ? '启用' : '禁用'}`);
+      this.logger.detail(`显示顺序: ${provider.displayOrder}`);
+    });
 
-  console.log('\n📮 Email 提供商:\n');
-  emailProviders.forEach((provider) => {
-    console.log(`  ${provider.displayName} (${provider.provider})`);
-    console.log(`    默认状态: ${provider.isEnabled ? '启用' : '禁用'}`);
-    console.log(`    显示顺序: ${provider.displayOrder}`);
-    console.log();
-  });
+    this.logger.divider();
+    this.logger.result(`Total: ${MESSAGE_PROVIDERS.length} items (Email: ${emailProviders.length}, SMS: ${smsProviders.length})`);
+  }
 
-  console.log('\n📱 SMS 提供商:\n');
-  smsProviders.forEach((provider) => {
-    console.log(`  ${provider.displayName} (${provider.provider})`);
-    console.log(`    默认状态: ${provider.isEnabled ? '启用' : '禁用'}`);
-    console.log(`    显示顺序: ${provider.displayOrder}`);
-    console.log();
-  });
-
-  console.log('='.repeat(80));
-  console.log(`\n总计: ${MESSAGE_PROVIDERS.length} 个消息提供商 (Email: ${emailProviders.length}, SMS: ${smsProviders.length})\n`);
+  /**
+   * 清空消息提供商配置
+   * @param {import('drizzle-orm').NodePgDatabase} db
+   */
+  async clean(db) {
+    this.logger.warn('正在清空消息提供商配置...');
+    await db.delete(messageProviders);
+    this.logger.success('已清空消息提供商配置 (messageProviders)');
+  }
 }

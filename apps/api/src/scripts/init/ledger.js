@@ -1,11 +1,13 @@
 /**
  * Ledger 系统初始化
- *用于初始化默认货币等
+ * 用于初始化默认货币等
  */
 
 import { sysCurrencies, sysAccounts, sysTransactions } from '../../extensions/ledger/schema.js';
 import { eq } from 'drizzle-orm';
 import { DEFAULT_CURRENCY_CODE } from '../../extensions/ledger/constants.js';
+import { BaseSeeder } from './base.js';
+import chalk from 'chalk';
 
 /**
  * 默认货币列表
@@ -45,91 +47,105 @@ export const DEFAULT_CURRENCIES = [
   },
 ];
 
-/**
- * 初始化 Ledger 系统 (货币)
- * @param {Object} db - Drizzle 数据库实例
- * @param {boolean} reset - 是否重置
- */
-export async function initLedger(db, reset = false) {
-  console.log('💰 初始化 Ledger 系统 (货币)...');
-
-  let addedCount = 0;
-  let updatedCount = 0;
-  let skippedCount = 0;
-
-  for (const currency of DEFAULT_CURRENCIES) {
-    try {
-      const [existing] = await db
-        .select()
-        .from(sysCurrencies)
-        .where(eq(sysCurrencies.code, currency.code))
-        .limit(1);
-
-      if (existing) {
-        if (reset) {
-          await db
-            .update(sysCurrencies)
-            .set({
-              ...currency,
-              updatedAt: new Date(),
-            })
-            .where(eq(sysCurrencies.code, currency.code));
-          updatedCount++;
-          console.log(`  ✓ 重置: ${currency.name} (${currency.code})`);
-        } else {
-          skippedCount++;
-          console.log(`  - 跳过: ${currency.name} (${currency.code}) (已存在)`);
-        }
-      } else {
-        await db.insert(sysCurrencies).values(currency);
-        addedCount++;
-        console.log(`  + 新增: ${currency.name} (${currency.code})`);
-      }
-    } catch (error) {
-      console.error(`  ✗ 失败: ${currency.name}`, error.message);
-    }
+export class LedgerSeeder extends BaseSeeder {
+  constructor() {
+    super('ledger');
   }
 
-  return {
-    total: DEFAULT_CURRENCIES.length,
-    addedCount,
-    updatedCount,
-    skippedCount,
-  };
-}
+  /**
+   * 初始化 Ledger 系统 (货币)
+   * @param {Object} db - Drizzle 数据库实例
+   * @param {boolean} reset - 是否重置
+   */
+  async init(db, reset = false) {
+    this.logger.header('初始化 Ledger 系统 (货币)');
 
-/**
- * 列出所有货币
- */
-export function listCurrencies() {
-  console.log('\n' + '='.repeat(80));
-  console.log('Ledger 系统货币');
-  console.log('='.repeat(80) + '\n');
-  
-  DEFAULT_CURRENCIES.forEach(currency => {
-    console.log(`  ${currency.name} (${currency.code}):`);
-    console.log(`    符号: ${currency.symbol}`);
-    console.log(`    精度: ${currency.precision}`);
-    console.log(`    状态: ${currency.isActive ? '启用' : '禁用'}`);
-    console.log();
-  });
-}
+    let addedCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
 
-/**
- * 清空 Ledger 系统数据
- * @param {import('drizzle-orm').NodePgDatabase} db
- */
-export async function cleanLedger(db) {
-  console.log('正在清空 Ledger 系统数据...');
+    const skippedCurrencies = [];
+    for (const currency of DEFAULT_CURRENCIES) {
+      try {
+        const [existing] = await db
+          .select()
+          .from(sysCurrencies)
+          .where(eq(sysCurrencies.code, currency.code))
+          .limit(1);
 
-  await db.delete(sysTransactions);
-  console.log('- 已清空系统交易 (sysTransactions)');
+        if (existing) {
+          if (reset) {
+            await db
+              .update(sysCurrencies)
+              .set({
+                ...currency,
+                updatedAt: new Date(),
+              })
+              .where(eq(sysCurrencies.code, currency.code));
+            updatedCount++;
+            this.logger.success(`重置: ${currency.name} (${currency.code})`);
+          } else {
+            skippedCount++;
+            skippedCurrencies.push(`${currency.name} (${currency.code})`);
+          }
+        } else {
+          await db.insert(sysCurrencies).values(currency);
+          addedCount++;
+          this.logger.success(`新增: ${currency.name} (${currency.code})`);
+        }
+      } catch (error) {
+        this.logger.error(`失败: ${currency.name}`, error);
+      }
+    }
+    if (skippedCurrencies.length > 0) {
+      this.logger.info(`跳过: ${skippedCurrencies.join(', ')} (已存在)`);
+    }
 
-  await db.delete(sysAccounts);
-  console.log('- 已清空系统账户 (sysAccounts)');
+    this.logger.summary({
+      total: DEFAULT_CURRENCIES.length,
+      addedCount,
+      updatedCount,
+      skippedCount,
+    });
+    return {
+      total: DEFAULT_CURRENCIES.length,
+      addedCount,
+      updatedCount,
+      skippedCount,
+    };
+  }
 
-  await db.delete(sysCurrencies);
-  console.log('- 已清空系统货币 (sysCurrencies)');
+  /**
+   * 列出所有货币
+   */
+  async list() {
+    this.logger.header('Ledger 系统货币');
+    
+    DEFAULT_CURRENCIES.forEach(currency => {
+      this.logger.item(`${chalk.bold(currency.name)} (${currency.code}):`, '💰');
+      this.logger.detail(`符号: ${currency.symbol}`);
+      this.logger.detail(`精度: ${currency.precision}`);
+      this.logger.detail(`状态: ${currency.isActive ? '启用' : '禁用'}`);
+    });
 
-  return { success: true };
+    this.logger.divider();
+    this.logger.result(`Total: ${DEFAULT_CURRENCIES.length} currencies`);
+  }
+
+  /**
+   * 清空 Ledger 系统数据
+   * @param {import('drizzle-orm').NodePgDatabase} db
+   */
+  async clean(db) {
+    this.logger.warn('正在清空 Ledger 系统数据...');
+
+    await db.delete(sysTransactions);
+    this.logger.success('已清空系统交易 (sysTransactions)');
+
+    await db.delete(sysAccounts);
+    this.logger.success('已清空系统账户 (sysAccounts)');
+
+    await db.delete(sysCurrencies);
+    this.logger.success('已清空系统货币 (sysCurrencies)');
+  }
 }

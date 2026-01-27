@@ -4,6 +4,8 @@
 
 import { invitationRules } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
+import { BaseSeeder } from './base.js';
+import chalk from 'chalk';
 
 // 邀请规则默认配置
 export const INVITATION_RULES = [
@@ -41,26 +43,24 @@ export const INVITATION_RULES = [
   },
 ];
 
-/**
- * 初始化邀请规则配置
- */
-export async function initInvitationRules(db, reset = false) {
-  console.log('\n🎫 初始化邀请规则配置...\n');
+export class InvitationSeeder extends BaseSeeder {
+  constructor() {
+    super('invitation');
+  }
 
-  let addedCount = 0;
-  let updatedCount = 0;
-  let skippedCount = 0;
+  /**
+   * 初始化邀请规则配置
+   */
+  async init(db, reset = false) {
+    this.logger.header('初始化邀请规则配置');
 
-  for (const rule of INVITATION_RULES) {
-    if (reset) {
-      // 重置模式：删除后重新插入
-      await db.delete(invitationRules).where(eq(invitationRules.role, rule.role));
-      await db.insert(invitationRules).values(rule);
-      console.log(`🔄 重置邀请规则: ${rule.role} (每日限制: ${rule.dailyLimit})`);
-      updatedCount++;
-    } else {
-      // 默认模式：只添加缺失的配置
-      // 先检查是否已存在
+    let addedCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
+
+    const skippedRules = [];
+    for (const rule of INVITATION_RULES) {
+      // 检查是否已存在
       const [existing] = await db
         .select()
         .from(invitationRules)
@@ -68,35 +68,58 @@ export async function initInvitationRules(db, reset = false) {
         .limit(1);
 
       if (existing) {
-        console.log(`⊙ 跳过邀请规则: ${rule.role} (已存在)`);
-        skippedCount++;
+        if (reset) {
+          // 重置模式：更新现有配置
+          await db
+            .update(invitationRules)
+            .set(rule)
+            .where(eq(invitationRules.id, existing.id));
+          updatedCount++;
+          this.logger.success(`重置邀请规则: ${rule.role} (每日限制: ${rule.dailyLimit})`);
+        } else {
+          // 默认模式：跳过
+          skippedRules.push(rule.role);
+          skippedCount++;
+        }
       } else {
         // 不存在则插入
         await db.insert(invitationRules).values(rule);
-        console.log(`✓ 添加邀请规则: ${rule.role} (每日限制: ${rule.dailyLimit})`);
+        this.logger.success(`添加邀请规则: ${rule.role} (每日限制: ${rule.dailyLimit})`);
         addedCount++;
       }
     }
+    if (skippedRules.length > 0) {
+      this.logger.info(`跳过邀请规则: ${skippedRules.join(', ')} (已存在)`);
+    }
+
+    this.logger.summary({ addedCount, updatedCount, skippedCount, total: INVITATION_RULES.length });
+    return { addedCount, updatedCount, skippedCount, total: INVITATION_RULES.length };
   }
 
-  return { addedCount, updatedCount, skippedCount, total: INVITATION_RULES.length };
-}
+  /**
+   * 列出邀请规则配置
+   */
+  async list() {
+    this.logger.header('邀请规则配置');
 
-/**
- * 列出邀请规则配置
- */
-export function listInvitationRules() {
-  console.log('\n🎫 邀请规则配置\n');
-  console.log('='.repeat(80));
-  INVITATION_RULES.forEach((rule) => {
-    console.log(`  ${rule.role}`);
-    console.log(`    每日限制: ${rule.dailyLimit}`);
-    console.log(`    每码使用次数: ${rule.maxUsesPerCode}`);
-    console.log(`    有效期: ${rule.expireDays} 天`);
-    console.log(`    积分消耗: ${rule.pointsCost}`);
-    console.log(`    默认状态: ${rule.isActive ? '启用' : '禁用'}`);
-    console.log();
-  });
-  console.log('='.repeat(80));
-  console.log(`\n总计: ${INVITATION_RULES.length} 个邀请规则\n`);
+    INVITATION_RULES.forEach((rule) => {
+      this.logger.item(`${chalk.bold(rule.role)}`, '🎫');
+      this.logger.detail(`每日限制: ${rule.dailyLimit}`);
+      this.logger.detail(`每码使用次数: ${rule.maxUsesPerCode}`);
+      this.logger.detail(`有效期: ${rule.expireDays} 天`);
+    });
+    
+    this.logger.divider();
+    this.logger.result(`Total: ${INVITATION_RULES.length} rules`);
+  }
+
+  /**
+   * 清空邀请规则配置
+   * @param {import('drizzle-orm').NodePgDatabase} db
+   */
+  async clean(db) {
+    this.logger.warn('正在清空邀请规则配置...');
+    await db.delete(invitationRules);
+    this.logger.success('已清空邀请规则配置 (invitationRules)');
+  }
 }

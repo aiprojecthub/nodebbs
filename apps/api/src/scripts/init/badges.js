@@ -4,6 +4,8 @@
 
 import { badges, userBadges } from '../../extensions/badges/schema.js';
 import { eq } from 'drizzle-orm';
+import { BaseSeeder } from './base.js';
+import chalk from 'chalk';
 
 /**
  * 默认勋章列表
@@ -178,97 +180,108 @@ export const DEFAULT_BADGES = [
   },
 ];
 
-/**
- * 列出所有默认勋章
- */
-export function listBadges() {
-  console.log('\n' + '='.repeat(80));
-  console.log('默认勋章列表');
-  console.log('='.repeat(80) + '\n');
-
-  DEFAULT_BADGES.forEach((badge) => {
-    console.log(`🎖️ ${badge.name} (${badge.slug})`);
-    console.log(`   描述: ${badge.description}`);
-    console.log(`   类型: ${badge.category}`);
-    console.log(`   条件: ${badge.unlockCondition}`);
-    console.log();
-  });
-
-  console.log('总计: ' + DEFAULT_BADGES.length + ' 个勋章\n');
-}
-
-/**
- * 初始化勋章数据
- * @param {Object} db - Drizzle 数据库实例
- * @param {boolean} reset - 是否重置现有数据
- * @returns {Promise<{total: number, addedCount: number, updatedCount: number, skippedCount: number}>}
- */
-export async function initBadges(db, reset = false) {
-  console.log('🏅 初始化勋章数据...');
-
-  let addedCount = 0;
-  let updatedCount = 0;
-  let skippedCount = 0;
-
-  for (const badge of DEFAULT_BADGES) {
-    try {
-      // 检查勋章是否已存在
-      const [existing] = await db
-        .select()
-        .from(badges)
-        .where(eq(badges.slug, badge.slug))
-        .limit(1);
-
-      if (existing) {
-        if (reset) {
-          // 重置模式：更新现有勋章
-          await db
-            .update(badges)
-            .set({
-              ...badge,
-              updatedAt: new Date(),
-            })
-            .where(eq(badges.slug, badge.slug));
-          updatedCount++;
-          console.log(`  ✓ 重置: ${badge.name} (${badge.slug})`);
-        } else {
-          // 非重置模式：跳过已存在的勋章
-          skippedCount++;
-          console.log(`  - 跳过: ${badge.name} (已存在)`);
-        }
-      } else {
-        // 插入新勋章
-        await db.insert(badges).values(badge);
-        addedCount++;
-        console.log(`  + 新增: ${badge.name}`);
-      }
-    } catch (error) {
-      console.error(`  ✗ 失败: ${badge.name}`, error.message);
-    }
+export class BadgesSeeder extends BaseSeeder {
+  constructor() {
+    super('badges');
   }
 
-  return {
-    total: DEFAULT_BADGES.length,
-    addedCount,
-    updatedCount,
-    skippedCount,
-  };
-}
+  /**
+   * 初始化勋章数据
+   * @param {Object} db - Drizzle 数据库实例
+   * @param {boolean} reset - 是否重置现有数据
+   * @returns {Promise<{total: number, addedCount: number, updatedCount: number, skippedCount: number}>}
+   */
+  async init(db, reset = false) {
+    this.logger.header('初始化勋章数据');
 
-/**
- * 清空勋章相关数据
- * @param {import('drizzle-orm').NodePgDatabase} db
- */
-export async function cleanBadges(db) {
-  console.log('正在清空勋章相关数据...');
+    let addedCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
 
-  // 1. Delete user badges (dependent on badges)
-  await db.delete(userBadges);
-  console.log('- 已清空用户勋章 (userBadges)');
+    const skippedBadges = [];
+    for (const badge of DEFAULT_BADGES) {
+      try {
+        // 检查勋章是否已存在
+        const [existing] = await db
+          .select()
+          .from(badges)
+          .where(eq(badges.slug, badge.slug))
+          .limit(1);
 
-  // 2. Delete badges
-  await db.delete(badges);
-  console.log('- 已清空勋章 (badges)');
+        if (existing) {
+          if (reset) {
+            // 重置模式：更新现有勋章
+            await db
+              .update(badges)
+              .set({
+                ...badge,
+                updatedAt: new Date(),
+              })
+              .where(eq(badges.slug, badge.slug));
+            updatedCount++;
+            this.logger.success(`重置: ${badge.name} (${badge.slug})`);
+          } else {
+            // 非重置模式：跳过已存在的勋章
+            skippedCount++;
+            skippedBadges.push(badge.name);
+          }
+        } else {
+          // 插入新勋章
+          await db.insert(badges).values(badge);
+          addedCount++;
+          this.logger.success(`新增: ${badge.name}`);
+        }
+      } catch (error) {
+        this.logger.error(`失败: ${badge.name}`, error);
+      }
+    }
+    if (skippedBadges.length > 0) {
+      this.logger.info(`跳过: ${skippedBadges.join(', ')} (已存在)`);
+    }
 
-  return { success: true };
+    this.logger.summary({
+      total: DEFAULT_BADGES.length,
+      addedCount,
+      updatedCount,
+      skippedCount,
+    });
+    return {
+      total: DEFAULT_BADGES.length,
+      addedCount,
+      updatedCount,
+      skippedCount,
+    };
+  }
+
+  /**
+   * 列出所有默认勋章
+   */
+  async list() {
+    this.logger.header('默认勋章列表');
+
+    DEFAULT_BADGES.forEach((badge) => {
+      this.logger.item(`${chalk.bold(badge.name)} (${badge.slug})`, '🎖️');
+      this.logger.detail(`描述: ${badge.description}`);
+      this.logger.detail(`类型: ${badge.category}`);
+    });
+
+    this.logger.divider();
+    this.logger.result(`Total: ${DEFAULT_BADGES.length} badges`);
+  }
+
+  /**
+   * 清空勋章相关数据
+   * @param {import('drizzle-orm').NodePgDatabase} db
+   */
+  async clean(db) {
+    this.logger.warn('正在清空勋章相关数据...');
+
+    // 1. Delete user badges (dependent on badges)
+    await db.delete(userBadges);
+    this.logger.success('已清空用户勋章 (userBadges)');
+
+    // 2. Delete badges
+    await db.delete(badges);
+    this.logger.success('已清空勋章 (badges)');
+  }
 }
