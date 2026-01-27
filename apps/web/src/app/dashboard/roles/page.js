@@ -13,10 +13,15 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { confirm } from '@/components/common/ConfirmPopover';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerClose,
+  DrawerTrigger,
+} from '@/components/ui/drawer';
 import { Switch } from '@/components/ui/switch';
 import {
   Select,
@@ -51,14 +56,12 @@ function ConditionEditor({ conditions, permission, onChange, disabled, hasConfig
     const cleaned = Object.entries(localConditions).reduce((acc, [key, value]) => {
       if (value !== null && value !== undefined && value !== '' && value !== false) {
         if (Array.isArray(value) && value.length === 0) return acc;
-        // 对于 rateLimit，检查是否有有效值
         if (key === 'rateLimit') {
           if (value.count && value.period) {
             acc[key] = value;
           }
           return acc;
         }
-        // 对于 timeRange，检查是否有有效值
         if (key === 'timeRange') {
           if (value.start && value.end) {
             acc[key] = value;
@@ -80,12 +83,11 @@ function ConditionEditor({ conditions, permission, onChange, disabled, hasConfig
 
   // 渲染条件输入控件
   const renderConditionInput = (conditionType) => {
-    const { key, label, type, component, description } = conditionType;
+    const { key, label, component, description } = conditionType;
 
-    // switch - 开关
     if (component === 'switch') {
       return (
-        <div key={key} className="flex items-center justify-between">
+        <div key={key} className="flex items-center justify-between py-2">
           <div className="space-y-0.5">
             <Label className="text-sm">{label}</Label>
             <p className="text-xs text-muted-foreground">{description}</p>
@@ -98,10 +100,9 @@ function ConditionEditor({ conditions, permission, onChange, disabled, hasConfig
       );
     }
 
-    // number - 数字输入
     if (component === 'number') {
       return (
-        <div key={key} className="space-y-1.5">
+        <div key={key} className="space-y-1.5 py-2">
           <Label className="text-sm">{label}</Label>
           <Input
             type="number"
@@ -109,17 +110,15 @@ function ConditionEditor({ conditions, permission, onChange, disabled, hasConfig
             placeholder="不限制"
             value={localConditions[key] || ''}
             onChange={(e) => updateCondition(key, e.target.value ? parseInt(e.target.value) : undefined)}
-            className="h-8"
           />
           {description && <p className="text-xs text-muted-foreground">{description}</p>}
         </div>
       );
     }
 
-    // tags - 标签数组输入
     if (component === 'tags') {
       return (
-        <div key={key} className="space-y-1.5">
+        <div key={key} className="space-y-1.5 py-2">
           <Label className="text-sm">{label}</Label>
           <Input
             placeholder="如: 1,2,3"
@@ -129,9 +128,7 @@ function ConditionEditor({ conditions, permission, onChange, disabled, hasConfig
               if (!val) {
                 updateCondition(key, undefined);
               } else {
-                // 支持数字数组和字符串数组
                 const items = val.split(',').map(s => s.trim()).filter(Boolean);
-                // 尝试解析为数字，如果失败则保持为字符串
                 const parsed = items.map(s => {
                   const num = parseInt(s);
                   return isNaN(num) ? s : num;
@@ -139,20 +136,16 @@ function ConditionEditor({ conditions, permission, onChange, disabled, hasConfig
                 updateCondition(key, parsed.length > 0 ? parsed : undefined);
               }
             }}
-            className="h-8"
           />
-          <p className="text-xs text-muted-foreground">
-            {description || '多个值用逗号分隔'}
-          </p>
+          <p className="text-xs text-muted-foreground">{description || '多个值用逗号分隔'}</p>
         </div>
       );
     }
 
-    // rate - 频率限制
     if (component === 'rate') {
       const rateLimit = localConditions[key] || { count: '', period: 'hour' };
       return (
-        <div key={key} className="space-y-1.5">
+        <div key={key} className="space-y-1.5 py-2">
           <Label className="text-sm">{label}</Label>
           <div className="flex gap-2">
             <Input
@@ -164,13 +157,13 @@ function ConditionEditor({ conditions, permission, onChange, disabled, hasConfig
                 ...rateLimit,
                 count: e.target.value ? parseInt(e.target.value) : ''
               })}
-              className="h-8 w-20"
+              className="w-24"
             />
             <Select
               value={rateLimit.period || 'hour'}
               onValueChange={(value) => updateCondition(key, { ...rateLimit, period: value })}
             >
-              <SelectTrigger className="h-8 flex-1">
+              <SelectTrigger className="flex-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -185,25 +178,22 @@ function ConditionEditor({ conditions, permission, onChange, disabled, hasConfig
       );
     }
 
-    // time - 时间段
     if (component === 'time') {
       const timeRange = localConditions[key] || { start: '', end: '' };
       return (
-        <div key={key} className="space-y-1.5">
+        <div key={key} className="space-y-1.5 py-2">
           <Label className="text-sm">{label}</Label>
           <div className="flex gap-2 items-center">
             <Input
               type="time"
               value={timeRange.start || ''}
               onChange={(e) => updateCondition(key, { ...timeRange, start: e.target.value })}
-              className="h-8"
             />
             <span className="text-muted-foreground">至</span>
             <Input
               type="time"
               value={timeRange.end || ''}
               onChange={(e) => updateCondition(key, { ...timeRange, end: e.target.value })}
-              className="h-8"
             />
           </div>
           {description && <p className="text-xs text-muted-foreground">{description}</p>}
@@ -211,10 +201,9 @@ function ConditionEditor({ conditions, permission, onChange, disabled, hasConfig
       );
     }
 
-    // fields - 字段列表
     if (component === 'fields') {
       return (
-        <div key={key} className="space-y-1.5">
+        <div key={key} className="space-y-1.5 py-2">
           <Label className="text-sm">{label}</Label>
           <Input
             placeholder="如: *, !passwordHash, !email"
@@ -228,7 +217,7 @@ function ConditionEditor({ conditions, permission, onChange, disabled, hasConfig
                 updateCondition(key, items.length > 0 ? items : undefined);
               }
             }}
-            className="h-8 font-mono text-xs"
+            className="font-mono text-xs"
           />
           <p className="text-xs text-muted-foreground">{description}</p>
         </div>
@@ -239,44 +228,38 @@ function ConditionEditor({ conditions, permission, onChange, disabled, hasConfig
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+    <Drawer open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          className={` ${
-            hasConfig ? 'text-primary' : 'text-muted-foreground/30'
-          }`}
+          className={hasConfig ? 'text-primary' : 'text-muted-foreground/30'}
           disabled={disabled}
         >
           <Settings2 className="h-3.5 w-3.5" />
         </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80" align="end">
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <h4 className="font-medium text-sm">条件配置</h4>
-            <p className="text-xs text-muted-foreground">
+      </DrawerTrigger>
+      <DrawerContent>
+        <div className="mx-auto w-full max-w-md">
+          <DrawerHeader>
+            <DrawerTitle>条件配置</DrawerTitle>
+            <DrawerDescription>
               为 &quot;{permission.name}&quot; 设置生效条件
-            </p>
-          </div>
-
-          <div className="space-y-3">
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="px-4 pb-4 overflow-y-auto max-h-[50vh]">
             {conditionTypes.map(renderConditionInput)}
           </div>
-
-          <div className="flex justify-end gap-2 pt-2 border-t">
-            <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
-              取消
-            </Button>
-            <Button size="sm" onClick={handleSave}>
-              确定
-            </Button>
-          </div>
+          <DrawerFooter>
+            <Button onClick={handleSave}>确定</Button>
+            <DrawerClose asChild>
+              <Button variant="outline">取消</Button>
+            </DrawerClose>
+          </DrawerFooter>
         </div>
-      </PopoverContent>
-    </Popover>
+      </DrawerContent>
+    </Drawer>
   );
 }
 
@@ -293,6 +276,7 @@ export default function RolesManagement() {
   // RBAC 配置（从后端获取）
   const [conditionTypes, setConditionTypes] = useState({});
   const [permissionConditions, setPermissionConditions] = useState({});
+  const [moduleOptions, setModuleOptions] = useState([]);
 
   const [roleForm, setRoleForm] = useState({
     slug: '',
@@ -324,6 +308,7 @@ export default function RolesManagement() {
       setPermissions(permsData.permissions || []);
       setConditionTypes(configData.conditionTypes || {});
       setPermissionConditions(configData.permissionConditions || {});
+      setModuleOptions(configData.modules || []);
     } catch (err) {
       console.error('获取数据失败:', err);
       toast.error('获取数据失败');
@@ -523,6 +508,12 @@ export default function RolesManagement() {
     return conditionKeys
       .map(key => conditionTypes[key])
       .filter(Boolean);
+  };
+
+  // 获取模块的中文名称
+  const getModuleLabel = (moduleValue) => {
+    const mod = moduleOptions.find(m => m.value === moduleValue);
+    return mod ? mod.label : moduleValue;
   };
 
   return (
@@ -771,21 +762,29 @@ export default function RolesManagement() {
         submitText="保存"
         onSubmit={handleSavePermissions}
         loading={submitting}
-        maxWidth="sm:max-w-[700px]"
+        maxWidth="sm:max-w-[750px]"
       >
-        <div className="space-y-4 py-4 max-h-[400px] overflow-y-auto">
+        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
           {Object.entries(groupedPermissions).map(([module, perms]) => (
-            <div key={module} className="space-y-1">
-              <div className="font-medium text-sm capitalize border-b pb-1">{module}</div>
-              <div className="grid grid-cols-2 gap-x-4">
+            <div key={module} className="space-y-2">
+              <div className="flex items-center gap-2 sticky top-0 bg-background py-1 border-b">
+                <span className="font-medium text-sm">{getModuleLabel(module)}</span>
+                <Badge variant="secondary" className="text-xs">{perms.length}</Badge>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
                 {perms.map((perm) => {
                   const selected = isPermissionSelected(perm.id);
                   const conditions = getPermissionConditions(perm.id);
                   const hasConfig = hasConditions(perm.id);
-                  const filterRules = conditions?.fieldFilter;
+                  const conditionCount = getPermissionConditionTypes(perm.slug).length;
 
                   return (
-                    <div key={perm.id} className="flex items-center gap-1.5 h-8 px-2 hover:bg-muted/50">
+                    <div
+                      key={perm.id}
+                      className={`flex items-center gap-1.5 h-8 px-2 rounded-sm transition-colors ${
+                        selected ? 'bg-primary/5' : 'hover:bg-muted/50'
+                      }`}
+                    >
                       <Checkbox
                         id={`perm-${perm.id}`}
                         checked={selected}
@@ -794,18 +793,20 @@ export default function RolesManagement() {
                       />
                       <Label
                         htmlFor={`perm-${perm.id}`}
-                        className="text-sm font-normal cursor-pointer w-28 flex-shrink-0 truncate"
-                        title={perm.slug}
+                        className="text-sm font-normal cursor-pointer flex-1 truncate"
+                        title={`${perm.name} (${perm.slug})`}
                       >
                         {perm.name}
                       </Label>
-                      {selected && filterRules && (
-                        <span className="text-xs text-muted-foreground font-mono truncate" title={filterRules.join(', ')}>
-                          {filterRules.join(', ')}
-                        </span>
+                      {/* 显示已配置的条件数量 */}
+                      {selected && hasConfig && (
+                        <Badge variant="outline" className="text-[10px] px-1 h-4">
+                          {Object.keys(conditions).length}
+                        </Badge>
                       )}
-                      <div className="ml-auto w-8 flex-shrink-0 flex justify-center">
-                        {selected && getPermissionConditionTypes(perm.slug).length > 0 && (
+                      {/* 条件配置按钮 */}
+                      <div className="w-7 flex-shrink-0 flex justify-center">
+                        {selected && conditionCount > 0 && (
                           <ConditionEditor
                             conditions={conditions}
                             permission={perm}
