@@ -22,6 +22,7 @@ coverage
 .agent
 .claude
 .shared
+.opencode
 
 # Build Outputs
 .next/

@@ -33,6 +33,7 @@ import {
 import { Shield, Pencil, Trash2, Plus, Key, Settings2, GitBranch } from 'lucide-react';
 import { rbacApi } from '@/lib/api';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 // 频率周期选项
 const RATE_LIMIT_PERIODS = [
@@ -215,9 +216,9 @@ function ConditionEditor({ conditions, permission, onChange, disabled, hasConfig
       <DrawerTrigger asChild>
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
-          className={hasConfig ? 'text-primary' : 'text-muted-foreground/30'}
+          className={cn('w-7 h-7', hasConfig ? 'text-primary' : 'text-muted-foreground/30')}
           disabled={disabled}
         >
           <Settings2 className="h-3.5 w-3.5" />
@@ -785,20 +786,20 @@ export default function RolesManagement() {
         submitText="保存"
         onSubmit={handleSavePermissions}
         loading={submitting}
-        maxWidth="sm:max-w-[750px]"
+        maxWidth="sm:max-w-3xl"
       >
-        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+        <div className="space-y-4 py-4">
           {moduleOptions.map(({ value: moduleKey, label: moduleLabel }) => {
             const perms = sortPermissions(groupedPermissions[moduleKey], moduleKey);
             if (!perms || perms.length === 0) return null;
 
             return (
               <div key={moduleKey} className="space-y-2">
-                <div className="flex items-center gap-2 sticky top-0 bg-background py-1 border-b z-10">
-                  <span className="font-medium text-sm">{moduleLabel}</span>
+                <div className="flex items-center gap-2 sticky top-0 bg-muted/90 backdrop-blur-sm px-4 py-2 border-y z-10 first:border-t-0">
+                  <span className="font-semibold text-sm text-foreground/80">{moduleLabel}</span>
                   <Badge variant="secondary" className="text-xs">{perms.length}</Badge>
                 </div>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-1 py-1">
                   {perms.map((perm) => {
                   const selected = isPermissionSelected(perm.id);
                   const conditions = getPermissionConditions(perm.id);
@@ -808,8 +809,8 @@ export default function RolesManagement() {
                   return (
                     <div
                       key={perm.id}
-                      className={`flex items-center gap-1.5 h-8 px-2 rounded-sm transition-colors ${
-                        selected ? 'bg-primary/5' : 'hover:bg-muted/50'
+                      className={`flex items-center gap-3 h-11 px-4 rounded-md transition-all ${
+                        selected ? 'bg-primary/5 text-primary' : 'hover:bg-muted/60'
                       }`}
                     >
                       <Checkbox
@@ -820,19 +821,19 @@ export default function RolesManagement() {
                       />
                       <Label
                         htmlFor={`perm-${perm.id}`}
-                        className="text-sm font-normal cursor-pointer flex-1 truncate"
+                        className="text-sm font-medium cursor-pointer flex-1 truncate"
                         title={`${perm.name} (${perm.slug})`}
                       >
                         {perm.name}
                       </Label>
                       {/* 显示已配置的条件数量 */}
                       {selected && hasConfig && (
-                        <Badge variant="outline" className="text-[10px] px-1 h-4">
+                        <Badge variant="outline" className="text-[11px] px-1.5 h-5 font-medium">
                           {Object.keys(conditions).length}
                         </Badge>
                       )}
                       {/* 条件配置按钮 */}
-                      <div className="w-7 flex-shrink-0 flex justify-center">
+                      <div className="flex-shrink-0 flex justify-center">
                         {selected && conditionCount > 0 && (
                           <ConditionEditor
                             conditions={conditions}
