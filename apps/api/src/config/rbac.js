@@ -96,7 +96,7 @@ export const CONDITION_TYPES = {
   },
   accountAge: {
     key: 'accountAge',
-    label: '账号年龄(天)',
+    label: '账号注册天数',
     type: 'number',
     component: 'number',
     description: '账号注册天数需达到指定值',
@@ -136,6 +136,13 @@ export const CONDITION_TYPES = {
     type: 'array',
     component: 'tags',
     description: '允许上传的文件扩展名（如: jpg,png,gif）',
+  },
+  uploadTypes: {
+    key: 'uploadTypes',
+    label: '允许的上传类型',
+    type: 'array',
+    component: 'tags',
+    description: '允许的上传目录类型（如: avatar,topic,badge,common,item,frame,site）',
   },
 };
 
@@ -337,7 +344,7 @@ export const SYSTEM_PERMISSIONS = [
     module: 'upload',
     action: 'create',
     isSystem: true,
-    conditions: ['maxFileSize', 'maxFilesPerDay', 'allowedFileTypes', 'rateLimit'],
+    conditions: ['uploadTypes', 'maxFileSize', 'maxFilesPerDay', 'allowedFileTypes', 'rateLimit'],
   },
 ];
 
@@ -446,6 +453,7 @@ export const ROLE_PERMISSION_CONDITIONS = {
     'post.update': { own: true },   // 只能编辑自己的回复
     'post.delete': { own: true },   // 只能删除自己的回复
     'user.update': { own: true },   // 只能编辑自己的资料
+    'upload.create': { uploadTypes: ['avatar'] }, // 只能上传头像
   },
 };
 

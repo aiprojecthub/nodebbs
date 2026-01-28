@@ -349,6 +349,14 @@ export const userApi = {
   async deleteUser(userId, permanent = false) {
     return apiClient.delete(`/users/${userId}`, { permanent });
   },
+
+  // 更新用户角色（管理员）
+  async updateUserRoles(userId, roleIds) {
+    return apiClient.request(`/users/${userId}/roles`, {
+      method: 'PUT',
+      body: JSON.stringify({ roleIds }),
+    });
+  },
 };
 
 // ============= 分类 API =============

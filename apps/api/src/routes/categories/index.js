@@ -7,7 +7,7 @@ export default async function categoryRoutes(fastify, options) {
   // 批量更新分类排序（仅管理员）
   // 注意：此路由需要放在 GET '/' 之前，避免被通配符路由覆盖
   fastify.patch('/batch-reorder', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('category.update')],
     schema: {
       tags: ['categories', 'admin'],
       description: '批量更新分类排序（仅管理员）',
@@ -269,7 +269,7 @@ export default async function categoryRoutes(fastify, options) {
 
   // Create category (admin only)
   fastify.post('/', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('category.create')],
     schema: {
       tags: ['categories', 'admin'],
       description: '创建新分类（仅管理员）',
@@ -330,7 +330,7 @@ export default async function categoryRoutes(fastify, options) {
 
   // Update category (admin only)
   fastify.patch('/:id', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('category.update')],
     schema: {
       tags: ['categories', 'admin'],
       description: '更新分类（仅管理员）',
@@ -383,7 +383,7 @@ export default async function categoryRoutes(fastify, options) {
 
   // Delete category (admin only)
   fastify.delete('/:id', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('category.delete')],
     schema: {
       tags: ['categories', 'admin'],
       description: '删除分类（仅管理员）',

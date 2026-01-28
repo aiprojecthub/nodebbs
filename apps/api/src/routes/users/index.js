@@ -1,5 +1,5 @@
 import db from '../../db/index.js';
-import { users, accounts, topics, posts, follows, bookmarks, categories } from '../../db/schema.js';
+import { users, accounts, topics, posts, follows, bookmarks, categories, userRoles, roles } from '../../db/schema.js';
 import { eq, sql, desc, and, ne, like, inArray, count } from 'drizzle-orm';
 import { pipeline } from 'stream/promises';
 import fs from 'fs';
@@ -12,6 +12,7 @@ import { normalizeEmail, normalizeUsername } from '../../utils/normalization.js'
 import { VerificationCodeType } from '../../plugins/message/config/verificationCode.js';
 import { verifyCode, deleteVerificationCode } from '../../plugins/message/utils/verificationCode.js';
 import { moderationLogs } from '../../db/schema.js';
+import { getPermissionService } from '../../services/permissionService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -93,6 +94,10 @@ export default async function userRoutes(fastify, options) {
       isEmailVerified
     }).returning();
 
+    // 分配默认角色（用户-角色关联）
+    const permissionService = getPermissionService();
+    await permissionService.assignDefaultRoleToUser(newUser.id, { assignedBy: request.user.id });
+
     // Remove sensitive data
     delete newUser.passwordHash;
 
@@ -101,7 +106,7 @@ export default async function userRoutes(fastify, options) {
 
   // Get users list (admin only)
   fastify.get('/', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('user.read')],
     schema: {
       tags: ['users'],
       description: '获取用户列表（仅管理员）',
@@ -187,6 +192,7 @@ export default async function userRoutes(fastify, options) {
 
     // 批量获取 OAuth 账号信息
     let accountsMap = {};
+    let userRolesMap = {};
     if (usersList.length > 0) {
       const userIds = usersList.map(u => u.id);
       const allAccounts = await db
@@ -196,12 +202,46 @@ export default async function userRoutes(fastify, options) {
         })
         .from(accounts)
         .where(inArray(accounts.userId, userIds));
-      
+
       allAccounts.forEach(acc => {
         if (!accountsMap[acc.userId]) {
           accountsMap[acc.userId] = [];
         }
         accountsMap[acc.userId].push(acc.provider);
+      });
+
+      // 批量获取用户角色（从 user_roles 表）
+      const allUserRoles = await db
+        .select({
+          userId: userRoles.userId,
+          roleId: userRoles.roleId,
+          roleSlug: roles.slug,
+          roleName: roles.name,
+          roleColor: roles.color,
+          roleIcon: roles.icon,
+          rolePriority: roles.priority,
+        })
+        .from(userRoles)
+        .innerJoin(roles, eq(userRoles.roleId, roles.id))
+        .where(inArray(userRoles.userId, userIds));
+
+      allUserRoles.forEach(ur => {
+        if (!userRolesMap[ur.userId]) {
+          userRolesMap[ur.userId] = [];
+        }
+        userRolesMap[ur.userId].push({
+          id: ur.roleId,
+          slug: ur.roleSlug,
+          name: ur.roleName,
+          color: ur.roleColor,
+          icon: ur.roleIcon,
+          priority: ur.rolePriority,
+        });
+      });
+
+      // 按优先级排序每个用户的角色
+      Object.keys(userRolesMap).forEach(userId => {
+        userRolesMap[userId].sort((a, b) => (b.priority || 0) - (a.priority || 0));
       });
     }
 
@@ -225,7 +265,8 @@ export default async function userRoutes(fastify, options) {
         ...user,
         isFounder,
         canManage,
-        oauthProviders: accountsMap[user.id] || []
+        oauthProviders: accountsMap[user.id] || [],
+        userRoles: userRolesMap[user.id] || [],
       };
     });
 
@@ -1192,7 +1233,7 @@ export default async function userRoutes(fastify, options) {
 
   // Update user by admin
   fastify.patch('/:userId', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('user.update')],
     schema: {
       tags: ['users'],
       description: '更新用户信息（仅管理员）',
@@ -1300,7 +1341,7 @@ export default async function userRoutes(fastify, options) {
 
   // Delete user (admin only)
   fastify.delete('/:userId', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('user.delete')],
     schema: {
       tags: ['users'],
       description: '删除用户（仅管理员）',
@@ -1359,5 +1400,119 @@ export default async function userRoutes(fastify, options) {
       }).where(eq(users.id, userId));
       return { message: '用户已软删除' };
     }
+  });
+
+  // Update user roles (admin only)
+  fastify.put('/:userId/roles', {
+    preHandler: [fastify.requirePermission('user.update')],
+    schema: {
+      tags: ['users'],
+      description: '更新用户角色（仅管理员）',
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        required: ['userId'],
+        properties: {
+          userId: { type: 'number' }
+        }
+      },
+      body: {
+        type: 'object',
+        required: ['roleIds'],
+        properties: {
+          roleIds: {
+            type: 'array',
+            items: { type: 'number' },
+            minItems: 0,
+            description: '要分配给用户的角色ID列表'
+          }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            message: { type: 'string' },
+            roles: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number' },
+                  slug: { type: 'string' },
+                  name: { type: 'string' }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const { userId } = request.params;
+    const { roleIds } = request.body;
+
+    // Check if user exists
+    const [targetUser] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!targetUser) {
+      return reply.code(404).send({ error: '用户不存在' });
+    }
+
+    // Prevent modifying the first admin (founder)
+    const [firstAdmin] = await db.select().from(users).where(eq(users.role, 'admin')).orderBy(users.id).limit(1);
+    if (targetUser.id === firstAdmin.id) {
+      return reply.code(403).send({ error: '不能修改创始人的角色' });
+    }
+
+    // Verify all roleIds exist
+    if (roleIds.length > 0) {
+      const existingRoles = await db.select({ id: roles.id }).from(roles).where(inArray(roles.id, roleIds));
+      const existingRoleIds = new Set(existingRoles.map(r => r.id));
+      const invalidRoleIds = roleIds.filter(id => !existingRoleIds.has(id));
+      if (invalidRoleIds.length > 0) {
+        return reply.code(400).send({ error: `以下角色ID不存在: ${invalidRoleIds.join(', ')}` });
+      }
+    }
+
+    // Delete all existing roles for this user
+    await db.delete(userRoles).where(eq(userRoles.userId, userId));
+
+    // Insert new roles
+    if (roleIds.length > 0) {
+      const newUserRoles = roleIds.map(roleId => ({
+        userId,
+        roleId,
+        assignedBy: request.user.id,
+        assignedAt: new Date(),
+      }));
+      await db.insert(userRoles).values(newUserRoles);
+    }
+
+    // Get the updated roles
+    const updatedRoles = await db
+      .select({
+        id: roles.id,
+        slug: roles.slug,
+        name: roles.name,
+        color: roles.color,
+        icon: roles.icon,
+        priority: roles.priority,
+      })
+      .from(userRoles)
+      .innerJoin(roles, eq(userRoles.roleId, roles.id))
+      .where(eq(userRoles.userId, userId))
+      .orderBy(roles.priority);
+
+    // Clear user cache
+    await fastify.clearUserCache(userId);
+
+    // Also clear permission cache
+    const permissionService = getPermissionService();
+    await permissionService.clearUserPermissionCache(userId);
+
+    return {
+      message: '用户角色已更新',
+      roles: updatedRoles
+    };
   });
 }

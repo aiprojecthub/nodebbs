@@ -235,9 +235,20 @@ async function authPlugin(fastify) {
   // ============ RBAC 权限检查装饰器 ============
 
   /**
-   * 检查用户是否有指定权限
+   * 前置权限检查（用于 preHandler）
+   * 适用于不需要资源上下文的简单权限检查
+   *
    * @param {string|string[]} permissionSlug - 权限标识或权限标识数组
-   * @param {Object} options - 选项 { any: true } 表示满足任一权限即可
+   * @param {Object} options - 配置选项
+   * @param {boolean} options.any - 满足任一权限即可（用于权限数组）
+   *
+   * @example
+   * // 基础权限检查
+   * preHandler: [fastify.requirePermission('topic.create')]
+   *
+   * @example
+   * // 多权限检查（满足任一）
+   * preHandler: [fastify.requirePermission(['topic.update', 'topic.delete'], { any: true })]
    */
   fastify.decorate('requirePermission', function(permissionSlug, options = {}) {
     return async function(request, reply) {
@@ -254,34 +265,126 @@ async function authPlugin(fastify) {
           return reply.code(403).send({ error: '访问被拒绝', message: '该账号已被删除' });
         }
 
-        // 检查封禁状态（支持临时封禁）
+        // 检查封禁状态
         const banStatus = await checkUserBanStatus(user);
         if (banStatus.isBanned) {
           return reply.code(403).send({ error: '访问被拒绝', message: getBanMessage(banStatus) });
         }
 
-        // 检查权限
+        // 检查权限（无资源上下文）
         const slugs = Array.isArray(permissionSlug) ? permissionSlug : [permissionSlug];
-        let hasPermission = false;
+        let lastDenyResult = null;
 
         if (options.any) {
-          hasPermission = await permissionService.hasAnyPermission(user.id, slugs);
+          // 任一权限满足即可
+          for (const slug of slugs) {
+            const result = await permissionService.checkPermissionWithReason(user.id, slug);
+            if (result.granted) {
+              lastDenyResult = null;
+              break;
+            }
+            lastDenyResult = result;
+          }
         } else {
-          hasPermission = await permissionService.hasAllPermissions(user.id, slugs);
+          // 所有权限都需满足
+          for (const slug of slugs) {
+            const result = await permissionService.checkPermissionWithReason(user.id, slug);
+            if (!result.granted) {
+              lastDenyResult = result;
+              break;
+            }
+          }
         }
 
-        if (!hasPermission) {
+        if (lastDenyResult) {
           return reply.code(403).send({
             error: '禁止访问',
-            message: `需要权限: ${slugs.join(', ')}`
+            message: lastDenyResult.reason,
+            code: lastDenyResult.code,
           });
         }
 
         request.user = enhanceUser(user);
       } catch (err) {
+        fastify.log.error('权限检查错误:', err);
         reply.code(401).send({ error: '未授权', message: '令牌无效或已过期' });
       }
     };
+  });
+
+  /**
+   * 后置权限检查（用于 handler 内部，在获取资源后调用）
+   * 适用于需要资源上下文的条件权限检查，避免重复查询
+   *
+   * @param {Object} request - Fastify request 对象
+   * @param {string|string[]} permissionSlug - 权限标识或权限标识数组
+   * @param {Object} context - 权限检查上下文
+   * @param {number} context.ownerId - 资源所有者ID（用于 own 条件）
+   * @param {number} context.categoryId - 分类ID（用于 categories 条件）
+   * @param {Object} options - 配置选项
+   * @param {boolean} options.any - 满足任一权限即可
+   * @returns {Promise<boolean>} 是否有权限
+   * @throws {Error} 无权限时抛出 403 错误
+   *
+   * @example
+   * // 在 handler 中检查权限
+   * async (request, reply) => {
+   *   const topic = await db.select()...;
+   *   if (!topic) return reply.code(404).send({ error: '话题不存在' });
+   *
+   *   // 检查权限（复用已查询的 topic）
+   *   await fastify.checkPermission(request, 'topic.update', {
+   *     ownerId: topic.userId,
+   *     categoryId: topic.categoryId
+   *   });
+   *
+   *   // 继续处理...
+   * }
+   */
+  fastify.decorate('checkPermission', async function(request, permissionSlug, context = {}, options = {}) {
+    const user = request.user;
+
+    if (!user) {
+      const error = new Error('未授权');
+      error.statusCode = 401;
+      throw error;
+    }
+
+    // 自动注入用户相关 context
+    if (context.userCreatedAt === undefined) {
+      context.userCreatedAt = user.createdAt;
+    }
+
+    const slugs = Array.isArray(permissionSlug) ? permissionSlug : [permissionSlug];
+    let lastDenyResult = null;
+
+    if (options.any) {
+      // 任一权限满足即可
+      for (const slug of slugs) {
+        const result = await permissionService.checkPermissionWithReason(user.id, slug, context);
+        if (result.granted) {
+          return true;
+        }
+        lastDenyResult = result;
+      }
+    } else {
+      // 所有权限都需满足
+      for (const slug of slugs) {
+        const result = await permissionService.checkPermissionWithReason(user.id, slug, context);
+        if (!result.granted) {
+          lastDenyResult = result;
+          break;
+        }
+      }
+      if (!lastDenyResult) {
+        return true;
+      }
+    }
+
+    const error = new Error(lastDenyResult.reason || '没有执行此操作的权限');
+    error.statusCode = 403;
+    error.code = lastDenyResult.code;
+    throw error;
   });
 
   // Optional authentication (doesn't fail if no token)

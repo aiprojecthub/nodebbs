@@ -66,6 +66,7 @@ export default async function rolesRoutes(fastify, options) {
                 isDefault: { type: 'boolean' },
                 isDisplayed: { type: 'boolean' },
                 priority: { type: 'number' },
+                parentId: { type: ['number', 'null'] },
               },
             },
           },
@@ -314,20 +315,73 @@ export default async function rolesRoutes(fastify, options) {
 
   // ============ 角色权限管理 ============
 
-  // 获取角色权限
+  // 获取角色权限（包含继承的权限）
   fastify.get(
     '/:id/permissions',
     {
       preHandler: [fastify.requireAdmin],
       schema: {
         tags: ['roles'],
-        description: '获取角色的权限列表',
+        description: '获取角色的权限列表（包含继承的权限）',
+        querystring: {
+          type: 'object',
+          properties: {
+            includeInherited: { type: 'boolean', default: true },
+          },
+        },
       },
     },
     async (request, reply) => {
       const { id } = request.params;
-      const perms = await permissionService.getRolePermissions(id);
-      return perms;
+      const { includeInherited = true } = request.query;
+
+      // 获取直接权限
+      const directPerms = await permissionService.getRolePermissions(id);
+
+      if (!includeInherited) {
+        return directPerms;
+      }
+
+      // 获取角色信息以检查是否有父角色
+      const [role] = await db.select().from(roles).where(eq(roles.id, parseInt(id))).limit(1);
+      if (!role) {
+        return reply.code(404).send({ error: '角色不存在' });
+      }
+
+      // 如果没有父角色，直接返回直接权限
+      if (!role.parentId) {
+        return directPerms;
+      }
+
+      // 递归获取所有父角色的权限
+      const getInheritedPermissions = async (parentId, visited = new Set()) => {
+        if (!parentId || visited.has(parentId)) return [];
+        visited.add(parentId);
+
+        const parentPerms = await permissionService.getRolePermissions(parentId);
+
+        // 获取父角色信息
+        const [parentRole] = await db.select().from(roles).where(eq(roles.id, parentId)).limit(1);
+        if (parentRole?.parentId) {
+          const grandParentPerms = await getInheritedPermissions(parentRole.parentId, visited);
+          return [...parentPerms, ...grandParentPerms];
+        }
+        return parentPerms;
+      };
+
+      const inheritedPerms = await getInheritedPermissions(role.parentId);
+
+      // 标记继承来源，并去重（直接权限优先）
+      const directPermIds = new Set(directPerms.map(p => p.id));
+      const uniqueInheritedPerms = inheritedPerms
+        .filter(p => !directPermIds.has(p.id))
+        .map(p => ({ ...p, inherited: true }));
+
+      // 合并返回：直接权限 + 继承权限
+      return [
+        ...directPerms.map(p => ({ ...p, inherited: false })),
+        ...uniqueInheritedPerms,
+      ];
     }
   );
 

@@ -8,23 +8,15 @@ import { DataTable } from '@/components/common/DataTable';
 import { ActionMenu } from '@/components/common/ActionMenu';
 import { PageHeader } from '@/components/common/PageHeader';
 import UserAvatar from '@/components/user/UserAvatar';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { confirm } from '@/components/common/ConfirmPopover';
-import { FormDialog } from '@/components/common/FormDialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Ban, ShieldCheck, UserCog, Trash2, UserPlus, Pencil, CheckCircle2, XCircle } from 'lucide-react';
-import { userApi, moderationApi } from '@/lib/api';
+import { Ban, ShieldCheck, UserCog, Trash2, UserPlus, Pencil, CheckCircle2, XCircle } from 'lucide-react';
+import { userApi, moderationApi, rbacApi } from '@/lib/api';
 import { toast } from 'sonner';
 import Time from '@/components/common/Time';
-import { Textarea } from '@/components/ui/textarea';
+import { UserRoleBadges } from './components/UserRoleBadges';
+import { UserFormDialog } from './components/UserFormDialog';
+import { RoleEditDialog } from './components/RoleEditDialog';
+import { BanUserDialog } from './components/BanUserDialog';
 
 export default function UsersManagement() {
   const [users, setUsers] = useState([]);
@@ -35,27 +27,23 @@ export default function UsersManagement() {
   const debouncedSearch = useDebounce(search, 500);
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [submitting, setSubmitting] = useState(false);
+
+  // 对话框状态
   const [selectedUser, setSelectedUser] = useState(null);
+  const [showUserDialog, setShowUserDialog] = useState(false);
+  const [dialogMode, setDialogMode] = useState('create');
   const [showRoleDialog, setShowRoleDialog] = useState(false);
   const [showBanDialog, setShowBanDialog] = useState(false);
 
-  const [newRole, setNewRole] = useState('user');
-  const [banForm, setBanForm] = useState({
-    duration: 0, // 0 表示永久
-    reason: '',
-  });
-  const [submitting, setSubmitting] = useState(false);
-  const [showUserDialog, setShowUserDialog] = useState(false);
-  const [dialogMode, setDialogMode] = useState('create'); // 'create' (创建) or 'edit' (编辑)
-  const [userForm, setUserForm] = useState({
-    username: '',
-    email: '',
-    password: '',
-    name: '',
-    role: 'user',
-    isEmailVerified: false
-  });
+  // 动态角色数据
+  const [availableRoles, setAvailableRoles] = useState([]);
+
   const limit = 20;
+
+  useEffect(() => {
+    fetchAvailableRoles();
+  }, []);
 
   useEffect(() => {
     if (page === 1) {
@@ -69,6 +57,15 @@ export default function UsersManagement() {
     fetchUsers();
   }, [page, roleFilter, statusFilter]);
 
+  const fetchAvailableRoles = async () => {
+    try {
+      const roles = await rbacApi.admin.getRoles();
+      setAvailableRoles(roles);
+    } catch (err) {
+      console.error('获取角色列表失败:', err);
+    }
+  };
+
   const fetchUsers = async () => {
     setLoading(true);
     try {
@@ -78,11 +75,6 @@ export default function UsersManagement() {
       if (statusFilter === 'banned') params.isBanned = true;
       if (statusFilter === 'active') params.isBanned = false;
       if (statusFilter === 'deleted') params.includeDeleted = true;
-      
-      // 如果要查看已删除用户，需要包含已删除的
-      if (statusFilter === 'deleted') {
-        params.includeDeleted = true;
-      }
 
       const data = await userApi.getList(params);
       setUsers(data.items);
@@ -95,68 +87,51 @@ export default function UsersManagement() {
     }
   };
 
-  const handleSearch = () => {
-    setPage(1);
-    fetchUsers();
+  // ---- 对话框操作 ----
+
+  const openCreateDialog = () => {
+    setDialogMode('create');
+    setSelectedUser(null);
+    setShowUserDialog(true);
+  };
+
+  const openEditDialog = (user) => {
+    setDialogMode('edit');
+    setSelectedUser(user);
+    setShowUserDialog(true);
+  };
+
+  const openRoleDialog = (user) => {
+    setSelectedUser(user);
+    setShowRoleDialog(true);
   };
 
   const openBanDialog = (user) => {
     setSelectedUser(user);
-    setBanForm({
-      duration: 0,
-      reason: '',
-    });
     setShowBanDialog(true);
   };
 
-  const handleBanUser = async () => {
-    setSubmitting(true);
-    try {
-      await moderationApi.banUser(selectedUser.id, {
-        duration: banForm.duration || null,
-        reason: banForm.reason || null,
-      });
-
-      const durationText = banForm.duration
-        ? `${banForm.duration} 分钟`
-        : '永久';
-      toast.success(`已封禁用户 ${selectedUser.username}（${durationText}）`);
-      setShowBanDialog(false);
-
-      // 更新本地状态
-      setUsers(users.map(u =>
-        u.id === selectedUser.id ? { ...u, isBanned: true } : u
-      ));
-    } catch (err) {
-      console.error('封禁失败:', err);
-      toast.error('封禁失败：' + err.message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  // ---- 行内操作 ----
 
   const handleUnbanClick = async (e, user) => {
     const confirmed = await confirm(e, {
       title: '确认解封用户？',
       description: (
         <>
-          确定要解封用户 "{user.username}" 吗？
+          确定要解封用户 &quot;{user.username}&quot; 吗？
           <br />
           解封后该用户将恢复正常使用权限。
         </>
       ),
       confirmText: '确认解封',
     });
-
     if (!confirmed) return;
 
     setSubmitting(true);
     try {
       await moderationApi.unbanUser(user.id);
       toast.success(`已解封用户 ${user.username}`);
-      
-      // 更新本地状态而不是重新获取
-      setUsers(users.map(u => 
+      setUsers(prev => prev.map(u =>
         u.id === user.id ? { ...u, isBanned: false } : u
       ));
     } catch (err) {
@@ -167,58 +142,6 @@ export default function UsersManagement() {
     }
   };
 
-  const handleChangeRole = async () => {
-    setSubmitting(true);
-    try {
-      await moderationApi.changeUserRole(selectedUser.id, newRole);
-      toast.success(`已将 ${selectedUser.username} 的角色更改为 ${getRoleLabel(newRole)}`);
-      setShowRoleDialog(false);
-      
-      // 更新本地状态而不是重新获取
-      setUsers(users.map(user => 
-        user.id === selectedUser.id ? { ...user, role: newRole } : user
-      ));
-    } catch (err) {
-      console.error('修改角色失败:', err);
-      toast.error('修改角色失败：' + err.message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const openRoleDialog = (user) => {
-    setSelectedUser(user);
-    setNewRole(user.role);
-    setShowRoleDialog(true);
-  };
-
-  const openCreateDialog = () => {
-    setDialogMode('create');
-    setUserForm({
-      username: '',
-      email: '',
-      password: '',
-      name: '',
-      role: 'user',
-      isEmailVerified: false
-    });
-    setShowUserDialog(true);
-  };
-
-  const openEditDialog = (user) => {
-    setDialogMode('edit');
-    setSelectedUser(user);
-    setUserForm({
-      username: user.username,
-      email: user.email,
-      password: '', // 编辑时不需要密码
-      name: user.name || '',
-      role: user.role,
-      isEmailVerified: user.isEmailVerified || false
-    });
-    setShowUserDialog(true);
-  };
-
   const handleDeleteClick = async (e, user, type) => {
     const isHard = type === 'hard';
     const confirmed = await confirm(e, {
@@ -226,16 +149,14 @@ export default function UsersManagement() {
       description: isHard ? (
         <>
           此操作将
-          <span className="font-semibold text-destructive">
-            彻底删除
-          </span>
-          用户 "{user.username}"，包括所有相关数据（话题、回复、点赞等）。
+          <span className="font-semibold text-destructive"> 彻底删除 </span>
+          用户 &quot;{user.username}&quot;，包括所有相关数据（话题、回复、点赞等）。
           <br />
           <span className="font-semibold text-destructive">此操作不可恢复！</span>
         </>
       ) : (
         <>
-          此操作将软删除用户 "{user.username}"。
+          此操作将软删除用户 &quot;{user.username}&quot;。
           <br />
           软删除后用户将无法登录，但数据仍保留在数据库中。
         </>
@@ -243,22 +164,17 @@ export default function UsersManagement() {
       confirmText: '确认删除',
       variant: isHard ? 'destructive' : 'default',
     });
-
     if (!confirmed) return;
 
     setSubmitting(true);
     try {
       await userApi.deleteUser(user.id, isHard);
       toast.success(isHard ? `已彻底删除用户 ${user.username}` : `已软删除用户 ${user.username}`);
-      
-      // 更新本地状态而不是重新获取
       if (isHard) {
-        // 彻底删除：从列表中移除用户
-        setUsers((prevUsers) => prevUsers.filter(u => u.id !== user.id));
+        setUsers(prev => prev.filter(u => u.id !== user.id));
         setTotal(prev => prev - 1);
       } else {
-        // 软删除：更新状态
-        setUsers((prevUsers) => prevUsers.map(u => 
+        setUsers(prev => prev.map(u =>
           u.id === user.id ? { ...u, isDeleted: true } : u
         ));
       }
@@ -270,92 +186,131 @@ export default function UsersManagement() {
     }
   };
 
-  const handleSubmitUser = async () => {
-    // 验证表单
-    if (!userForm.username || !userForm.email) {
-      toast.error('请填写所有必填字段');
-      return;
-    }
+  // ---- 回调 ----
 
-    // 创建模式下，密码是必填的
-    if (dialogMode === 'create' && !userForm.password) {
-      toast.error('请填写密码');
-      return;
-    }
+  const handleUserCreated = () => fetchUsers();
 
-    if (dialogMode === 'create' && userForm.password.length < 6) {
-      toast.error('密码至少需要 6 个字符');
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      if (dialogMode === 'create') {
-        // 创建用户
-        await userApi.createUser(userForm);
-        toast.success(`用户 ${userForm.username} 创建成功`);
-        // 创建意味着可能有需要排序/分页的新条目，所以我们刷新列表
-        fetchUsers();
-      } else {
-        // 编辑用户 - 不传递密码字段
-        const { password, ...updateData } = userForm;
-        await userApi.updateUser(selectedUser.id, updateData);
-        toast.success(`用户 ${userForm.username} 更新成功`);
-        
-        // 更新本地状态而不是重新获取
-        setUsers(users.map(user => 
-          user.id === selectedUser.id ? { ...user, ...updateData } : user
-        ));
-      }
-
-      setShowUserDialog(false);
-      // 重置表单
-      setUserForm({
-        username: '',
-        email: '',
-        password: '',
-        name: '',
-        role: 'user',
-        isEmailVerified: false
-      });
-    } catch (err) {
-      console.error(`${dialogMode === 'create' ? '创建' : '更新'}用户失败:`, err);
-      toast.error(`${dialogMode === 'create' ? '创建' : '更新'}用户失败：` + err.message);
-    } finally {
-      setSubmitting(false);
-    }
+  const handleUserUpdated = (userId, updateData, updatedRoles) => {
+    setUsers(prev => prev.map(u =>
+      u.id === userId ? { ...u, ...updateData, userRoles: updatedRoles } : u
+    ));
   };
 
-  // 检查是否可以修改该用户
-  const canModifyUser = (user) => {
-    return !!user.canManage;
+  const handleRolesUpdated = (userId, updatedRoles) => {
+    setUsers(prev => prev.map(u =>
+      u.id === userId ? { ...u, userRoles: updatedRoles } : u
+    ));
   };
 
-  const getRoleLabel = (role) => {
-    const labels = {
-      user: '用户',
-      vip: 'VIP',
-      moderator: '版主',
-      admin: '管理员',
-    };
-    return labels[role] || role;
+  const handleBanned = (userId) => {
+    setUsers(prev => prev.map(u =>
+      u.id === userId ? { ...u, isBanned: true } : u
+    ));
   };
 
-  const getRoleBadgeVariant = (role) => {
-    const variants = {
-      admin: 'destructive',
-      moderator: 'default',
-      vip: 'secondary',
-      user: 'secondary',
-    };
-    return variants[role] || 'secondary';
-  };
+  const canModifyUser = (user) => !!user.canManage;
+
+  // ---- 表格列 ----
+
+  const columns = [
+    {
+      key: 'user',
+      label: '用户',
+      render: (_, user) => (
+        <div className="flex items-center gap-3">
+          <UserAvatar url={user.avatar} name={user.username} size="sm" />
+          <div>
+            <div className="font-medium text-sm">{user.username}</div>
+            {user.name && <div className="text-xs text-muted-foreground">{user.name}</div>}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'email',
+      label: '邮箱',
+      width: 'w-[200px]',
+      render: (value, user) => (
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm text-muted-foreground">{value}</span>
+          {user.isEmailVerified ? (
+            <CheckCircle2 className="h-3.5 w-3.5 text-green-500" aria-label="已验证" />
+          ) : (
+            <XCircle className="h-3.5 w-3.5 text-muted-foreground/50" aria-label="未验证" />
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'oauth',
+      label: '关联账号',
+      render: (_, user) => (
+        <div className="flex gap-1 flex-wrap">
+          {user.oauthProviders?.length > 0 ? (
+            user.oauthProviders.map((provider) => (
+              <Badge key={provider} variant="secondary" className="text-[10px] px-1 h-5 capitalize">
+                {provider}
+              </Badge>
+            ))
+          ) : (
+            <span className="text-xs text-muted-foreground">-</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'role',
+      label: '角色',
+      width: 'w-[180px]',
+      render: (_, user) => <UserRoleBadges user={user} />,
+    },
+    {
+      key: 'status',
+      label: '状态',
+      width: 'w-[100px]',
+      render: (_, user) => {
+        if (user.isDeleted) return <Badge variant="destructive" className="text-xs">已删除</Badge>;
+        if (user.isBanned) return <Badge variant="destructive" className="text-xs">已封禁</Badge>;
+        return <Badge variant="outline" className="text-xs">正常</Badge>;
+      },
+    },
+    {
+      key: 'createdAt',
+      label: '注册时间',
+      width: 'w-[120px]',
+      render: (value) => (
+        <span className="text-xs text-muted-foreground">
+          <Time date={value} />
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      label: '操作',
+      align: 'right',
+      sticky: 'right',
+      render: (_, user) => (
+        <ActionMenu
+          items={[
+            { label: '编辑用户', icon: Pencil, onClick: () => openEditDialog(user), disabled: !canModifyUser(user) },
+            { label: '修改角色', icon: UserCog, onClick: () => openRoleDialog(user), disabled: !canModifyUser(user) },
+            { separator: true },
+            { label: '解封用户', icon: ShieldCheck, onClick: (e) => handleUnbanClick(e, user), hidden: !user.isBanned },
+            { label: '封禁用户', icon: Ban, variant: 'warning', onClick: () => openBanDialog(user), disabled: !canModifyUser(user), hidden: user.isBanned },
+            { separator: true },
+            { label: '软删除', icon: Trash2, variant: 'warning', onClick: (e) => handleDeleteClick(e, user, 'soft'), disabled: !canModifyUser(user) },
+            { label: '彻底删除', icon: Trash2, variant: 'destructive', onClick: (e) => handleDeleteClick(e, user, 'hard'), disabled: !canModifyUser(user) },
+          ]}
+        />
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title='用户管理'
-        description='管理用户账号、角色和权限'
+        title="用户管理"
+        description="管理用户账号、角色和权限"
         actions={
           <Button onClick={openCreateDialog}>
             <UserPlus className="h-4 w-4 mr-2" />
@@ -364,164 +319,8 @@ export default function UsersManagement() {
         }
       />
 
-      {/* 用户列表 */}
       <DataTable
-        columns={[
-          {
-            key: 'user',
-            label: '用户',
-            render: (_, user) => (
-              <div className="flex items-center gap-3">
-                <UserAvatar url={user.avatar} name={user.username} size="sm" />
-                <div>
-                  <div className="font-medium text-sm">{user.username}</div>
-                  {user.name && (
-                    <div className="text-xs text-muted-foreground">{user.name}</div>
-                  )}
-                </div>
-              </div>
-            ),
-          },
-          {
-            key: 'email',
-            label: '邮箱',
-            width: 'w-[200px]',
-            render: (value, user) => (
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm text-muted-foreground">{value}</span>
-                {user.isEmailVerified ? (
-                  <CheckCircle2 className="h-3.5 w-3.5 text-green-500" aria-label="已验证" />
-                ) : (
-                  <XCircle className="h-3.5 w-3.5 text-muted-foreground/50" aria-label="未验证" />
-                )}
-              </div>
-            ),
-          },
-          {
-            key: 'oauth',
-            label: '关联账号',
-            render: (_, user) => (
-              <div className="flex gap-1 flex-wrap">
-                {user.oauthProviders && user.oauthProviders.length > 0 ? (
-                  user.oauthProviders.map((provider) => (
-                    <Badge key={provider} variant="secondary" className="text-[10px] px-1 h-5 capitalize">
-                      {provider}
-                    </Badge>
-                  ))
-                ) : (
-                  <span className="text-xs text-muted-foreground">-</span>
-                )}
-              </div>
-            ),
-          },
-          {
-            key: 'role',
-            label: '角色',
-            width: 'w-[100px]',
-            render: (value, user) => (
-              <div className="flex items-center gap-2">
-                <Badge variant={getRoleBadgeVariant(value)} className="text-xs">
-                  {getRoleLabel(value)}
-                </Badge>
-                {user.isFounder && (
-                  <Badge variant="outline" className="text-xs">
-                    创始人
-                  </Badge>
-                )}
-              </div>
-            ),
-          },
-          {
-            key: 'status',
-            label: '状态',
-            width: 'w-[100px]',
-            render: (_, user) => {
-              if (user.isDeleted) {
-                return (
-                  <Badge variant="destructive" className="text-xs">
-                    已删除
-                  </Badge>
-                );
-              }
-              if (user.isBanned) {
-                return (
-                  <Badge variant="destructive" className="text-xs">
-                    已封禁
-                  </Badge>
-                );
-              }
-              return (
-                <Badge variant="outline" className="text-xs">
-                  正常
-                </Badge>
-              );
-            },
-          },
-          {
-            key: 'createdAt',
-            label: '注册时间',
-            width: 'w-[120px]',
-            render: (value) => (
-              <span className="text-xs text-muted-foreground">
-                <Time date={value} />
-              </span>
-            ),
-          },
-          {
-            key: 'actions',
-            label: '操作',
-            align: 'right',
-            sticky: 'right',
-            render: (_, user) => (
-              <ActionMenu
-                items={[
-                  {
-                    label: '编辑用户',
-                    icon: Pencil,
-                    onClick: () => openEditDialog(user),
-                    disabled: !canModifyUser(user),
-                  },
-                  {
-                    label: '修改角色',
-                    icon: UserCog,
-                    onClick: () => openRoleDialog(user),
-                    disabled: !canModifyUser(user),
-                  },
-                  { separator: true },
-                  {
-                    label: '解封用户',
-                    icon: ShieldCheck,
-                    onClick: (e) => handleUnbanClick(e, user),
-                    hidden: !user.isBanned,
-                  },
-                  {
-                    label: '封禁用户',
-                    icon: Ban,
-                    variant: 'warning',
-                    onClick: () => openBanDialog(user),
-                    disabled: !canModifyUser(user),
-                    hidden: user.isBanned,
-                  },
-                  { separator: true },
-                  {
-                    label: '软删除',
-                    icon: Trash2,
-                    variant: 'warning',
-                    onClick: (e) => handleDeleteClick(e, user, 'soft'),
-                    disabled: !canModifyUser(user),
-                  },
-                  {
-                    label: '彻底删除',
-                    icon: Trash2,
-                    variant: 'destructive',
-                    onClick: (e) => handleDeleteClick(e, user, 'hard'),
-                    disabled: !canModifyUser(user),
-                  },
-                ]}
-              />
-            ),
-          },
-        ]}
+        columns={columns}
         data={users}
         loading={loading}
         search={{
@@ -538,228 +337,44 @@ export default function UsersManagement() {
           },
           options: [
             { value: 'all-all', label: '全部' },
-            { value: 'user-all', label: '用户' },
-            { value: 'vip-all', label: 'VIP' },
-            { value: 'moderator-all', label: '版主' },
+            { value: 'user-all', label: '普通用户' },
             { value: 'admin-all', label: '管理员' },
             { value: 'all-active', label: '正常用户' },
             { value: 'all-banned', label: '已封禁' },
             { value: 'all-deleted', label: '已删除' },
           ],
         }}
-        pagination={{
-          page,
-          total,
-          limit,
-          onPageChange: setPage,
-        }}
+        pagination={{ page, total, limit, onPageChange: setPage }}
         emptyMessage="暂无用户"
       />
 
-      {/* 封禁确认对话框 */}
+      {/* 创建/编辑用户 */}
+      <UserFormDialog
+        open={showUserDialog}
+        onOpenChange={setShowUserDialog}
+        mode={dialogMode}
+        user={selectedUser}
+        availableRoles={availableRoles}
+        onCreated={handleUserCreated}
+        onUpdated={handleUserUpdated}
+      />
 
+      {/* 修改角色 */}
+      <RoleEditDialog
+        open={showRoleDialog}
+        onOpenChange={setShowRoleDialog}
+        user={selectedUser}
+        availableRoles={availableRoles}
+        onUpdated={handleRolesUpdated}
+      />
 
-      {/* 修改角色对话框 - 使用 FormDialog 因为它包含输入控件 */}
-      <FormDialog
-         open={showRoleDialog}
-         onOpenChange={setShowRoleDialog}
-         title="修改用户角色"
-         description={
-            <>
-              为用户 "{selectedUser?.username}" 设置新角色
-              {selectedUser?.role === 'admin' && (
-                <>
-                  <br />
-                  <span className="text-amber-600 font-medium">
-                    注意：该用户是管理员，只有第一个管理员（创始人）可以修改其他管理员的角色。
-                  </span>
-                </>
-              )}
-            </>
-         }
-         submitText="确认修改"
-         onSubmit={handleChangeRole}
-         loading={submitting}
-         // FormDialog internally wraps children in a div but we can pass Select directly
-      >
-          <div className="py-4">
-            <Select value={newRole} onValueChange={setNewRole}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="user">用户</SelectItem>
-                <SelectItem value="vip">VIP</SelectItem>
-                <SelectItem value="moderator">版主</SelectItem>
-                <SelectItem value="admin">管理员</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-      </FormDialog>
-
-      {/* 删除确认对话框 */}
-
-
-      {/* 创建/编辑用户对话框 */}
-      <FormDialog
-          open={showUserDialog}
-          onOpenChange={setShowUserDialog}
-          title={dialogMode === 'create' ? '创建新用户' : '编辑用户'}
-          description={dialogMode === 'create'
-            ? '填写用户信息以创建新账号'
-            : '修改用户信息'}
-          submitText={dialogMode === 'create' ? '创建用户' : '保存修改'}
-          onSubmit={handleSubmitUser}
-          loading={submitting}
-          maxWidth="sm:max-w-[500px]"
-      >
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">
-                用户名 <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="username"
-                placeholder="输入用户名"
-                value={userForm.username}
-                onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
-                disabled={submitting}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">
-                邮箱 <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="输入邮箱地址"
-                value={userForm.email}
-                onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
-                disabled={submitting}
-              />
-            </div>
-            {dialogMode === 'create' && (
-              <div className="space-y-2">
-                <Label htmlFor="password">
-                  密码 <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="至少 6 个字符"
-                  value={userForm.password}
-                  onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                  disabled={submitting}
-                />
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="name">显示名称</Label>
-              <Input
-                id="name"
-                placeholder="输入显示名称（可选）"
-                value={userForm.name}
-                onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
-                disabled={submitting}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="role">角色</Label>
-              <Select
-                value={userForm.role}
-                onValueChange={(value) => setUserForm({ ...userForm, role: value })}
-                disabled={submitting}
-              >
-                <SelectTrigger id="role">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">用户</SelectItem>
-                  <SelectItem value="vip">VIP</SelectItem>
-                  <SelectItem value="moderator">版主</SelectItem>
-                  <SelectItem value="admin">管理员</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="isEmailVerified"
-                checked={userForm.isEmailVerified}
-                onCheckedChange={(checked) =>
-                  setUserForm({ ...userForm, isEmailVerified: checked })
-                }
-                disabled={submitting}
-              />
-              <Label
-                htmlFor="isEmailVerified"
-                className="text-sm font-normal cursor-pointer"
-              >
-                邮箱已验证（跳过邮箱验证流程）
-              </Label>
-            </div>
-          </div>
-      </FormDialog>
-
-      {/* 封禁对话框 */}
-      <FormDialog
+      {/* 封禁用户 */}
+      <BanUserDialog
         open={showBanDialog}
         onOpenChange={setShowBanDialog}
-        title="封禁用户"
-        description={
-          <>
-            封禁用户 "{selectedUser?.username}"，封禁后将无法登录
-            {selectedUser?.role === 'admin' && (
-              <>
-                <br />
-                <span className="text-amber-600 font-medium">
-                  注意：该用户是管理员，只有创始人可以封禁其他管理员。
-                </span>
-              </>
-            )}
-          </>
-        }
-        submitText="确认封禁"
-        onSubmit={handleBanUser}
-        loading={submitting}
-        maxWidth="sm:max-w-[450px]"
-      >
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="banDuration">封禁时长</Label>
-            <Select
-              value={banForm.duration?.toString() || '0'}
-              onValueChange={(value) => setBanForm({ ...banForm, duration: parseInt(value) })}
-              disabled={submitting}
-            >
-              <SelectTrigger id="banDuration">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="60">1 小时</SelectItem>
-                <SelectItem value="360">6 小时</SelectItem>
-                <SelectItem value="1440">1 天</SelectItem>
-                <SelectItem value="4320">3 天</SelectItem>
-                <SelectItem value="10080">7 天</SelectItem>
-                <SelectItem value="43200">30 天</SelectItem>
-                <SelectItem value="129600">90 天</SelectItem>
-                <SelectItem value="0">永久</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="banReason">封禁原因（可选）</Label>
-            <Textarea
-              id="banReason"
-              placeholder="请输入封禁原因..."
-              value={banForm.reason}
-              onChange={(e) => setBanForm({ ...banForm, reason: e.target.value })}
-              disabled={submitting}
-              rows={3}
-            />
-          </div>
-        </div>
-      </FormDialog>
+        user={selectedUser}
+        onBanned={handleBanned}
+      />
     </div>
   );
 }

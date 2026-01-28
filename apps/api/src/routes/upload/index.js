@@ -9,13 +9,13 @@ export default async function uploadRoutes(fastify) {
     preHandler: [fastify.authenticate],
     schema: {
       tags: ['upload'],
-      description: '上传文件（仅限允许的角色）',
+      description: '上传文件',
       security: [{ bearerAuth: [] }],
       querystring: {
         type: 'object',
         properties: {
-          type: { 
-            type: 'string', 
+          type: {
+            type: 'string',
             enum: ['common', 'avatar', 'badge', 'topic', 'item', 'frame', 'site'],
             default: 'common'
           }
@@ -34,15 +34,14 @@ export default async function uploadRoutes(fastify) {
       }
     }
   }, async (request, reply) => {
-    // 1. Check permissions
-    const allowedRoles = await fastify.settings.get('upload_allowed_roles', ['admin']);
-    if (!allowedRoles.includes(request.user.role)) {
-      return reply.code(403).send({ error: '您没有上传文件的权限' });
-    }
-
     const uploadType = request.query.type || 'common';
 
-    // 2. Process file
+    // 检查上传权限（带上传类型上下文）
+    await fastify.checkPermission(request, 'upload.create', {
+      uploadType,
+    });
+
+    // Process file
     const data = await request.file();
     
     if (!data) {

@@ -127,14 +127,6 @@ export const SETTING_KEYS = {
     category: 'features',
     accessLevel: ACCESS_LEVEL.PUBLIC,
   },
-  UPLOAD_ALLOWED_ROLES: {
-    key: 'upload_allowed_roles',
-    defaultValue: JSON.stringify(['admin']),
-    valueType: 'json',
-    description: '允许上传文件的角色列表',
-    category: 'features',
-    accessLevel: ACCESS_LEVEL.ADMIN,
-  },
 
   // ============ 用户设置 ============
   ALLOW_USERNAME_CHANGE: {

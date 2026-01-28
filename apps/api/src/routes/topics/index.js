@@ -579,7 +579,11 @@ export default async function topicRoutes(fastify, options) {
   fastify.post(
     '/',
     {
-      preHandler: [fastify.authenticate, fastify.checkBanned, fastify.requireEmailVerification],
+      preHandler: [
+        fastify.authenticate,
+        fastify.checkBanned,
+        fastify.requireEmailVerification
+      ],
       schema: {
         tags: ['topics'],
         description: '创建新话题',
@@ -609,9 +613,13 @@ export default async function topicRoutes(fastify, options) {
         return reply.code(404).send({ error: '分类不存在' });
       }
 
-      // 检查私有分类权限
-      const isAdmin = request.user?.isAdmin;
-      if (category.isPrivate && !isAdmin) {
+      // 检查创建话题权限（带分类上下文）
+      await fastify.checkPermission(request, 'topic.create', {
+        categoryId: category.id,
+      });
+
+      // 检查私有分类权限（管理员可以在私有分类发帖）
+      if (category.isPrivate && !request.user.isAdmin) {
         return reply.code(403).send({
           error: '访问被拒绝',
           message: '你没有权限在该私有分类中发帖',
@@ -716,7 +724,7 @@ export default async function topicRoutes(fastify, options) {
       preHandler: [fastify.authenticate],
       schema: {
         tags: ['topics'],
-        description: '更新话题（所有者、版主或管理员）',
+        description: '更新话题（所有者或管理员）',
         security: [{ bearerAuth: [] }],
         params: {
           type: 'object',
@@ -751,25 +759,19 @@ export default async function topicRoutes(fastify, options) {
         return reply.code(404).send({ error: '话题不存在' });
       }
 
-      // 检查权限
-      const isAdmin = request.user?.isAdmin;
-      const isOwner = topic.userId === request.user.id;
+      // 检查更新权限（复用已查询的 topic）
+      await fastify.checkPermission(request, 'topic.update', {
+        ownerId: topic.userId,
+        categoryId: topic.categoryId,
+      });
 
-      if (!isAdmin && !isOwner) {
-        return reply
-          .code(403)
-          .send({ error: '你没有权限编辑该话题' });
-      }
-
-      // 仅版主可以置顶或关闭话题
-      if (
-        (request.body.isPinned !== undefined ||
-          request.body.isClosed !== undefined) &&
-        !isAdmin
-      ) {
-        return reply
-          .code(403)
-          .send({ error: '只有版主可以置顶或关闭话题' });
+      // 置顶/关闭话题需要 topic.pin/topic.close 权限（仅管理员）
+      if (request.body.isPinned !== undefined || request.body.isClosed !== undefined) {
+        if (!request.user.isAdmin) {
+          return reply
+            .code(403)
+            .send({ error: '只有管理员可以置顶或关闭话题' });
+        }
       }
 
       // 检查是否开启内容审核
@@ -791,9 +793,10 @@ export default async function topicRoutes(fastify, options) {
       let statusChanged = false;
       let needsReapproval = false; // 区分是已批准内容的编辑还是被拒绝内容的重新提交
       const previousStatus = topic.approvalStatus;
+      const isOwner = topic.userId === request.user.id;
 
-      // 如果内容审核开启，且编辑者是普通用户（非版主/管理员）
-      if (contentModerationEnabled && isOwner && !isAdmin) {
+      // 如果内容审核开启，且编辑者是普通用户（非管理员）
+      if (contentModerationEnabled && isOwner && !request.user.isAdmin) {
         // 编辑标题或内容时，需要重新审核
         if (request.body.title || content !== undefined) {
           // 已批准的内容编辑后需要重新审核
@@ -980,22 +983,18 @@ export default async function topicRoutes(fastify, options) {
         return reply.code(404).send({ error: '话题不存在' });
       }
 
-      // 检查权限
-      const isAdmin = request.user?.isAdmin;
-      const isOwner = topic.userId === request.user.id;
+      // 检查删除权限（复用已查询的 topic）
+      await fastify.checkPermission(request, 'topic.delete', {
+        ownerId: topic.userId,
+        categoryId: topic.categoryId,
+      });
 
-      if (!isAdmin && !isOwner) {
-        return reply
-          .code(403)
-          .send({ error: '你没有权限删除该话题' });
-      }
-
-      // 仅版主和管理员可以永久删除话题
-      if (permanent && !isAdmin) {
+      // 仅管理员可以永久删除话题
+      if (permanent && !request.user.isAdmin) {
         return reply
           .code(403)
           .send({
-            error: '只有版主和管理员可以永久删除话题',
+            error: '只有管理员可以永久删除话题',
           });
       }
 

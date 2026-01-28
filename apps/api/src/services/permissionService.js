@@ -209,17 +209,33 @@ class PermissionService {
    * @returns {Promise<boolean>}
    */
   async hasPermission(userId, permissionSlug, context = {}) {
+    const result = await this.checkPermissionWithReason(userId, permissionSlug, context);
+    return result.granted;
+  }
+
+  /**
+   * 检查用户是否有某个权限（带详细原因）
+   * @param {number} userId - 用户 ID
+   * @param {string} permissionSlug - 权限标识
+   * @param {Object} context - 上下文
+   * @returns {Promise<{granted: boolean, reason?: string, code?: string}>}
+   */
+  async checkPermissionWithReason(userId, permissionSlug, context = {}) {
     // 快捷路径：admin 角色拥有所有权限，无需检查条件
     const isAdmin = await this.hasRole(userId, 'admin');
     if (isAdmin) {
-      return true;
+      return { granted: true };
     }
 
     const userPermissions = await this.getUserPermissions(userId);
     const permission = userPermissions.find(p => p.slug === permissionSlug);
 
     if (!permission) {
-      return false;
+      return {
+        granted: false,
+        code: 'NO_PERMISSION',
+        reason: '你没有执行此操作的权限',
+      };
     }
 
     // 检查条件
@@ -227,21 +243,33 @@ class PermissionService {
       // own: true 表示只能操作自己的资源
       if (permission.conditions.own && context.ownerId !== undefined) {
         if (context.ownerId !== userId) {
-          return false;
+          return {
+            granted: false,
+            code: 'NOT_OWNER',
+            reason: '只能操作自己的内容',
+          };
         }
       }
 
       // categories: [1, 2, 3] 表示只能在指定分类操作
       if (permission.conditions.categories && context.categoryId !== undefined) {
         if (!permission.conditions.categories.includes(context.categoryId)) {
-          return false;
+          return {
+            granted: false,
+            code: 'CATEGORY_NOT_ALLOWED',
+            reason: '你没有在该分类下操作的权限',
+          };
         }
       }
 
       // minPosts: 10 表示需要达到指定发帖数
       if (permission.conditions.minPosts !== undefined && context.userPostCount !== undefined) {
         if (context.userPostCount < permission.conditions.minPosts) {
-          return false;
+          return {
+            granted: false,
+            code: 'MIN_POSTS_NOT_MET',
+            reason: `需要发帖数达到 ${permission.conditions.minPosts} 条，当前 ${context.userPostCount} 条`,
+          };
         }
       }
 
@@ -251,7 +279,11 @@ class PermissionService {
           (Date.now() - new Date(context.userCreatedAt).getTime()) / (1000 * 60 * 60 * 24)
         );
         if (accountAgeDays < permission.conditions.accountAge) {
-          return false;
+          return {
+            granted: false,
+            code: 'ACCOUNT_TOO_NEW',
+            reason: `账号注册需满 ${permission.conditions.accountAge} 天，当前 ${accountAgeDays} 天`,
+          };
         }
       }
 
@@ -262,7 +294,32 @@ class PermissionService {
           const now = new Date();
           const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
           if (currentTime < start || currentTime > end) {
-            return false;
+            return {
+              granted: false,
+              code: 'TIME_NOT_ALLOWED',
+              reason: `当前时间不允许操作，开放时间段：${start} - ${end}`,
+            };
+          }
+        }
+      }
+
+      // rateLimit: { count: 10, period: "hour" } 表示限制操作频率
+      if (permission.conditions.rateLimit) {
+        const { count, period } = permission.conditions.rateLimit;
+        if (count && period) {
+          const rateLimitResult = await this._checkAndIncrementRateLimit(
+            userId,
+            permissionSlug,
+            count,
+            period
+          );
+          if (!rateLimitResult.allowed) {
+            const periodText = { minute: '分钟', hour: '小时', day: '天' }[period] || period;
+            return {
+              granted: false,
+              code: 'RATE_LIMITED',
+              reason: `操作过于频繁，每${periodText}最多 ${count} 次`,
+            };
           }
         }
       }
@@ -271,7 +328,11 @@ class PermissionService {
       if (permission.conditions.maxFileSize !== undefined && context.fileSize !== undefined) {
         const fileSizeKB = context.fileSize / 1024;
         if (fileSizeKB > permission.conditions.maxFileSize) {
-          return false;
+          return {
+            granted: false,
+            code: 'FILE_TOO_LARGE',
+            reason: `文件大小超过限制，最大 ${permission.conditions.maxFileSize} KB`,
+          };
         }
       }
 
@@ -279,12 +340,66 @@ class PermissionService {
       if (permission.conditions.allowedFileTypes && context.fileType !== undefined) {
         const ext = context.fileType.toLowerCase().replace('.', '');
         if (!permission.conditions.allowedFileTypes.includes(ext)) {
-          return false;
+          return {
+            granted: false,
+            code: 'FILE_TYPE_NOT_ALLOWED',
+            reason: `不支持的文件类型，允许：${permission.conditions.allowedFileTypes.join(', ')}`,
+          };
+        }
+      }
+
+      // uploadTypes: ["avatar", "topic"] 表示允许的上传目录类型
+      if (permission.conditions.uploadTypes && context.uploadType !== undefined) {
+        if (!permission.conditions.uploadTypes.includes(context.uploadType)) {
+          return {
+            granted: false,
+            code: 'UPLOAD_TYPE_NOT_ALLOWED',
+            reason: '你没有上传该类型文件的权限',
+          };
         }
       }
     }
 
-    return true;
+    return { granted: true };
+  }
+
+  /**
+   * 内部方法：检查并增加频率限制计数
+   * @private
+   */
+  async _checkAndIncrementRateLimit(userId, actionKey, maxCount, period) {
+    // 计算时间窗口（秒）
+    const periodSeconds = {
+      minute: 60,
+      hour: 3600,
+      day: 86400,
+    }[period] || 3600;
+
+    const cacheKey = `ratelimit:${userId}:${actionKey}`;
+
+    // 如果有缓存，使用滑动窗口计数
+    if (this.fastify?.cache) {
+      const currentCount = (await this.fastify.cache.get(cacheKey)) || 0;
+
+      if (currentCount >= maxCount) {
+        return {
+          allowed: false,
+          remaining: 0,
+          resetAt: new Date(Date.now() + periodSeconds * 1000),
+        };
+      }
+
+      // 增加计数
+      await this.fastify.cache.set(cacheKey, currentCount + 1, periodSeconds);
+
+      return {
+        allowed: true,
+        remaining: maxCount - currentCount - 1,
+      };
+    }
+
+    // 没有缓存时，默认允许（降级处理）
+    return { allowed: true };
   }
 
   /**
@@ -472,6 +587,50 @@ class PermissionService {
   }
 
   // ============ 管理方法 ============
+
+  /**
+   * 为新用户分配默认角色
+   * @param {number} userId - 用户 ID
+   * @param {Object} options - 选项
+   * @param {number} options.assignedBy - 分配者 ID（可选）
+   * @returns {Promise<Object|null>} 分配的角色信息
+   */
+  async assignDefaultRoleToUser(userId, options = {}) {
+    const { assignedBy } = options;
+
+    // 查找默认角色（isDefault = true）或 slug = 'user'
+    let [defaultRole] = await db
+      .select()
+      .from(roles)
+      .where(eq(roles.isDefault, true))
+      .limit(1);
+
+    // 如果没有设置默认角色，尝试查找 slug = 'user' 的角色
+    if (!defaultRole) {
+      [defaultRole] = await db
+        .select()
+        .from(roles)
+        .where(eq(roles.slug, 'user'))
+        .limit(1);
+    }
+
+    if (!defaultRole) {
+      // 没有找到默认角色，记录警告但不阻断流程
+      if (this.fastify?.log) {
+        this.fastify.log.warn(`[RBAC] 未找到默认角色，用户 ${userId} 未分配角色`);
+      }
+      return null;
+    }
+
+    // 分配角色
+    await db.insert(userRoles).values({
+      userId,
+      roleId: defaultRole.id,
+      assignedBy,
+    }).onConflictDoNothing(); // 如果已存在则忽略
+
+    return defaultRole;
+  }
 
   /**
    * 为用户分配角色

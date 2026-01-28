@@ -294,6 +294,7 @@ export function RolesTab() {
   });
 
   const [rolePermissions, setRolePermissions] = useState([]); // [{ permissionId, conditions }]
+  const [inheritedPermissions, setInheritedPermissions] = useState([]); // 继承的权限ID列表
 
   useEffect(() => {
     fetchData();
@@ -359,15 +360,25 @@ export function RolesTab() {
     setSelectedRole(role);
     try {
       const perms = await rbacApi.admin.getRolePermissions(role.id);
+      // 分离直接权限和继承权限
+      const directPerms = perms.filter(p => !p.inherited);
+      const inheritedPerms = perms.filter(p => p.inherited);
+
       // 转换为 { permissionId, conditions } 格式
-      // conditions 可能是 JSON 字符串，需要解析
-      setRolePermissions(perms.map(p => ({
+      setRolePermissions(directPerms.map(p => ({
+        permissionId: p.id,
+        conditions: typeof p.conditions === 'string' ? JSON.parse(p.conditions) : (p.conditions || null),
+      })));
+
+      // 存储继承权限的ID列表
+      setInheritedPermissions(inheritedPerms.map(p => ({
         permissionId: p.id,
         conditions: typeof p.conditions === 'string' ? JSON.parse(p.conditions) : (p.conditions || null),
       })));
     } catch (err) {
       console.error('获取角色权限失败:', err);
       setRolePermissions([]);
+      setInheritedPermissions([]);
     }
     setShowPermissionDialog(true);
   };
@@ -464,21 +475,22 @@ export function RolesTab() {
     );
   };
 
-  // 检查权限是否已选中
+  // 检查权限是否已选中（直接权限）
   const isPermissionSelected = (permId) => {
     return rolePermissions.some(rp => rp.permissionId === permId);
   };
 
-  // 获取权限的条件
-  const getPermissionConditions = (permId) => {
-    const rp = rolePermissions.find(rp => rp.permissionId === permId);
-    return rp?.conditions || null;
+  // 检查权限是否是继承的
+  const isPermissionInherited = (permId) => {
+    return inheritedPermissions.some(rp => rp.permissionId === permId);
   };
 
-  // 检查权限是否有条件配置
-  const hasConditions = (permId) => {
-    const conditions = getPermissionConditions(permId);
-    return conditions && Object.keys(conditions).length > 0;
+  // 获取权限的条件（优先直接权限，其次继承权限）
+  const getPermissionConditions = (permId) => {
+    const direct = rolePermissions.find(rp => rp.permissionId === permId);
+    if (direct) return direct.conditions || null;
+    const inherited = inheritedPermissions.find(rp => rp.permissionId === permId);
+    return inherited?.conditions || null;
   };
 
   // 按模块分组权限
@@ -771,7 +783,11 @@ export function RolesTab() {
         open={showPermissionDialog}
         onOpenChange={setShowPermissionDialog}
         title={`配置权限 - ${selectedRole?.name || ''}`}
-        description="选择该角色拥有的权限"
+        description={
+          selectedRole?.parentId
+            ? '选择该角色拥有的权限。标记为"继承"的权限来自父角色，不可直接修改。'
+            : '选择该角色拥有的权限'
+        }
         submitText="保存"
         onSubmit={handleSavePermissions}
         loading={submitting}
@@ -791,37 +807,48 @@ export function RolesTab() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-1 py-1">
                   {perms.map((perm) => {
                   const selected = isPermissionSelected(perm.id);
+                  const inherited = isPermissionInherited(perm.id);
+                  const isChecked = selected || inherited;
                   const conditions = getPermissionConditions(perm.id);
-                  const hasConfig = hasConditions(perm.id);
+                  const hasConfig = conditions && Object.keys(conditions).length > 0;
                   const conditionCount = getPermissionConditionTypes(perm.slug).length;
 
                   return (
                     <div
                       key={perm.id}
-                      className={`flex items-center gap-3 h-11 px-4 rounded-md transition-all ${
-                        selected ? 'bg-primary/5 text-primary' : 'hover:bg-muted/60'
-                      }`}
+                      className={cn(
+                        'flex items-center gap-3 h-11 px-4 rounded-md transition-all',
+                        selected && 'bg-primary/5 text-primary',
+                        inherited && !selected && 'bg-muted/40 text-muted-foreground',
+                        !isChecked && 'hover:bg-muted/60'
+                      )}
                     >
                       <Checkbox
                         id={`perm-${perm.id}`}
-                        checked={selected}
-                        onCheckedChange={() => togglePermission(perm.id)}
-                        disabled={submitting}
+                        checked={isChecked}
+                        onCheckedChange={() => !inherited && togglePermission(perm.id)}
+                        disabled={submitting || inherited}
                       />
                       <Label
                         htmlFor={`perm-${perm.id}`}
-                        className="text-sm font-medium cursor-pointer flex-1 truncate"
-                        title={`${perm.name} (${perm.slug})`}
+                        className={cn(
+                          'text-sm font-medium cursor-pointer flex-1 truncate',
+                          inherited && !selected && 'cursor-default'
+                        )}
+                        title={`${perm.name} (${perm.slug})${inherited ? ' - 继承自父角色' : ''}`}
                       >
                         {perm.name}
+                        {inherited && !selected && (
+                          <span className="ml-1.5 text-[10px] text-muted-foreground font-normal">(继承)</span>
+                        )}
                       </Label>
                       {/* 显示已配置的条件数量 */}
-                      {selected && hasConfig && (
+                      {isChecked && hasConfig && (
                         <Badge variant="outline" className="text-[11px] px-1.5 h-5 font-medium">
                           {Object.keys(conditions).length}
                         </Badge>
                       )}
-                      {/* 条件配置按钮 */}
+                      {/* 条件配置按钮 - 只对直接权限显示 */}
                       <div className="flex-shrink-0 flex justify-center">
                         {selected && conditionCount > 0 && (
                           <ConditionEditor

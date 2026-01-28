@@ -10,6 +10,7 @@ import { eq, and } from 'drizzle-orm';
 import crypto from 'crypto';
 import { normalizeEmail } from '../utils/normalization.js';
 import { getSetting } from './settingsService.js';
+import { getPermissionService } from './permissionService.js';
 
 /**
  * 生成随机 state 参数
@@ -178,6 +179,10 @@ export async function createOAuthUser(profile, provider) {
       isEmailVerified: !!email, // 如果有邮箱，认为已验证
     })
     .returning();
+
+  // 分配默认角色（用户-角色关联）
+  const permissionService = getPermissionService();
+  await permissionService.assignDefaultRoleToUser(newUser.id);
 
   return newUser;
 }
