@@ -321,7 +321,6 @@ async function authPlugin(fastify) {
    * @param {Object} context - 权限检查上下文，根据权限条件传递对应字段
    * @param {number} [context.ownerId] - 资源所有者ID，用于 `own: true` 条件（检查是否操作自己的资源）
    * @param {number} [context.categoryId] - 分类ID，用于 `categories: [1,2,3]` 条件（检查是否在允许的分类内）
-   * @param {number} [context.userPostCount] - 用户发帖数，用于 `minPosts: 10` 条件（检查发帖数是否达标）
    * @param {Date|string} [context.userCreatedAt] - 用户注册时间，用于 `accountAge: 30` 条件（自动注入，无需手动传递）
    * @param {number} [context.fileSize] - 文件大小（字节），用于 `maxFileSize: 1024` 条件（检查上传文件大小限制，单位KB）
    * @param {string} [context.fileType] - 文件类型/扩展名，用于 `allowedFileTypes: ["jpg","png"]` 条件

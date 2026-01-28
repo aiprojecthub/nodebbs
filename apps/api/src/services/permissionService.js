@@ -262,17 +262,6 @@ class PermissionService {
         }
       }
 
-      // minPosts: 10 表示需要达到指定发帖数
-      if (permission.conditions.minPosts !== undefined && context.userPostCount !== undefined) {
-        if (context.userPostCount < permission.conditions.minPosts) {
-          return {
-            granted: false,
-            code: 'MIN_POSTS_NOT_MET',
-            reason: `需要发帖数达到 ${permission.conditions.minPosts} 条，当前 ${context.userPostCount} 条`,
-          };
-        }
-      }
-
       // accountAge: 30 表示账号注册天数需达到指定值
       if (permission.conditions.accountAge !== undefined && context.userCreatedAt !== undefined) {
         const accountAgeDays = Math.floor(

@@ -95,15 +95,6 @@ export const CONDITION_TYPES = {
   },
 
   // ===== 用户门槛 =====
-  minPosts: {
-    key: 'minPosts',
-    label: '最低发帖数',
-    type: 'number',
-    component: 'number',
-    description: '用户发帖数需达到指定值',
-    placeholder: '不限制',
-    min: 0,
-  },
   accountAge: {
     key: 'accountAge',
     label: '账号注册天数',
@@ -194,7 +185,7 @@ export const SYSTEM_PERMISSIONS = [
     module: 'topic',
     action: 'create',
     isSystem: true,
-    conditions: ['categories', 'rateLimit', 'minPosts', 'accountAge', 'timeRange'],
+    conditions: ['categories', 'rateLimit', 'accountAge', 'timeRange'],
   },
   {
     slug: 'topic.read',
@@ -260,7 +251,7 @@ export const SYSTEM_PERMISSIONS = [
     module: 'post',
     action: 'create',
     isSystem: true,
-    conditions: ['categories', 'rateLimit', 'minPosts', 'accountAge', 'timeRange'],
+    conditions: ['categories', 'rateLimit', 'accountAge', 'timeRange'],
   },
   {
     slug: 'post.read',
