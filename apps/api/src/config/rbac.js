@@ -13,10 +13,7 @@ export const MODULE_OPTIONS = [
   { value: 'post', label: '回复' },
   { value: 'user', label: '用户' },
   { value: 'category', label: '分类' },
-  { value: 'system', label: '系统' },
   { value: 'upload', label: '上传' },
-  { value: 'invitation', label: '邀请' },
-  { value: 'moderation', label: '审核' },
 ];
 
 // 通用操作 - 适用于大多数模块
@@ -44,20 +41,9 @@ export const MODULE_SPECIAL_ACTIONS = {
     { value: 'role.assign', label: '分配角色' },
   ],
   category: [],
-  system: [
-    { value: 'settings', label: '设置' },
-    { value: 'dashboard', label: '后台' },
-    { value: 'logs', label: '日志' },
-  ],
   upload: [
     { value: 'image', label: '图片' },
     { value: 'file', label: '文件' },
-  ],
-  invitation: [],
-  moderation: [
-    { value: 'reports', label: '举报' },
-    { value: 'content', label: '内容' },
-    { value: 'approve', label: '审核' },
   ],
 };
 
@@ -401,40 +387,6 @@ export const SYSTEM_PERMISSIONS = [
     conditions: ['fieldFilter'],
   },
 
-  // ========== 系统权限 ==========
-  {
-    slug: 'system.settings',
-    name: '系统设置',
-    module: 'system',
-    action: 'settings',
-    isSystem: true,
-    conditions: [],
-  },
-  {
-    slug: 'system.dashboard',
-    name: '管理后台',
-    module: 'system',
-    action: 'dashboard',
-    isSystem: true,
-    conditions: [],
-  },
-  {
-    slug: 'system.logs',
-    name: '系统日志',
-    module: 'system',
-    action: 'logs',
-    isSystem: true,
-    conditions: ['fieldFilter'],
-  },
-  {
-    slug: 'system.manage',
-    name: '系统管理',
-    module: 'system',
-    action: 'manage',
-    isSystem: true,
-    conditions: [],
-  },
-
   // ========== 上传权限 ==========
   {
     slug: 'upload.create',
@@ -459,67 +411,6 @@ export const SYSTEM_PERMISSIONS = [
     action: 'file',
     isSystem: true,
     conditions: ['maxFileSize', 'maxFilesPerDay', 'allowedFileTypes', 'rateLimit'],
-  },
-
-  // ========== 邀请权限 ==========
-  // 注：邀请码的业务规则（每日限制、过期天数、积分消耗等）由 invitationRules 表控制
-  {
-    slug: 'invitation.create',
-    name: '创建邀请码',
-    module: 'invitation',
-    action: 'create',
-    isSystem: true,
-    conditions: [],  // 业务参数由 invitationRules 按角色配置
-  },
-  {
-    slug: 'invitation.read',
-    name: '查看邀请码',
-    module: 'invitation',
-    action: 'read',
-    isSystem: true,
-    conditions: ['own', 'fieldFilter'],
-  },
-  {
-    slug: 'invitation.manage',
-    name: '管理邀请码',
-    module: 'invitation',
-    action: 'manage',
-    isSystem: true,
-    conditions: ['fieldFilter'],
-  },
-
-  // ========== 审核权限 ==========
-  {
-    slug: 'moderation.reports',
-    name: '处理举报',
-    module: 'moderation',
-    action: 'reports',
-    isSystem: true,
-    conditions: ['fieldFilter'],
-  },
-  {
-    slug: 'moderation.content',
-    name: '审核内容',
-    module: 'moderation',
-    action: 'content',
-    isSystem: true,
-    conditions: ['categories', 'fieldFilter'],
-  },
-  {
-    slug: 'moderation.approve',
-    name: '审核通过',
-    module: 'moderation',
-    action: 'approve',
-    isSystem: true,
-    conditions: ['categories'],
-  },
-  {
-    slug: 'moderation.manage',
-    name: '审核管理',
-    module: 'moderation',
-    action: 'manage',
-    isSystem: true,
-    conditions: ['fieldFilter'],
   },
 ];
 
@@ -606,8 +497,6 @@ export const ROLE_PERMISSION_MAP = {
     'category.read',
     // 上传：图片
     'upload.create', 'upload.image',
-    // 邀请：查看自己的
-    'invitation.read',
   ],
 
   // 访客：只有查看权限
@@ -630,7 +519,6 @@ export const ROLE_PERMISSION_CONDITIONS = {
     'post.update': { own: true },   // 只能编辑自己的回复
     'post.delete': { own: true },   // 只能删除自己的回复
     'user.update': { own: true },   // 只能编辑自己的资料
-    'invitation.read': { own: true }, // 只能查看自己的邀请码
   },
 };
 
