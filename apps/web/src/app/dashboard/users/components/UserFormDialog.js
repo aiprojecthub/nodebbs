@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FormDialog } from '@/components/common/FormDialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -40,40 +40,26 @@ export function UserFormDialog({
   onUpdated,
 }) {
   const isCreate = mode === 'create';
-  const [form, setForm] = useState(() =>
-    isCreate
-      ? INITIAL_FORM
-      : {
-          username: user?.username || '',
-          email: user?.email || '',
-          password: '',
-          name: user?.name || '',
-          roleIds: user?.userRoles?.map(r => r.id) || [],
-          isEmailVerified: user?.isEmailVerified || false,
-        }
-  );
+  const [form, setForm] = useState(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
 
-  // 当 open / mode / user 切换时重置表单
-  const resetForm = () => {
-    if (isCreate) {
-      setForm(INITIAL_FORM);
-    } else if (user) {
-      setForm({
-        username: user.username,
-        email: user.email,
-        password: '',
-        name: user.name || '',
-        roleIds: user.userRoles?.map(r => r.id) || [],
-        isEmailVerified: user.isEmailVerified || false,
-      });
+  // 当弹窗打开时根据 mode 和 user 重置表单
+  useEffect(() => {
+    if (open) {
+      if (isCreate) {
+        setForm(INITIAL_FORM);
+      } else if (user) {
+        setForm({
+          username: user.username,
+          email: user.email,
+          password: '',
+          name: user.name || '',
+          roleIds: user.userRoles?.map(r => r.id) || [],
+          isEmailVerified: user.isEmailVerified || false,
+        });
+      }
     }
-  };
-
-  const handleOpenChange = (v) => {
-    if (v) resetForm();
-    onOpenChange(v);
-  };
+  }, [open, isCreate, user]);
 
   const handleSubmit = async () => {
     if (!form.username || !form.email) {
@@ -118,7 +104,7 @@ export function UserFormDialog({
   return (
     <FormDialog
       open={open}
-      onOpenChange={handleOpenChange}
+      onOpenChange={onOpenChange}
       title={isCreate ? '创建新用户' : '编辑用户'}
       description={isCreate ? '填写用户信息以创建新账号' : '修改用户信息'}
       submitText={isCreate ? '创建用户' : '保存修改'}
