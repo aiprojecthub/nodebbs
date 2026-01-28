@@ -229,12 +229,12 @@ export default function MessagesPage() {
                             >
                               {deletingUserId === otherUser.id ? (
                                 <>
-                                  <Loader2 className='h-4 w-4 animate-spin mr-2' />
+                                  <Loader2 className='h-4 w-4 animate-spin' />
                                   删除...
                                 </>
                               ) : (
                                 <>
-                                  <Trash2 className='h-4 w-4 mr-2' />
+                                  <Trash2 className='h-4 w-4' />
                                   删除会话
                                 </>
                               )}

@@ -153,7 +153,7 @@ export function QRLoginTab({ onSuccess }) {
               {status === 'expired' ? '二维码已过期' : '加载失败'}
             </p>
             <Button onClick={generateQRCode} variant="outline" size="sm">
-              <RefreshCw className="w-4 h-4 mr-2" />
+              <RefreshCw className="w-4 h-4" />
               刷新二维码
             </Button>
           </div>

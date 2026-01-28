@@ -132,12 +132,12 @@ export function SecurityTab() {
           <Button type='submit' disabled={changingPassword}>
             {changingPassword ? (
               <>
-                <Loader2 className='h-4 w-4 animate-spin mr-2' />
+                <Loader2 className='h-4 w-4 animate-spin' />
                 {user.hasPassword === false ? '设置中...' : '修改中...'}
               </>
             ) : (
               <>
-                <Lock className='h-4 w-4 mr-2' />
+                <Lock className='h-4 w-4' />
                 {user.hasPassword === false ? '设置密码' : '修改密码'}
               </>
             )}

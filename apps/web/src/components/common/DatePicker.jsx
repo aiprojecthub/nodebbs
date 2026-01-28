@@ -67,7 +67,7 @@ function DatePicker({
           )}
           {...props}
         >
-          <CalendarIcon className="h-4 w-4 mr-2" />
+          <CalendarIcon className="h-4 w-4" />
           {value ? format(value) : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>

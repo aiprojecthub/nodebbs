@@ -34,7 +34,7 @@ export function AlertDialog({
             e.preventDefault();
             onConfirm();
           }} disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             {confirmText}
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -75,7 +75,7 @@ export function ConfirmDialog({
             disabled={loading || confirmDisabled}
             className={variant === 'destructive' ? 'bg-destructive hover:bg-destructive/90' : confirmClassName}
           >
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             {confirmText}
           </AlertDialogAction>
         </AlertDialogFooter>

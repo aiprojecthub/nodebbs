@@ -133,7 +133,7 @@ export function RewardListDialog({ open, onOpenChange, postId }) {
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                        <Loader2 className="h-3 w-3 animate-spin" />
                         加载中...
                       </>
                     ) : (

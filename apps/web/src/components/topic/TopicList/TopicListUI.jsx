@@ -80,13 +80,13 @@ export function TopicItem({ topic }) {
           <div className='mb-2 leading-snug relative'>
             {/* 置顶标签 */}
             {isPinned && (
-              <span className='inline-flex items-center gap-1 mr-2 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary align-middle relative -top-[1px]'>
+              <span className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary align-middle relative -top-[1px]'>
                 <Pin className='w-3 h-3' />
                 置顶
               </span>
             )}
             {topic.isClosed && (
-              <span className='inline-flex items-center gap-1 mr-2 px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground align-middle relative -top-[1px]'>
+              <span className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground align-middle relative -top-[1px]'>
                 <Lock className='w-3 h-3' />
                 已关闭
               </span>

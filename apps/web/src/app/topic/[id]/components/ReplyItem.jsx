@@ -460,7 +460,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
                             disabled={isEditing}
                             className="cursor-pointer"
                           >
-                            <Pencil className='h-4 w-4 mr-2' />
+                            <Pencil className='h-4 w-4' />
                             编辑回复
                           </DropdownMenuItem>
                         )}
@@ -477,12 +477,12 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
                         >
                           {deletingPostId === localReply.id ? (
                             <>
-                              <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+                              <Loader2 className='h-4 w-4 animate-spin' />
                               删除中...
                             </>
                           ) : (
                             <>
-                              <Trash2 className='h-4 w-4 mr-2' />
+                              <Trash2 className='h-4 w-4' />
                               删除回复
                             </>
                           )}
@@ -495,7 +495,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
                     disabled={!isAuthenticated}
                     className="cursor-pointer"
                   >
-                    <Flag className='h-4 w-4 mr-2' />
+                    <Flag className='h-4 w-4' />
                     举报回复
                   </DropdownMenuItem>
                 </DropdownMenuContent>

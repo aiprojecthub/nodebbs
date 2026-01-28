@@ -182,12 +182,12 @@ export function RewardDialog({ open, onOpenChange, postId, postAuthor, onSuccess
                   <Button onClick={handleSubmit} disabled={isSubmitting || !amount}>
                     {isSubmitting ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin" />
                         打赏中...
                       </>
                     ) : (
                       <>
-                        <Heart className="mr-2 h-4 w-4" />
+                        <Heart className="h-4 w-4" />
                         确认打赏
                       </>
                     )}

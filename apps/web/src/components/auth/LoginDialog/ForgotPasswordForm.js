@@ -156,12 +156,12 @@ export function ForgotPasswordForm({ onSuccess }) {
             <Button type='submit' className='w-full' disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <Loader2 className='h-4 w-4 animate-spin mr-2' />
+                  <Loader2 className='h-4 w-4 animate-spin' />
                   发送中...
                 </>
               ) : (
                 <>
-                  <Mail className='h-4 w-4 mr-2' />
+                  <Mail className='h-4 w-4' />
                   发送验证码
                 </>
               )}
@@ -250,12 +250,12 @@ export function ForgotPasswordForm({ onSuccess }) {
             >
               {isLoading ? (
                 <>
-                  <Loader2 className='h-4 w-4 animate-spin mr-2' />
+                  <Loader2 className='h-4 w-4 animate-spin' />
                   重置中...
                 </>
               ) : (
                 <>
-                  <Lock className='h-4 w-4 mr-2' />
+                  <Lock className='h-4 w-4' />
                   重置密码
                 </>
               )}

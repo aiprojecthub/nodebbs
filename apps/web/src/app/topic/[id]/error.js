@@ -26,13 +26,13 @@ export default function TopicErrorPage({ error, reset }) {
         
         <div className='flex flex-col sm:flex-row gap-3 justify-center'>
           <Button onClick={() => reset()} variant='default'>
-            <RefreshCw className='w-4 h-4 mr-2' />
+            <RefreshCw className='w-4 h-4' />
             重试
           </Button>
           
           <Button asChild variant='outline'>
             <Link href='/'>
-              <Home className='w-4 h-4 mr-2' />
+              <Home className='w-4 h-4' />
               返回首页
             </Link>
           </Button>

@@ -110,12 +110,12 @@ export function EmailVerificationDialog({ open, onOpenChange, user, onVerified }
             >
               {isSendingCode ? (
                 <>
-                  <Loader2 className='h-4 w-4 animate-spin mr-2' />
+                  <Loader2 className='h-4 w-4 animate-spin' />
                   发送中...
                 </>
               ) : (
                 <>
-                  <Send className='h-4 w-4 mr-2' />
+                  <Send className='h-4 w-4' />
                   发送验证码
                 </>
               )}
@@ -138,7 +138,7 @@ export function EmailVerificationDialog({ open, onOpenChange, user, onVerified }
               >
                 {isVerifying ? (
                   <>
-                    <Loader2 className='h-4 w-4 animate-spin mr-2' />
+                    <Loader2 className='h-4 w-4 animate-spin' />
                     验证中...
                   </>
                 ) : (

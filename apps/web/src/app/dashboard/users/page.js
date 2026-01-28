@@ -313,7 +313,7 @@ export default function UsersManagement() {
         description="管理用户账号、角色和权限"
         actions={
           <Button onClick={openCreateDialog}>
-            <UserPlus className="h-4 w-4 mr-2" />
+            <UserPlus className="h-4 w-4" />
             创建用户
           </Button>
         }

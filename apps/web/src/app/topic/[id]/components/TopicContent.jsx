@@ -81,7 +81,7 @@ export default function TopicContent() {
           <div className='flex-1 min-w-0'>
             <h1 className='text-3xl font-bold mb-3 leading-tight text-foreground break-all'>
               {topic.isPinned && (
-                <Pin className='inline-block h-5 w-5 mr-2 text-chart-5 -mt-1' />
+                <Pin className='inline-block h-5 w-5 text-chart-5 -mt-1' />
               )}
               {topic.title}
               {topic.isDeleted && (
