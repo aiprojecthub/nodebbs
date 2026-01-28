@@ -22,7 +22,6 @@ export const COMMON_ACTIONS = [
   { value: 'create', label: '创建' },
   { value: 'update', label: '编辑' },
   { value: 'delete', label: '删除' },
-  { value: 'manage', label: '管理' },
 ];
 
 // 模块特殊操作
@@ -41,10 +40,7 @@ export const MODULE_SPECIAL_ACTIONS = {
     { value: 'role.assign', label: '分配角色' },
   ],
   category: [],
-  upload: [
-    { value: 'image', label: '图片' },
-    { value: 'file', label: '文件' },
-  ],
+  upload: [],
 };
 
 // ============ 条件类型定义 ============
@@ -205,14 +201,6 @@ export const SYSTEM_PERMISSIONS = [
     conditions: ['own', 'categories'],
   },
   {
-    slug: 'topic.manage',
-    name: '管理话题',
-    module: 'topic',
-    action: 'manage',
-    isSystem: true,
-    conditions: ['categories', 'fieldFilter'],
-  },
-  {
     slug: 'topic.pin',
     name: '置顶话题',
     module: 'topic',
@@ -279,14 +267,6 @@ export const SYSTEM_PERMISSIONS = [
     conditions: ['own', 'categories'],
   },
   {
-    slug: 'post.manage',
-    name: '管理回复',
-    module: 'post',
-    action: 'manage',
-    isSystem: true,
-    conditions: ['categories', 'fieldFilter'],
-  },
-  {
     slug: 'post.approve',
     name: '审核回复',
     module: 'post',
@@ -319,14 +299,6 @@ export const SYSTEM_PERMISSIONS = [
     action: 'delete',
     isSystem: true,
     conditions: [],
-  },
-  {
-    slug: 'user.manage',
-    name: '管理用户',
-    module: 'user',
-    action: 'manage',
-    isSystem: true,
-    conditions: ['fieldFilter'],
   },
   {
     slug: 'user.ban',
@@ -378,15 +350,6 @@ export const SYSTEM_PERMISSIONS = [
     isSystem: true,
     conditions: [],
   },
-  {
-    slug: 'category.manage',
-    name: '管理分类',
-    module: 'category',
-    action: 'manage',
-    isSystem: true,
-    conditions: ['fieldFilter'],
-  },
-
   // ========== 上传权限 ==========
   {
     slug: 'upload.create',
@@ -394,23 +357,7 @@ export const SYSTEM_PERMISSIONS = [
     module: 'upload',
     action: 'create',
     isSystem: true,
-    conditions: ['maxFileSize', 'maxFilesPerDay', 'allowedFileTypes', 'rateLimit'],
-  },
-  {
-    slug: 'upload.image',
-    name: '上传图片',
-    module: 'upload',
-    action: 'image',
-    isSystem: true,
     conditions: ['maxFileSize', 'maxFilesPerDay', 'rateLimit'],
-  },
-  {
-    slug: 'upload.file',
-    name: '上传附件',
-    module: 'upload',
-    action: 'file',
-    isSystem: true,
-    conditions: ['maxFileSize', 'maxFilesPerDay', 'allowedFileTypes', 'rateLimit'],
   },
 ];
 
@@ -495,8 +442,8 @@ export const ROLE_PERMISSION_MAP = {
     'user.read', 'user.update',
     // 分类：查看
     'category.read',
-    // 上传：图片
-    'upload.create', 'upload.image',
+    // 上传
+    'upload.create',
   ],
 
   // 访客：只有查看权限
