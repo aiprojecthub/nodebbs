@@ -237,39 +237,6 @@ async function authPlugin(fastify) {
     }
   });
 
-  // Check if user is moderator or admin
-  fastify.decorate('requireModerator', async function(request, reply) {
-    try {
-      await request.jwtVerify();
-
-      // 从缓存或数据库获取最新的用户信息
-      const user = await getUserInfo(request.user.id);
-
-      if (!user) {
-        return reply.code(401).send({ error: '未授权', message: '用户不存在' });
-      }
-
-      if (user.isDeleted) {
-        return reply.code(403).send({ error: '访问被拒绝', message: '该账号已被删除' });
-      }
-
-      // 检查封禁状态（支持临时封禁）
-      const banStatus = await checkUserBanStatus(user);
-      if (banStatus.isBanned) {
-        return reply.code(403).send({ error: '访问被拒绝', message: getBanMessage(banStatus) });
-      }
-
-      if (![ROLE_MODERATOR, ROLE_ADMIN].includes(user.role)) {
-        return reply.code(403).send({ error: '禁止访问', message: '需要版主或管理员权限' });
-      }
-
-      // 更新 request.user 为最新的用户信息
-      request.user = enhanceUser(user);
-    } catch (err) {
-      reply.code(401).send({ error: '未授权', message: '令牌无效或已过期' });
-    }
-  });
-
   // ============ RBAC 权限检查装饰器 ============
 
   /**
