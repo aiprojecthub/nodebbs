@@ -16,6 +16,113 @@ import {
 // 权限缓存 TTL（秒）
 const PERMISSION_CACHE_TTL = 300; // 5 分钟
 
+/**
+ * 智能合并两个权限条件
+ * 原则：取更宽松的条件（并集）
+ * @param {Object} cond1 - 条件 1
+ * @param {Object} cond2 - 条件 2
+ * @returns {Object} 合并后的条件
+ */
+function mergePermissionConditions(cond1, cond2) {
+  // 如果任一条件为空（无限制 = 最宽松），直接返回 null
+  if (!cond1 || !cond2) return null;
+  
+  const merged = {};
+  const allKeys = new Set([...Object.keys(cond1), ...Object.keys(cond2)]);
+  
+  for (const key of allKeys) {
+    const val1 = cond1[key];
+    const val2 = cond2[key];
+    
+    // 如果某个条件不存在该限制，说明该限制不生效（更宽松）
+    if (val1 === undefined) {
+      merged[key] = val2;
+      continue;
+    }
+    if (val2 === undefined) {
+      merged[key] = val1;
+      continue;
+    }
+    
+    switch (key) {
+      case 'own':
+        // own: 只要有一个不要求 own，就不限制（false 更宽松）
+        merged.own = val1 && val2;
+        break;
+        
+      case 'categories':
+        // categories: 取并集（更多分类 = 更宽松）
+        if (Array.isArray(val1) && Array.isArray(val2)) {
+          merged.categories = [...new Set([...val1, ...val2])];
+        } else {
+          merged.categories = val1 || val2;
+        }
+        break;
+        
+      case 'accountAge':
+        // accountAge: 取较小值（门槛更低 = 更宽松）
+        merged.accountAge = Math.min(val1, val2);
+        break;
+        
+      case 'rateLimit':
+        // rateLimit: 取较大的 count（更多次数 = 更宽松）
+        if (val1.period === val2.period) {
+          merged.rateLimit = {
+            count: Math.max(val1.count, val2.count),
+            period: val1.period,
+          };
+        } else {
+          // 周期不同时，转换为统一周期再比较（简化处理：取 count 较大的）
+          merged.rateLimit = val1.count >= val2.count ? val1 : val2;
+        }
+        break;
+        
+      case 'maxFileSize':
+        // maxFileSize: 取较大值（更大文件 = 更宽松）
+        merged.maxFileSize = Math.max(val1, val2);
+        break;
+        
+      case 'allowedFileTypes':
+        // allowedFileTypes: 取并集（更多类型 = 更宽松）
+        if (Array.isArray(val1) && Array.isArray(val2)) {
+          merged.allowedFileTypes = [...new Set([...val1, ...val2])];
+        } else {
+          merged.allowedFileTypes = val1 || val2;
+        }
+        break;
+        
+      case 'uploadTypes':
+        // uploadTypes: 取并集（更多类型 = 更宽松）
+        if (Array.isArray(val1) && Array.isArray(val2)) {
+          merged.uploadTypes = [...new Set([...val1, ...val2])];
+        } else {
+          merged.uploadTypes = val1 || val2;
+        }
+        break;
+        
+      case 'timeRange':
+        // timeRange: 取并集（更长时间段 = 更宽松）
+        // 简化处理：如果有任一角色无时间限制，则无限制
+        if (!val1 || !val2) {
+          merged.timeRange = null;
+        } else {
+          // 取更早的开始时间和更晚的结束时间
+          merged.timeRange = {
+            start: val1.start < val2.start ? val1.start : val2.start,
+            end: val1.end > val2.end ? val1.end : val2.end,
+          };
+        }
+        break;
+        
+      default:
+        // 未知条件类型，保守处理：取第一个
+        merged[key] = val1;
+    }
+  }
+  
+  return merged;
+}
+
 class PermissionService {
   constructor(fastify) {
     this.fastify = fastify;
@@ -71,33 +178,61 @@ class PermissionService {
   }
 
   /**
-   * 获取角色的所有祖先角色ID（用于角色继承）
-   * @param {number} roleId - 角色 ID
-   * @param {Set} visited - 已访问的角色ID集合（防止循环）
-   * @returns {Promise<number[]>} 祖先角色ID列表
+   * 构建角色继承关系缓存
+   * 一次性查询所有角色并预计算继承关系
+   * @returns {Promise<Map>} 角色ID -> 祖先角色ID列表的映射
    */
-  async _getAncestorRoleIds(roleId, visited = new Set()) {
-    if (visited.has(roleId)) {
-      return []; // 防止循环继承
+  async _buildRoleInheritanceCache() {
+    const cacheKey = 'rbac:role_inheritance_map';
+
+    const cachedData = await this.fastify.cache.remember(cacheKey, 3600, async () => {
+      // 一次性查询所有角色
+      const allRoles = await db
+        .select({ id: roles.id, parentId: roles.parentId })
+        .from(roles);
+      
+      const parentMap = new Map(allRoles.map(r => [r.id, r.parentId]));
+      
+      // 预计算每个角色的所有祖先
+      const ancestorMap = {};
+      
+      const getAncestors = (roleId, visited = new Set()) => {
+        if (visited.has(roleId)) return [];
+        visited.add(roleId);
+        
+        const parentId = parentMap.get(roleId);
+        if (!parentId) return [];
+        
+        const ancestors = getAncestors(parentId, visited);
+        return [parentId, ...ancestors];
+      };
+      
+      allRoles.forEach(role => {
+        ancestorMap[role.id] = getAncestors(role.id);
+      });
+      
+      // 返回普通对象（可以被 JSON 序列化）
+      return ancestorMap;
+    });
+    
+    // 转换为 Map 返回（保持接口一致）
+    return new Map(Object.entries(cachedData).map(([k, v]) => [Number(k), v]));
+  }
+
+  /**
+   * 清除角色继承关系缓存
+   * 在角色的 parentId 变更时调用
+   */
+  async clearRoleInheritanceCache() {
+    if (this.fastify?.cache) {
+      await this.fastify.cache.invalidate(['rbac:role_inheritance_map']);
+      this.fastify.log.info('[RBAC] 已清除角色继承关系缓存');
     }
-    visited.add(roleId);
-
-    const [role] = await db
-      .select({ parentId: roles.parentId })
-      .from(roles)
-      .where(eq(roles.id, roleId))
-      .limit(1);
-
-    if (!role || !role.parentId) {
-      return [];
-    }
-
-    const ancestors = await this._getAncestorRoleIds(role.parentId, visited);
-    return [role.parentId, ...ancestors];
   }
 
   /**
    * 获取用户所有角色ID（包括继承的父角色）
+   * 使用缓存的继承关系映射，避免重复查询
    * @param {number} userId - 用户 ID
    * @returns {Promise<number[]>} 角色ID列表
    */
@@ -105,13 +240,14 @@ class PermissionService {
     const userRolesList = await this.getUserRoles(userId);
     const allRoleIds = new Set(userRolesList.map(r => r.id));
 
-    // 递归获取所有父角色
-    for (const role of userRolesList) {
-      if (role.parentId) {
-        const ancestors = await this._getAncestorRoleIds(role.id);
-        ancestors.forEach(id => allRoleIds.add(id));
-      }
-    }
+    // 从缓存获取继承关系映射
+    const ancestorMap = await this._buildRoleInheritanceCache();
+
+    // 添加所有祖先角色
+    userRolesList.forEach(role => {
+      const ancestors = ancestorMap.get(role.id) || [];
+      ancestors.forEach(id => allRoleIds.add(id));
+    });
 
     return Array.from(allRoleIds);
   }
@@ -160,41 +296,28 @@ class PermissionService {
       .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
       .where(inArray(rolePermissions.roleId, roleIds));
 
-    // 获取角色优先级映射
-    const rolePriorityMap = new Map();
-    const allRoles = await db
-      .select({ id: roles.id, priority: roles.priority })
-      .from(roles)
-      .where(inArray(roles.id, roleIds));
-    allRoles.forEach(r => rolePriorityMap.set(r.id, r.priority));
-
-    // 去重并合并条件（高优先级角色的权限覆盖低优先级）
+    // 去重并合并条件（使用智能合并策略）
     const permMap = new Map();
     for (const perm of results) {
       const existing = permMap.get(perm.slug);
-      const currentPriority = rolePriorityMap.get(perm.roleId) || 0;
-      const existingPriority = existing ? (rolePriorityMap.get(existing.roleId) || 0) : -1;
+      const currentConditions = perm.conditions ? JSON.parse(perm.conditions) : null;
 
       if (!existing) {
         permMap.set(perm.slug, {
           ...perm,
-          conditions: perm.conditions ? JSON.parse(perm.conditions) : null,
+          conditions: currentConditions,
         });
       } else {
-        // 如果有更宽松的权限（无条件），使用无条件版本
-        // 或者高优先级角色的权限覆盖低优先级
-        if (!perm.conditions && existing.conditions) {
-          permMap.set(perm.slug, {
-            ...perm,
-            conditions: null,
-          });
-        } else if (currentPriority > existingPriority && perm.conditions) {
-          // 高优先级角色的条件可能更宽松
-          permMap.set(perm.slug, {
-            ...perm,
-            conditions: JSON.parse(perm.conditions),
-          });
-        }
+        // 智能合并条件：取更宽松的条件
+        const mergedConditions = mergePermissionConditions(
+          existing.conditions,
+          currentConditions
+        );
+        
+        permMap.set(perm.slug, {
+          ...perm,
+          conditions: mergedConditions,
+        });
       }
     }
 
@@ -281,33 +404,31 @@ class PermissionService {
         const { start, end } = permission.conditions.timeRange;
         if (start && end) {
           const now = new Date();
-          const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-          if (currentTime < start || currentTime > end) {
+          const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+          // 转换时间字符串为分钟数
+          const timeToMinutes = (timeStr) => {
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours * 60 + minutes;
+          };
+
+          const startMinutes = timeToMinutes(start);
+          const endMinutes = timeToMinutes(end);
+
+          let allowed;
+          if (startMinutes <= endMinutes) {
+            // 正常时间段：09:00 - 18:00
+            allowed = currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+          } else {
+            // 跨午夜时间段：22:00 - 02:00
+            allowed = currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+          }
+
+          if (!allowed) {
             return {
               granted: false,
               code: 'TIME_NOT_ALLOWED',
               reason: `当前时间不允许操作，开放时间段：${start} - ${end}`,
-            };
-          }
-        }
-      }
-
-      // rateLimit: { count: 10, period: "hour" } 表示限制操作频率
-      if (permission.conditions.rateLimit) {
-        const { count, period } = permission.conditions.rateLimit;
-        if (count && period) {
-          const rateLimitResult = await this._checkAndIncrementRateLimit(
-            userId,
-            permissionSlug,
-            count,
-            period
-          );
-          if (!rateLimitResult.allowed) {
-            const periodText = { minute: '分钟', hour: '小时', day: '天' }[period] || period;
-            return {
-              granted: false,
-              code: 'RATE_LIMITED',
-              reason: `操作过于频繁，每${periodText}最多 ${count} 次`,
             };
           }
         }
@@ -347,13 +468,35 @@ class PermissionService {
           };
         }
       }
+
+      // rateLimit: { count: 10, period: "hour" } 表示限制操作频率
+      // 注意：rateLimit 放在最后检查，避免其他条件失败时也增加计数器
+      if (permission.conditions.rateLimit) {
+        const { count, period } = permission.conditions.rateLimit;
+        if (count && period) {
+          const rateLimitResult = await this._checkAndIncrementRateLimit(
+            userId,
+            permissionSlug,
+            count,
+            period
+          );
+          if (!rateLimitResult.allowed) {
+            const periodText = { minute: '分钟', hour: '小时', day: '天' }[period] || period;
+            return {
+              granted: false,
+              code: 'RATE_LIMITED',
+              reason: `操作过于频繁，每${periodText}最多 ${count} 次`,
+            };
+          }
+        }
+      }
     }
 
     return { granted: true };
   }
 
   /**
-   * 内部方法：检查并增加频率限制计数
+   * 内部方法：检查并增加频率限制计数（使用 Redis 原子操作）
    * @private
    */
   async _checkAndIncrementRateLimit(userId, actionKey, maxCount, period) {
@@ -364,9 +507,39 @@ class PermissionService {
       day: 86400,
     }[period] || 3600;
 
-    const cacheKey = `ratelimit:${userId}:${actionKey}`;
+    // 使用明确的前缀避免与其他功能的 key 冲突
+    const cacheKey = `rbac:ratelimit:${userId}:${actionKey}`;
 
-    // 如果有缓存，使用滑动窗口计数
+    // 优先使用 Redis（支持原子操作）
+    if (this.fastify?.redis) {
+      try {
+        const current = await this.fastify.redis.incr(cacheKey);
+
+        if (current === 1) {
+          // 第一次设置过期时间
+          await this.fastify.redis.expire(cacheKey, periodSeconds);
+        }
+
+        if (current > maxCount) {
+          const ttl = await this.fastify.redis.ttl(cacheKey);
+          return {
+            allowed: false,
+            remaining: 0,
+            resetAt: new Date(Date.now() + ttl * 1000),
+          };
+        }
+
+        return {
+          allowed: true,
+          remaining: maxCount - current,
+        };
+      } catch (err) {
+        this.fastify?.log.error('[RBAC] Redis 频率限制检查失败:', err);
+        // Redis 失败时降级到内存缓存
+      }
+    }
+
+    // 降级：使用内存缓存（非原子操作，但总比没有好）
     if (this.fastify?.cache) {
       const currentCount = (await this.fastify.cache.get(cacheKey)) || 0;
 
@@ -387,7 +560,8 @@ class PermissionService {
       };
     }
 
-    // 没有缓存时，默认允许（降级处理）
+    // 最终降级：记录警告并允许（避免功能完全不可用）
+    this.fastify?.log.warn('[RBAC] 频率限制缓存不可用，已降级允许操作');
     return { allowed: true };
   }
 
@@ -429,7 +603,7 @@ class PermissionService {
       day: 86400,
     }[period] || 3600;
 
-    const cacheKey = `ratelimit:${userId}:${actionKey}`;
+    const cacheKey = `rbac:ratelimit:${userId}:${actionKey}`;
 
     // 如果有缓存，使用滑动窗口计数
     if (this.fastify?.cache) {
@@ -510,7 +684,10 @@ class PermissionService {
    */
   async clearUserPermissionCache(userId) {
     if (this.fastify?.cache) {
+      // 同时清除用户信息缓存和权限缓存，确保一致性
       await this.fastify.cache.invalidate([
+        `user:${userId}`,
+        `user:full:${userId}`,
         `user:${userId}:roles`,
         `user:${userId}:permissions`,
       ]);
