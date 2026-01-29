@@ -253,11 +253,7 @@ export function ProfileTab() {
                 <span>用户角色</span>
               </div>
               <Badge variant='outline'>
-                {user.role === 'admin'
-                  ? '管理员'
-                  : user.role === 'moderator'
-                  ? '版主'
-                  : '用户'}
+                {user.displayRole?.name || (user.isAdmin ? '管理员' : '用户')}
               </Badge>
             </div>
             <div className='flex items-center justify-between'>

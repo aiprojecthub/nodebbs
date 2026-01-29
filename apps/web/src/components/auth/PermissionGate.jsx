@@ -87,15 +87,4 @@ export function AdminGate({ children, fallback = null }) {
   );
 }
 
-/**
- * 版主权限门控（包括管理员）
- */
-export function ModeratorGate({ children, fallback = null }) {
-  return (
-    <PermissionGate roles={['admin', 'moderator']} fallback={fallback}>
-      {children}
-    </PermissionGate>
-  );
-}
-
 export default PermissionGate;

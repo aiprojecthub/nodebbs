@@ -24,8 +24,6 @@ import { useDefaultCurrencyName } from '@/extensions/ledger/contexts/LedgerConte
 
 const ROLE_LABELS = {
   user: '普通用户',
-  vip: 'VIP用户',
-  moderator: '版主',
   admin: '管理员',
 };
 
@@ -315,8 +313,6 @@ export default function InvitationRulesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value='user'>普通用户</SelectItem>
-                  <SelectItem value='vip'>VIP用户</SelectItem>
-                  <SelectItem value='moderator'>版主</SelectItem>
                   <SelectItem value='admin'>管理员</SelectItem>
                 </SelectContent>
               </Select>

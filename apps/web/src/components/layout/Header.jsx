@@ -225,7 +225,7 @@ export default function Header() {
                       </DropdownMenuItem>
 
                       {/* 管理员入口 */}
-                      {user?.role === 'admin' && (
+                      {user?.isAdmin && (
                         <>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem asChild>

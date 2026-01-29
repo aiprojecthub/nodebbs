@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 import { authApi } from '@/lib/api';
 import LoginDialog from '@/components/auth/LoginDialog';
 import { useSettings } from '@/contexts/SettingsContext';
-import { ROLE_ADMIN, ROLE_MODERATOR } from '@/constants/roles';
+import { ROLE_ADMIN } from '@/constants/roles';
 
 const AuthContext = createContext(null);
 
@@ -15,16 +15,9 @@ function enhanceUser(user) {
 
   const enhanced = {
     ...user,
-    // 向后兼容的属性
-    isAdmin: user.role === ROLE_ADMIN,
-    isModerator: [ROLE_ADMIN, ROLE_MODERATOR].includes(user.role),
+    // 基于 RBAC 的 isAdmin 属性
+    isAdmin: user.userRoles?.some(r => r.slug === 'admin') || user.role === ROLE_ADMIN,
   };
-
-  // 如果有 RBAC 数据，使用它更新权限标志
-  if (user.userRoles?.length > 0) {
-    enhanced.isAdmin = user.userRoles.some(r => r.slug === 'admin');
-    enhanced.isModerator = user.userRoles.some(r => ['admin', 'moderator'].includes(r.slug));
-  }
 
   return enhanced;
 }

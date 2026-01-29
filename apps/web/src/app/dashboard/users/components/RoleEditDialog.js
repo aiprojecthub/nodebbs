@@ -59,7 +59,7 @@ export function RoleEditDialog({
       description={
         <>
           为用户 &quot;{user?.username}&quot; 分配角色（可多选）
-          {user?.role === 'admin' && (
+          {user?.userRoles?.some(r => r.slug === 'admin') && (
             <>
               <br />
               <span className="text-amber-600 font-medium">

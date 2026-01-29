@@ -450,8 +450,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
                 <DropdownMenuContent align='end' className="w-48">
                   {/* 删除选项 */}
                   {isAuthenticated &&
-                    (user?.id === localReply.userId ||
-                      ['moderator', 'admin'].includes(user?.role)) && (
+                    (user?.id === localReply.userId || user?.isAdmin) && (
                       <>
                         {/* 编辑选项 */}
                         {canEdit && (

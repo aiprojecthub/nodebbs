@@ -66,20 +66,12 @@ function enhanceUser(user) {
   if (!user) return null;
 
   const ROLE_ADMIN = 'admin';
-  const ROLE_MODERATOR = 'moderator';
 
   const enhanced = {
     ...user,
-    // 向后兼容的属性
-    isAdmin: user.role === ROLE_ADMIN,
-    isModerator: [ROLE_ADMIN, ROLE_MODERATOR].includes(user.role),
+    // 基于 RBAC 的 isAdmin 属性
+    isAdmin: user.userRoles?.some(r => r.slug === 'admin') || user.role === ROLE_ADMIN,
   };
-
-  // 如果有 RBAC 数据（现在 /auth/me 直接返回），使用它更新权限标志
-  if (user.userRoles?.length > 0) {
-    enhanced.isAdmin = user.userRoles.some(r => r.slug === 'admin');
-    enhanced.isModerator = user.userRoles.some(r => ['admin', 'moderator'].includes(r.slug));
-  }
 
   return enhanced;
 }

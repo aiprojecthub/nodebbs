@@ -46,7 +46,7 @@ export function BanUserDialog({ open, onOpenChange, user, onBanned }) {
       description={
         <>
           封禁用户 &quot;{user?.username}&quot;，封禁后将无法登录
-          {user?.role === 'admin' && (
+          {user?.userRoles?.some(r => r.slug === 'admin') && (
             <>
               <br />
               <span className="text-amber-600 font-medium">
