@@ -36,7 +36,6 @@ async function getTopicPermissions({ permissionService, user, topic }) {
       canDelete: false,
       canPin: false,
       canClose: false,
-      canApprove: false,
     };
   }
 
@@ -46,12 +45,11 @@ async function getTopicPermissions({ permissionService, user, topic }) {
   };
 
   // 并行检查所有权限
-  const [editResult, deleteResult, pinResult, closeResult, approveResult] = await Promise.all([
+  const [editResult, deleteResult, pinResult, closeResult] = await Promise.all([
     permissionService.checkPermissionWithReason(user.id, 'topic.update', context),
     permissionService.checkPermissionWithReason(user.id, 'topic.delete', context),
     permissionService.checkPermissionWithReason(user.id, 'topic.pin', { categoryId: topic.categoryId }),
     permissionService.checkPermissionWithReason(user.id, 'topic.close', context),
-    permissionService.checkPermissionWithReason(user.id, 'topic.approve', { categoryId: topic.categoryId }),
   ]);
 
   return {
@@ -59,7 +57,6 @@ async function getTopicPermissions({ permissionService, user, topic }) {
     canDelete: deleteResult.granted,
     canPin: pinResult.granted,
     canClose: closeResult.granted,
-    canApprove: approveResult.granted,
   };
 }
 

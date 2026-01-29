@@ -42,7 +42,6 @@ export function useTopicSidebar() {
   const canClose = topic.canClose || false;
   const canEdit = topic.canEdit || false;
   const canDelete = topic.canDelete || false;
-  const canApprove = topic.canApprove || false;
   const isTopicOwner = user && topic.userId === user.id;
 
   /**
@@ -160,8 +159,6 @@ export function useTopicSidebar() {
     canEdit,
     /** 当前用户是否有权删除话题 */
     canDelete,
-    /** 当前用户是否有权审核话题 */
-    canApprove,
     /** 当前用户是否是话题作者 */
     isTopicOwner,
   };
