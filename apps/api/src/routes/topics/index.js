@@ -19,6 +19,50 @@ import { eq, sql, desc, and, or, like, inArray, not, count } from 'drizzle-orm';
 import slugify from 'slug';
 import { userEnricher } from '../../services/userEnricher.js';
 import { shouldHideUserInfo } from '../../utils/visibility.js';
+import { getPermissionService } from '../../services/permissionService.js';
+
+/**
+ * 计算用户对话题的操作权限
+ * @param {Object} params - 参数
+ * @param {Object} params.user - 当前用户
+ * @param {Object} params.topic - 话题对象（需包含 userId, categoryId）
+ * @returns {Promise<Object>} 权限对象
+ */
+async function getTopicPermissions({ user, topic }) {
+  // 未登录用户无任何操作权限
+  if (!user) {
+    return {
+      canEdit: false,
+      canDelete: false,
+      canPin: false,
+      canClose: false,
+      canApprove: false,
+    };
+  }
+
+  const permissionService = getPermissionService();
+  const context = {
+    ownerId: topic.userId,
+    categoryId: topic.categoryId,
+  };
+
+  // 并行检查所有权限
+  const [editResult, deleteResult, pinResult, closeResult, approveResult] = await Promise.all([
+    permissionService.checkPermissionWithReason(user.id, 'topic.update', context),
+    permissionService.checkPermissionWithReason(user.id, 'topic.delete', context),
+    permissionService.checkPermissionWithReason(user.id, 'topic.pin', { categoryId: topic.categoryId }),
+    permissionService.checkPermissionWithReason(user.id, 'topic.close', context),
+    permissionService.checkPermissionWithReason(user.id, 'topic.approve', { categoryId: topic.categoryId }),
+  ]);
+
+  return {
+    canEdit: editResult.granted,
+    canDelete: deleteResult.granted,
+    canPin: pinResult.granted,
+    canClose: closeResult.granted,
+    canApprove: approveResult.granted,
+  };
+}
 
 // 辅助函数：获取分类及其所有子孙分类的 ID
 async function getCategoryWithDescendants(categoryId) {
@@ -552,6 +596,12 @@ export default async function topicRoutes(fastify, options) {
       const isSubscribed = subscriptionResult.length > 0;
       const isBlockedUser = blockResult.length > 0;
 
+      // 计算用户对该话题的操作权限
+      const topicPermissions = await getTopicPermissions({
+        user: request.user,
+        topic,
+      });
+
       return {
         ...topic,
         content: firstPost?.content || '',
@@ -570,7 +620,9 @@ export default async function topicRoutes(fastify, options) {
         viewCount: topic.viewCount + 1, // Return incremented count
         userAvatarFrame: authorInfo.avatarFrame || null,
         userBadges: authorInfo.badges || [],
-        isBlockedUser
+        isBlockedUser,
+        // 操作权限
+        ...topicPermissions,
       };
     }
   );
@@ -765,13 +817,19 @@ export default async function topicRoutes(fastify, options) {
         categoryId: topic.categoryId,
       });
 
-      // 置顶/关闭话题需要 topic.pin/topic.close 权限（仅管理员）
-      if (request.body.isPinned !== undefined || request.body.isClosed !== undefined) {
-        if (!request.user.isAdmin) {
-          return reply
-            .code(403)
-            .send({ error: '只有管理员可以置顶或关闭话题' });
-        }
+      // 置顶话题需要 topic.pin 权限
+      if (request.body.isPinned !== undefined) {
+        await fastify.checkPermission(request, 'topic.pin', {
+          categoryId: topic.categoryId,
+        });
+      }
+
+      // 关闭话题需要 topic.close 权限（作者可关闭自己的话题）
+      if (request.body.isClosed !== undefined) {
+        await fastify.checkPermission(request, 'topic.close', {
+          ownerId: topic.userId,
+          categoryId: topic.categoryId,
+        });
       }
 
       // 检查是否开启内容审核

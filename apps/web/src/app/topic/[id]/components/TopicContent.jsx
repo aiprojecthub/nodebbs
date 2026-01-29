@@ -53,8 +53,7 @@ export default function TopicContent() {
               此话题已被删除
             </p>
             <p className='text-xs text-muted-foreground'>
-              作为{user?.role === 'admin' ? '管理员' : '版主'}
-              ，您可以查看已删除的话题内容。普通用户无法访问此话题。
+              您有权限查看已删除的话题内容。普通用户无法访问此话题。
             </p>
           </div>
         </div>

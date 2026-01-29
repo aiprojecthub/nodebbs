@@ -18,6 +18,8 @@ import {
   Bell,
   Bookmark,
   Loader2,
+  Pin,
+  Trash2,
 } from 'lucide-react';
 import Link from '@/components/common/Link';
 import ReportDialog from '@/components/common/ReportDialog';
@@ -25,6 +27,7 @@ import TopicForm from '@/components/topic/TopicForm';
 import Time from '@/components/common/Time';
 import UserCard from '@/components/user/UserCard';
 import { useTopicSidebar } from '@/hooks/topic/useTopicSidebar';
+import { confirm } from '@/components/common/ConfirmPopover';
 
 /**
  * 话题侧边栏组件
@@ -43,13 +46,19 @@ export default function TopicSidebar() {
     subscribeLoading,
     handleToggleSubscribe: onToggleSubscribe,
     handleToggleTopicStatus: onToggleTopicStatus,
+    isPinned,
+    handleTogglePinTopic: onTogglePinTopic,
+    handleDeleteTopic: onDeleteTopic,
     isEditDialogOpen,
     setIsEditDialogOpen,
     editLoading,
     handleEditTopic: onEditTopic,
     reportDialogOpen,
     setReportDialogOpen,
-    canCloseOrPinTopic,
+    canEdit,
+    canClose,
+    canPin,
+    canDelete,
     isTopicOwner,
   } = useTopicSidebar();
   const author = {
@@ -134,27 +143,55 @@ export default function TopicSidebar() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align='end' className='w-48'>
-            {/* 编辑话题 - 只有话题作者或管理员可见 */}
-            {(isTopicOwner || canCloseOrPinTopic) && (
+            {/* 编辑话题 - 使用后端返回的 canEdit 权限 */}
+            {canEdit && (
+              <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
+                <Edit className='h-4 w-4' />
+                编辑话题
+              </DropdownMenuItem>
+            )}
+
+            {/* 置顶/取消置顶 - 使用后端返回的 canPin 权限 */}
+            {canPin && (
+              <DropdownMenuItem onClick={onTogglePinTopic}>
+                <Pin className={`h-4 w-4 ${isPinned ? 'fill-current' : ''}`} />
+                {isPinned ? '取消置顶' : '置顶话题'}
+              </DropdownMenuItem>
+            )}
+
+            {/* 关闭/开启话题 - 使用后端返回的 canClose 权限 */}
+            {canClose && (
+              <DropdownMenuItem onClick={onToggleTopicStatus}>
+                <Lock className='h-4 w-4' />
+                {topic.isClosed ? '重新开启' : '关闭话题'}
+              </DropdownMenuItem>
+            )}
+
+            {/* 删除话题 - 使用后端返回的 canDelete 权限，需要二次确认 */}
+            {canDelete && (
               <>
-                <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
-                  <Edit className='h-4 w-4' />
-                  编辑话题
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className='text-destructive focus:text-destructive'
+                  onClick={async (e) => {
+                    const confirmed = await confirm(e, {
+                      title: '确认删除话题',
+                      description: '删除后话题将不再显示，此操作可以恢复。',
+                      confirmText: '删除',
+                      variant: 'destructive',
+                    });
+                    if (confirmed) {
+                      onDeleteTopic();
+                    }
+                  }}
+                >
+                  <Trash2 className='h-4 w-4' />
+                  删除话题
+                </DropdownMenuItem>
               </>
             )}
 
-            {/* 关闭/开启话题 - 只有版主和管理员可见 */}
-            {canCloseOrPinTopic && (
-              <>
-                <DropdownMenuItem onClick={onToggleTopicStatus}>
-                  <Lock className='h-4 w-4' />
-                  {topic.isClosed ? '重新开启' : '关闭话题'}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
-            )}
+            {(canEdit || canPin || canClose || canDelete) && <DropdownMenuSeparator />}
 
             <DropdownMenuItem onClick={() => setReportDialogOpen(true)}>
               <Flag className='h-4 w-4' />

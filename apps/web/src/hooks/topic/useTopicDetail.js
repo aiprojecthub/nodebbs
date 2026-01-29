@@ -35,6 +35,8 @@ export function useTopicDetail({
     bookmark: false,
     subscribe: false,
     toggleStatus: false,
+    togglePin: false,
+    delete: false,
   });
 
   // 监听 initialRewardStats 变化
@@ -150,6 +152,57 @@ export function useTopicDetail({
   };
 
   /**
+   * 切换话题置顶状态
+   * 包含乐观更新和错误回滚
+   */
+  const togglePinTopic = async () => {
+    if (!isAuthenticated) return openLoginDialog();
+
+    setLoading('togglePin', true);
+
+    try {
+      const newPinnedState = !topic.isPinned;
+      // 乐观更新
+      updateTopic({ isPinned: newPinnedState });
+
+      await topicApi.update(topic.id, {
+        isPinned: newPinnedState,
+      });
+
+      toast.success(newPinnedState ? '话题已置顶' : '已取消置顶');
+      router.refresh();
+    } catch (err) {
+      // 回滚
+      updateTopic({ isPinned: !topic.isPinned });
+      console.error('置顶操作失败:', err);
+      toast.error('操作失败：' + err.message);
+    } finally {
+      setLoading('togglePin', false);
+    }
+  };
+
+  /**
+   * 删除话题（软删除）
+   */
+  const deleteTopic = async () => {
+    if (!isAuthenticated) return openLoginDialog();
+
+    setLoading('delete', true);
+
+    try {
+      await topicApi.delete(topic.id);
+      toast.success('话题已删除');
+      // 删除后跳转到首页或分类页
+      router.push('/');
+    } catch (err) {
+      console.error('删除话题失败:', err);
+      toast.error('删除失败：' + err.message);
+    } finally {
+      setLoading('delete', false);
+    }
+  };
+
+  /**
    * 处理打赏成功的回调
    * 更新本地打赏统计数据
    * @param {number} postId - 帖子ID
@@ -240,5 +293,9 @@ export function useTopicDetail({
     toggleSubscribe,
     /** 切换话题状态方法 */
     toggleTopicStatus,
+    /** 切换话题置顶方法 */
+    togglePinTopic,
+    /** 删除话题方法 */
+    deleteTopic,
   };
 }

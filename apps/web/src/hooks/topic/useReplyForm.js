@@ -120,5 +120,7 @@ export function useReplyForm({
     isClosed: topic.isClosed,
     /** 当前话题是否已删除 (来自 Context) */
     isDeleted: topic.isDeleted,
+    /** 当前用户是否有权关闭话题 (来自后端) */
+    canClose: topic.canClose || false,
   };
 }

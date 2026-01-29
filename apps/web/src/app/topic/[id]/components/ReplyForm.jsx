@@ -26,6 +26,7 @@ export default function ReplyForm({
     handleToggleTopicStatus,
     isClosed,
     isDeleted,
+    canClose,
   } = useReplyForm({
     onReplyAdded,
   });
@@ -76,8 +77,8 @@ export default function ReplyForm({
               此话题已关闭
             </p>
             <p className='text-xs text-muted-foreground mt-1'>
-              {user?.role === 'admin' || user?.role === 'moderator'
-                ? '作为管理员/版主，您可以重新开启此话题。'
+              {canClose
+                ? '您有权限重新开启此话题。'
                 : '此话题不再接受新回复。'}
             </p>
           </div>
@@ -112,8 +113,7 @@ export default function ReplyForm({
             <div className='text-sm text-muted-foreground'>
             </div>
             <div className='flex items-center space-x-2'>
-              {!isDeleted &&
-                (user?.role === 'admin' || user?.role === 'moderator') && (
+              {!isDeleted && canClose && (
                   <Button
                     variant='outline'
                     size='sm'
