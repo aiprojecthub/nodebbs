@@ -117,6 +117,7 @@ export function RolesTab() {
 
   const openCreateDialog = () => {
     setDialogMode('create');
+    setSelectedRole(null);
     setRoleForm({
       slug: '',
       name: '',
