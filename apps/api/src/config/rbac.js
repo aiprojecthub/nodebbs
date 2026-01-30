@@ -331,7 +331,6 @@ export const SYSTEM_PERMISSIONS = [
     // 场景：管理操作，可限制频率防止滥用
     conditions: ['rateLimit'],
   },
-  // TODO: user.list or user.manage 管理用户 列出所有用户
 
   // ========== 分类权限 ==========
   {
