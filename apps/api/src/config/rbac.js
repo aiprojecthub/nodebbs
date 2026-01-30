@@ -89,8 +89,8 @@ export const CONDITION_TYPES = {
       user: ['*.read'],  // user 角色的所有读权限不显示 scope
     },
     options: [
-      { value: 'own', label: '仅自己的资源' },
-      { value: 'list', label: '列表查询（无需过滤参数）' },
+      { value: 'own', label: '仅自己' },
+      { value: 'list', label: '全部' },
     ],
   },
 
