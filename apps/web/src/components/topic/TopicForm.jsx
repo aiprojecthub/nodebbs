@@ -78,6 +78,7 @@ export default function TopicForm({
               onChange={(value) => updateField('content', value)}
               placeholder='详细描述你的话题内容，支持 Markdown 格式...'
               className={errors.content ? 'border-destructive' : ''}
+              uploadType="topics" // 显式指定上传类型
             />
 
             {errors.content && (
@@ -86,7 +87,9 @@ export default function TopicForm({
                 <span>{errors.content}</span>
               </p>
             )}
-            <p className='text-xs text-muted-foreground'>支持 Markdown 格式</p>
+            <p className='text-xs text-muted-foreground'>
+              支持 Markdown 格式，支持粘贴或拖拽上传图片
+            </p>
           </div>
         </div>
 
@@ -206,6 +209,7 @@ export default function TopicForm({
                 <p>• 提供详细的背景信息和上下文</p>
                 <p>• 选择合适的分类便于他人查找</p>
                 <p>• 添加相关标签提高话题可见度</p>
+                <p>• 支持拖拽或粘贴上传图片</p>
               </div>
             </div>
           </aside>

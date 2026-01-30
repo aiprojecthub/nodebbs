@@ -256,6 +256,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
                       handleSubmitEdit();
                     }
                   }}
+                  uploadType="topics"
                 />
                 <div className='flex items-center justify-end gap-2 mt-3'>
                   <Button
@@ -522,6 +523,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
                 minimal={true}
                 autoFocus
                 onKeyDown={handleKeyDown}
+                uploadType="topics"
               />
               <div className='flex items-center justify-end gap-2 mt-3'>
                 <Button

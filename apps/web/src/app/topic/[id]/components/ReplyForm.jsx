@@ -104,6 +104,7 @@ export default function ReplyForm({
             disabled={submitting || isClosed || isDeleted}
             minimal={true}
             onKeyDown={handleKeyDown}
+            uploadType="topics"
           />
         </div>
 
