@@ -5,7 +5,7 @@
 
 import { eq } from 'drizzle-orm';
 import db from '../../db/index.js';
-import { roles, permissions, rolePermissions, userRoles, users } from '../../db/schema.js';
+import { roles, permissions, rolePermissions, userRoles, users, invitationRules } from '../../db/schema.js';
 import { getRbacConfig } from '../../config/rbac.js';
 
 export default async function rolesRoutes(fastify, options) {
@@ -281,6 +281,9 @@ export default async function rolesRoutes(fastify, options) {
 
       // 删除前先清除拥有该角色的用户的权限缓存
       await permissionService.clearRoleUsersPermissionCache(id);
+
+      // 删除关联的邀请规则
+      await db.delete(invitationRules).where(eq(invitationRules.role, role.slug));
 
       await db.delete(roles).where(eq(roles.id, id));
 

@@ -1,5 +1,5 @@
 import db from '../../db/index.js';
-import { invitationCodes, invitationRules, users, roles } from '../../db/schema.js';
+import { invitationCodes, invitationRules, users, roles, permissions, rolePermissions } from '../../db/schema.js';
 import { eq, and, desc, sql, or, like, asc, count } from 'drizzle-orm';
 import {
   generateInvitationCode,
@@ -710,6 +710,7 @@ export default async function invitationsRoutes(fastify) {
                     maxUsesPerCode: { type: 'number' },
                     expireDays: { type: 'number' },
                     pointsCost: { type: 'number' },
+                    isEnabled: { type: 'boolean' },
                     createdAt: { type: 'string' },
                     updatedAt: { type: 'string' },
                   },
@@ -728,21 +729,59 @@ export default async function invitationsRoutes(fastify) {
         const { page = 1, limit = 20 } = request.query;
         const offset = (page - 1) * limit;
 
-        // 获取规则列表
+
+        // 获取所有角色的权限映射 (优化查询逻辑，避免 RAW SQL)
+        const [createPerm] = await db
+          .select({ id: permissions.id })
+          .from(permissions)
+          .where(eq(permissions.slug, 'invitation.create'))
+          .limit(1);
+
+        // 如果找不到权限ID（理论上不应发生），则所有角色都无权限
+        const rolePermissionMap = new Set();
+        if (createPerm) {
+          const rolePerms = await db
+            .select({ roleId: rolePermissions.roleId })
+            .from(rolePermissions)
+            .where(eq(rolePermissions.permissionId, createPerm.id));
+          
+          rolePerms.forEach(rp => rolePermissionMap.add(rp.roleId));
+        }
+
+        // 获取规则列表 (仅返回存在的角色)
         const rules = await db
-          .select()
+          .select({
+            id: invitationRules.id,
+            role: invitationRules.role,
+            roleId: roles.id, // 需要 roleId 来匹配权限
+            dailyLimit: invitationRules.dailyLimit,
+            maxUsesPerCode: invitationRules.maxUsesPerCode,
+            expireDays: invitationRules.expireDays,
+            pointsCost: invitationRules.pointsCost,
+            createdAt: invitationRules.createdAt,
+            updatedAt: invitationRules.updatedAt,
+          })
           .from(invitationRules)
+          .leftJoin(roles, eq(invitationRules.role, roles.slug))
           .limit(limit)
           .offset(offset)
           .orderBy(asc(invitationRules.createdAt));
+        
+        // 组合数据：添加 isEnabled 字段
+        const rulesWithPermission = rules.map(rule => ({
+          ...rule,
+          isEnabled: rolePermissionMap.has(rule.roleId),
+          roleId: undefined, // 移除辅助字段
+        }));
 
         // 获取总数
         const [{ count: total }] = await db
           .select({ count: count() })
-          .from(invitationRules);
+          .from(invitationRules)
+          .leftJoin(roles, eq(invitationRules.role, roles.slug));
 
         return {
-          items: rules,
+          items: rulesWithPermission,
           page,
           limit,
           total,

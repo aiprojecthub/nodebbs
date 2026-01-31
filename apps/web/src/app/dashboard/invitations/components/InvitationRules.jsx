@@ -15,7 +15,8 @@ import {
 import { confirm } from '@/components/common/ConfirmPopover';
 import { FormDialog } from '@/components/common/FormDialog';
 import { toast } from 'sonner';
-import { Shield, Edit, Plus, Trash2 } from 'lucide-react';
+import { Shield, Edit, Plus, Trash2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Loading } from '@/components/common/Loading';
 import { invitationsApi, rbacApi } from '@/lib/api';
 import { useDefaultCurrencyName } from '@/extensions/ledger/contexts/LedgerContext';
@@ -202,9 +203,20 @@ export function InvitationRules() {
               <div className='flex items-start justify-between'>
                 <div className='flex-1'>
                   <div className='flex items-center gap-3 mb-4'>
-                    <h3 className='text-lg font-semibold'>
-                      {getRoleLabel(rule.role)}
-                    </h3>
+                    <div className='flex items-center gap-2'>
+                        <h3 className='text-lg font-semibold'>
+                            {getRoleLabel(rule.role)}
+                        </h3>
+                        {rule.isEnabled ? (
+                            <Badge variant="outline" className="text-emerald-600 bg-emerald-50 border-emerald-200 gap-1 font-normal">
+                                <CheckCircle2 className="w-3 h-3" /> <span className="text-xs">权限已开启</span>
+                            </Badge>
+                        ) : (
+                            <Badge variant="outline" className="text-amber-600 bg-amber-50 border-amber-200 gap-1 font-normal">
+                                <AlertTriangle className="w-3 h-3" /> <span className="text-xs">权限未开启</span>
+                            </Badge>
+                        )}
+                    </div>
                   </div>
 
                   <div className='grid grid-cols-2 md:grid-cols-4 gap-4 text-sm'>

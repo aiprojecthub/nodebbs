@@ -733,7 +733,7 @@ export const invitationRules = pgTable(
   'invitation_rules',
   {
     ...$defaults,
-    role: varchar('role', { length: 20 }).notNull().default('user').unique(),
+    role: varchar('role', { length: 50 }).notNull().default('user').unique(),
     dailyLimit: integer('daily_limit').notNull().default(1),
     maxUsesPerCode: integer('max_uses_per_code').notNull().default(1),
     expireDays: integer('expire_days').notNull().default(30),

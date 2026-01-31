@@ -5,13 +5,14 @@
  * 所有配置从 config/rbac.js 导入，确保单一数据源
  */
 
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import {
   roles,
   permissions,
   rolePermissions,
   userRoles,
   users,
+  invitationRules,
 } from '../../db/schema.js';
 import {
   SYSTEM_ROLES,
@@ -21,6 +22,7 @@ import {
   validateRbacConfig,
 } from '../../config/rbac.js';
 import { BaseSeeder } from './base.js';
+import { InvitationSeeder } from './invitation.js';
 import chalk from 'chalk';
 
 export class RBACSeeder extends BaseSeeder {
@@ -135,6 +137,37 @@ export class RBACSeeder extends BaseSeeder {
         ? SYSTEM_PERMISSIONS.map(p => p.slug)
         : permSlugs;
 
+      // --- 同步逻辑开始：清理废弃权限 ---
+      // 1. 计算目标权限 ID 集合
+      const targetPermissionIds = new Set();
+      for (const permSlug of actualPermSlugs) {
+        const pid = permissionIdMap[permSlug];
+        if (pid) targetPermissionIds.add(pid);
+      }
+
+      // 2. 获取现有权限关联
+      const existingRolePermissions = await db
+        .select()
+        .from(rolePermissions)
+        .where(eq(rolePermissions.roleId, roleId));
+
+      // 3. 找出废弃的关联 ID
+      const toDeleteIds = [];
+      for (const rp of existingRolePermissions) {
+        if (!targetPermissionIds.has(rp.permissionId)) {
+          toDeleteIds.push(rp.id);
+        }
+      }
+
+      // 4. 执行删除 (修改为：仅记录日志，不执行删除，以保留运行时更改)
+      // 注意：此处不强制删除是为了支持通过 UI/管理后台进行的动态权限配置。
+      // 如果配置中不存在但在数据库中存在，警告开发者即可，不应抹除运营数据。
+      if (toDeleteIds.length > 0) {
+        // await db.delete(rolePermissions).where(inArray(rolePermissions.id, toDeleteIds));
+        this.logger.warn(`  - [${roleSlug}] 发现 ${toDeleteIds.length} 个非配置定义的权限 (保留以支持运行时配置)`);
+      }
+      // --- 同步逻辑结束 ---
+
       for (const permSlug of actualPermSlugs) {
         const permissionId = permissionIdMap[permSlug];
         if (!permissionId) {
@@ -187,6 +220,13 @@ export class RBACSeeder extends BaseSeeder {
 
     // 5. 兜底保护：确保至少有一个管理员角色（引导模式）
     await this.bootstrapAdmin(db, roleIdMap['admin']);
+
+    // 6. 初始化默认邀请规则 (RBAC 配套)
+    // 邀请规则依赖于角色，因此必须在角色初始化后执行
+    // 且 clean rbac 也会清理 invitationRules，所以 init rbac 必须负责恢复
+    this.logger.item('初始化邀请规则...', '🎫');
+    const invitationSeeder = new InvitationSeeder();
+    await invitationSeeder.init(db, reset);
 
     this.logger.summary({
       total: result.roles.total + result.permissions.total + result.rolePermissions.total,
@@ -241,6 +281,9 @@ export class RBACSeeder extends BaseSeeder {
     // 按依赖顺序删除
     await db.delete(rolePermissions);
     this.logger.success('已清理角色权限关联');
+
+    await db.delete(invitationRules);
+    this.logger.success('已清理邀请规则');
 
     await db.delete(userRoles);
     this.logger.success('已清理用户角色关联');

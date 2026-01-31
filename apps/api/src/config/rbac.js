@@ -600,7 +600,7 @@ export const ROLE_PERMISSION_MAP = {
     // 上传
     'upload.create',
     // 邀请
-    'invitation.create',
+    // 'invitation.create',
   ],
 
   // 访客：只有查看权限
