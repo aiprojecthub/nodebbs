@@ -77,7 +77,6 @@ export default function DashboardSidebar() {
         { href: '/dashboard/users', icon: Users, label: '用户管理', permission: 'dashboard.users' },
         { href: '/dashboard/roles', icon: Shield, label: '角色与权限', permission: 'dashboard.roles' },
         { href: '/dashboard/invitations', icon: Gift, label: '邀请码', permission: 'dashboard.invitations' },
-        { href: '/dashboard/invitation-rules', icon: Settings, label: '邀请码规则', permission: 'dashboard.invitations' },
       ],
     },
 

@@ -16,6 +16,7 @@ export const MODULE_OPTIONS = [
   { value: 'user', label: '用户' },
   { value: 'category', label: '分类' },
   { value: 'upload', label: '上传' },
+  { value: 'invitation', label: '邀请' },
   { value: 'dashboard', label: '管理后台' },
 ];
 
@@ -39,6 +40,7 @@ export const MODULE_SPECIAL_ACTIONS = {
   ],
   category: [],
   upload: [],
+  invitation: [],
   dashboard: [
     { value: 'access', label: '访问后台' },
     { value: 'topics', label: '话题管理' },
@@ -386,6 +388,17 @@ export const SYSTEM_PERMISSIONS = [
     conditions: ['uploadTypes', 'maxFileSize', 'allowedFileTypes', 'rateLimit', 'accountAge'],
   },
 
+  // ========== 邀请权限 ==========
+  {
+    slug: 'invitation.create',
+    name: '生成邀请码',
+    module: 'invitation',
+    action: 'create',
+    isSystem: true,
+    // 场景：限制邀请频率、账号门槛
+    conditions: ['rateLimit', 'accountAge'],
+  },
+
   // ========== 管理后台权限 ==========
   {
     slug: 'dashboard.access',
@@ -586,6 +599,8 @@ export const ROLE_PERMISSION_MAP = {
     'category.read',
     // 上传
     'upload.create',
+    // 邀请
+    'invitation.create',
   ],
 
   // 访客：只有查看权限

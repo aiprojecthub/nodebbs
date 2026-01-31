@@ -964,11 +964,6 @@ export const invitationsApi = {
     async delete(role) {
       return apiClient.delete(`/invitations/rules/${role}`);
     },
-
-    // 切换规则启用状态
-    async toggle(role) {
-      return apiClient.patch(`/invitations/rules/${role}/toggle`);
-    },
   },
 };
 

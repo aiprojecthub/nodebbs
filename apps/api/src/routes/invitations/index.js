@@ -1,5 +1,5 @@
 import db from '../../db/index.js';
-import { invitationCodes, invitationRules, users } from '../../db/schema.js';
+import { invitationCodes, invitationRules, users, roles } from '../../db/schema.js';
 import { eq, and, desc, sql, or, like, asc, count } from 'drizzle-orm';
 import {
   generateInvitationCode,
@@ -58,6 +58,8 @@ export default async function invitationsRoutes(fastify) {
     },
     async (request, reply) => {
       try {
+        // 检查 RBAC 权限
+        await fastify.checkPermission(request, 'invitation.create');
         const { note, maxUses, expireDays, count = 1 } = request.body;
         const userId = request.user.id;
 
@@ -291,7 +293,7 @@ export default async function invitationsRoutes(fastify) {
             type: 'object',
             properties: {
               quota: {
-                type: 'object',
+                type: ['object', 'null'],
                 properties: {
                   dailyLimit: { type: 'number' },
                   todayUsed: { type: 'number' },
@@ -301,7 +303,7 @@ export default async function invitationsRoutes(fastify) {
                 },
               },
               stats: {
-                type: 'object',
+                type: ['object', 'null'],
                 properties: {
                   total: { type: 'number' },
                   active: { type: 'number' },
@@ -309,6 +311,7 @@ export default async function invitationsRoutes(fastify) {
                   expired: { type: 'number' },
                 },
               },
+              message: { type: 'string' },
             },
           },
         },
@@ -318,8 +321,28 @@ export default async function invitationsRoutes(fastify) {
       try {
         const userId = request.user.id;
 
+        // 检查 RBAC 权限
+        const hasPermission = await fastify.hasPermission(request, 'invitation.create');
+        if (!hasPermission) {
+          return {
+            quota: null,
+            stats: null,
+            message: '没有生成邀请码的权限',
+          };
+        }
+
         // 获取用户规则
-        const rule = await getUserInvitationRule(userId);
+        let rule;
+        try {
+          rule = await getUserInvitationRule(userId);
+        } catch (error) {
+          // 没有找到规则时返回 null quota
+          return {
+            quota: null,
+            stats: null,
+            message: error.message,
+          };
+        }
 
         // 获取今日已使用次数
         const todayUsed = await getTodayGeneratedCount(userId);
@@ -687,7 +710,6 @@ export default async function invitationsRoutes(fastify) {
                     maxUsesPerCode: { type: 'number' },
                     expireDays: { type: 'number' },
                     pointsCost: { type: 'number' },
-                    isActive: { type: 'boolean' },
                     createdAt: { type: 'string' },
                     updatedAt: { type: 'string' },
                   },
@@ -796,7 +818,6 @@ export default async function invitationsRoutes(fastify) {
             maxUsesPerCode: { type: 'number', minimum: 1 },
             expireDays: { type: 'number', minimum: 1 },
             pointsCost: { type: 'number', minimum: 0 },
-            isActive: { type: 'boolean' },
           },
         },
       },
@@ -804,7 +825,7 @@ export default async function invitationsRoutes(fastify) {
     async (request, reply) => {
       try {
         const { role } = request.params;
-        const { dailyLimit, maxUsesPerCode, expireDays, pointsCost, isActive } =
+        const { dailyLimit, maxUsesPerCode, expireDays, pointsCost } =
           request.body;
 
         // 检查规则是否存在
@@ -825,7 +846,6 @@ export default async function invitationsRoutes(fastify) {
               maxUsesPerCode,
               expireDays,
               pointsCost: pointsCost ?? 0,
-              isActive: isActive ?? true,
             })
             .where(eq(invitationRules.role, role))
             .returning();
@@ -839,7 +859,6 @@ export default async function invitationsRoutes(fastify) {
               maxUsesPerCode,
               expireDays,
               pointsCost: pointsCost ?? 0,
-              isActive: isActive ?? true,
             })
             .returning();
         }
@@ -874,11 +893,17 @@ export default async function invitationsRoutes(fastify) {
       try {
         const { role } = request.params;
 
-        // 不允许删除 user 角色的规则
-        if (role === 'user') {
+        // 检查是否为系统角色（从 RBAC 角色表查询）
+        const [roleInfo] = await db
+          .select({ isSystem: roles.isSystem, name: roles.name })
+          .from(roles)
+          .where(eq(roles.slug, role))
+          .limit(1);
+
+        if (roleInfo?.isSystem) {
           return reply
             .code(400)
-            .send({ error: '不能删除默认用户角色的规则' });
+            .send({ error: `不能删除系统角色「${roleInfo.name}」的规则` });
         }
 
         const [deleted] = await db
@@ -894,54 +919,6 @@ export default async function invitationsRoutes(fastify) {
       } catch (error) {
         fastify.log.error('删除邀请规则时出错:', error);
         return reply.code(500).send({ error: '删除邀请规则失败' });
-      }
-    }
-  );
-
-  // 切换规则启用状态（管理员）
-  fastify.patch(
-    '/rules/:role/toggle',
-    {
-      preHandler: [fastify.requireAdmin],
-      schema: {
-        tags: ['invitations', 'admin'],
-        description: '切换邀请规则启用状态（管理员）',
-        security: [{ bearerAuth: [] }],
-        params: {
-          type: 'object',
-          required: ['role'],
-          properties: {
-            role: { type: 'string' },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      try {
-        const { role } = request.params;
-
-        // 获取当前状态
-        const [current] = await db
-          .select()
-          .from(invitationRules)
-          .where(eq(invitationRules.role, role))
-          .limit(1);
-
-        if (!current) {
-          return reply.code(404).send({ error: '规则不存在' });
-        }
-
-        // 切换状态
-        const [updated] = await db
-          .update(invitationRules)
-          .set({ isActive: !current.isActive })
-          .where(eq(invitationRules.role, role))
-          .returning();
-
-        return updated;
-      } catch (error) {
-        fastify.log.error('切换邀请规则状态时出错:', error);
-        return reply.code(500).send({ error: '切换规则状态失败' });
       }
     }
   );

@@ -5,7 +5,6 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -15,27 +14,33 @@ import {
 } from '@/components/ui/select';
 import { confirm } from '@/components/common/ConfirmPopover';
 import { FormDialog } from '@/components/common/FormDialog';
-import { PageHeader } from '@/components/common/PageHeader';
 import { toast } from 'sonner';
 import { Shield, Edit, Plus, Trash2 } from 'lucide-react';
 import { Loading } from '@/components/common/Loading';
-import { invitationsApi } from '@/lib/api';
+import { invitationsApi, rbacApi } from '@/lib/api';
 import { useDefaultCurrencyName } from '@/extensions/ledger/contexts/LedgerContext';
 
-const ROLE_LABELS = {
-  user: '普通用户',
-  admin: '管理员',
-};
-
-export default function InvitationRulesPage() {
+export function InvitationRules() {
   const currencyName = useDefaultCurrencyName();
   const [rules, setRules] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingRule, setEditingRule] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  
 
+
+  // 获取角色标签（动态从 roles 列表中获取）
+  const getRoleLabel = (roleSlug) => {
+    const role = roles.find(r => r.slug === roleSlug);
+    return role ? role.name : roleSlug;
+  };
+
+  // 检查角色是否可以删除（系统角色不可删除）
+  const canDeleteRule = (roleSlug) => {
+    const role = roles.find(r => r.slug === roleSlug);
+    return role ? !role.isSystem : true;
+  };
 
   const [formData, setFormData] = useState({
     role: '',
@@ -43,26 +48,30 @@ export default function InvitationRulesPage() {
     maxUsesPerCode: 1,
     expireDays: 30,
     pointsCost: 0,
-    isActive: true,
   });
 
-  // 加载规则列表
-  const loadRules = async () => {
+  // 加载规则列表和角色列表
+  const loadData = async () => {
     try {
       setLoading(true);
-      const data = await invitationsApi.rules.getAll();
+      const [rulesData, rolesData] = await Promise.all([
+        invitationsApi.rules.getAll(),
+        rbacApi.admin.getRoles(),
+      ]);
       // 适配新的数据结构 {items, page, limit, total}
-      setRules(data.items || data);
+      setRules(rulesData.items || rulesData);
+      // 角色数据
+      setRoles(rolesData.items || rolesData);
     } catch (error) {
-      console.error('Failed to load rules:', error);
-      toast.error('加载邀请规则失败');
+      console.error('Failed to load data:', error);
+      toast.error('加载数据失败');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadRules();
+    loadData();
   }, []);
 
   // 打开编辑对话框
@@ -74,7 +83,6 @@ export default function InvitationRulesPage() {
       maxUsesPerCode: rule.maxUsesPerCode,
       expireDays: rule.expireDays,
       pointsCost: rule.pointsCost,
-      isActive: rule.isActive,
     });
     setIsDialogOpen(true);
   };
@@ -88,7 +96,6 @@ export default function InvitationRulesPage() {
       maxUsesPerCode: 1,
       expireDays: 30,
       pointsCost: 0,
-      isActive: true,
     });
     setIsDialogOpen(true);
   };
@@ -108,7 +115,6 @@ export default function InvitationRulesPage() {
         maxUsesPerCode: formData.maxUsesPerCode,
         expireDays: formData.expireDays,
         pointsCost: formData.pointsCost,
-        isActive: formData.isActive,
       });
 
       // 局部更新：在列表中查找并更新或添加规则
@@ -137,41 +143,17 @@ export default function InvitationRulesPage() {
     }
   };
 
-  // 切换启用状态
-  const handleToggle = async (role) => {
-    try {
-      const updatedRule = await invitationsApi.rules.toggle(role);
-
-      // 局部更新：切换指定规则的启用状态
-      setRules((prevRules) =>
-        prevRules.map((r) =>
-          r.role === role ? updatedRule : r
-        )
-      );
-
-      toast.success('状态已更新');
-    } catch (error) {
-      console.error('Failed to toggle rule:', error);
-      toast.error(error.message || '切换状态失败');
-    }
-  };
-
   // 确认删除
   const handleDeleteClick = async (e, role) => {
     const confirmed = await confirm(e, {
       title: '确认删除规则？',
-      description: `确定要删除角色 "${ROLE_LABELS[role] || role}" 的规则吗？`,
+      description: `确定要删除角色 "${getRoleLabel(role)}" 的规则吗？`,
       confirmText: '确认删除',
       variant: 'destructive',
     });
     
     if (!confirmed) return;
 
-    // Use a local loading state or just rely on toast?
-    // Since there's no global "deleting" state anymore, and the action is quick.
-    // If we want to show loading on the specific button, it's harder with confirm popover pattern unless we track it.
-    // Given the previous pattern didn't seemingly show loading on the button (it was on the dialog), we can just wrap in try-catch.
-    
     try {
       await invitationsApi.rules.delete(role);
 
@@ -189,18 +171,22 @@ export default function InvitationRulesPage() {
     return <Loading text='加载中...' className='min-h-[400px]' />;
   }
 
+  // 计算可添加规则的角色（排除 guest 和已有规则的角色）
+  const availableRoles = roles.filter((role) => {
+    if (role.slug === 'guest') return false;
+    const existingRoleSlugs = rules.map(r => r.role);
+    return !existingRoleSlugs.includes(role.slug);
+  });
+  const canCreateRule = availableRoles.length > 0;
+
   return (
     <div className='space-y-6'>
-      <PageHeader
-        title='邀请规则管理'
-        description='为不同角色配置邀请码生成规则'
-        actions={
-          <Button onClick={handleCreate}>
+      <div className="flex justify-end">
+        <Button onClick={handleCreate} disabled={!canCreateRule}>
             <Plus className='h-4 w-4' />
             新建规则
-          </Button>
-        }
-      />
+        </Button>
+      </div>
 
       {/* 规则列表 */}
       <div className='grid gap-4'>
@@ -208,7 +194,7 @@ export default function InvitationRulesPage() {
           <Card className='p-12 text-center shadow-none'>
             <Shield className='h-12 w-12 mx-auto text-muted-foreground mb-4' />
             <p className='text-muted-foreground mb-4'>还没有配置任何规则</p>
-            <Button onClick={handleCreate}>创建第一个规则</Button>
+            <Button onClick={handleCreate} disabled={!canCreateRule}>创建第一个规则</Button>
           </Card>
         ) : (
           rules.map((rule) => (
@@ -217,17 +203,8 @@ export default function InvitationRulesPage() {
                 <div className='flex-1'>
                   <div className='flex items-center gap-3 mb-4'>
                     <h3 className='text-lg font-semibold'>
-                      {ROLE_LABELS[rule.role] || rule.role}
+                      {getRoleLabel(rule.role)}
                     </h3>
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        rule.isActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {rule.isActive ? '启用' : '禁用'}
-                    </span>
                   </div>
 
                   <div className='grid grid-cols-2 md:grid-cols-4 gap-4 text-sm'>
@@ -259,12 +236,6 @@ export default function InvitationRulesPage() {
                 </div>
 
                 <div className='flex items-center gap-2 ml-4'>
-                  <div className='flex items-center h-8 px-2 rounded-md hover:bg-muted'>
-                    <Switch
-                      checked={rule.isActive}
-                      onCheckedChange={() => handleToggle(rule.role)}
-                    />
-                  </div>
                   <Button
                     variant='ghost'
                     size='sm'
@@ -272,7 +243,7 @@ export default function InvitationRulesPage() {
                   >
                     <Edit className='h-4 w-4' />
                   </Button>
-                  {rule.role !== 'user' && (
+                  {canDeleteRule(rule.role) && (
                     <Button
                       variant='ghost'
                       size='sm'
@@ -312,8 +283,22 @@ export default function InvitationRulesPage() {
                   <SelectValue placeholder='选择角色' />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value='user'>普通用户</SelectItem>
-                  <SelectItem value='admin'>管理员</SelectItem>
+                  {roles
+                    .filter((role) => {
+                      // 排除访客角色
+                      if (role.slug === 'guest') return false;
+                      // 新建时排除已有规则的角色
+                      if (!editingRule) {
+                        const existingRoleSlugs = rules.map(r => r.role);
+                        if (existingRoleSlugs.includes(role.slug)) return false;
+                      }
+                      return true;
+                    })
+                    .map((role) => (
+                      <SelectItem key={role.id} value={role.slug}>
+                        {role.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -381,22 +366,8 @@ export default function InvitationRulesPage() {
                 }
               />
             </div>
-
-            <div className='flex items-center justify-between'>
-              <Label htmlFor='isActive'>启用规则</Label>
-              <Switch
-                id='isActive'
-                checked={formData.isActive}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, isActive: checked })
-                }
-              />
-            </div>
           </div>
       </FormDialog>
-
-      {/* 删除确认对话框 */}
-
     </div>
   );
 }

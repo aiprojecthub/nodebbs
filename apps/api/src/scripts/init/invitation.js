@@ -15,7 +15,6 @@ export const INVITATION_RULES = [
     maxUsesPerCode: 1,
     expireDays: 30,
     pointsCost: 0,
-    isActive: true,
   },
   {
     role: 'admin',
@@ -23,7 +22,6 @@ export const INVITATION_RULES = [
     maxUsesPerCode: 1,
     expireDays: 365,
     pointsCost: 0,
-    isActive: true,
   },
 ];
 

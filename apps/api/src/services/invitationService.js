@@ -1,7 +1,8 @@
 import { customAlphabet } from 'nanoid';
 import db from '../db/index.js';
 import { invitationCodes, invitationRules, users } from '../db/schema.js';
-import { eq, and, gte, sql, count } from 'drizzle-orm';
+import { eq, and, gte, sql, count, inArray } from 'drizzle-orm';
+import { getPermissionService } from './permissionService.js';
 
 /**
  * 生成唯一的邀请码
@@ -34,39 +35,39 @@ export async function generateUniqueCode(length = 12) {
 
 /**
  * 获取用户的邀请规则
+ * 通过 RBAC 系统获取用户所有角色，然后匹配邀请规则
+ * 当用户有多个角色时，取最优规则（dailyLimit 最大的）
  * @param {number} userId - 用户ID
  * @returns {Promise<Object>} 邀请规则
  */
 export async function getUserInvitationRule(userId) {
-  // 获取用户角色
-  const [user] = await db
-    .select({ role: users.role })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-  
-  if (!user) {
-    throw new Error('用户不存在');
+  // 通过 RBAC 系统获取用户所有角色
+  const permissionService = getPermissionService();
+  const userRoles = await permissionService.getUserRoles(userId);
+
+  if (!userRoles || userRoles.length === 0) {
+    throw new Error('用户没有分配角色');
   }
-  
-  // 获取对应角色的规则（不管是否启用）
-  const [rule] = await db
+
+  // 获取用户所有角色的 slug
+  const roleSlugs = userRoles.map(r => r.slug);
+
+  // 查询所有匹配角色的邀请规则
+  const rules = await db
     .select()
     .from(invitationRules)
-    .where(eq(invitationRules.role, user.role))
-    .limit(1);
-  
-  // 如果找到规则
-  if (rule) {
-    // 检查规则是否启用
-    if (!rule.isActive) {
-      throw new Error('该角色的邀请功能已被禁用');
-    }
-    return rule;
+    .where(inArray(invitationRules.role, roleSlugs));
+
+  if (rules.length === 0) {
+    throw new Error('没有找到该用户角色的邀请规则');
   }
-  
-  // 如果没有找到规则
-  throw new Error('没有找到该角色的邀请规则');
+
+  // 取最优规则（dailyLimit 最大的）
+  const bestRule = rules.reduce((best, current) => {
+    return current.dailyLimit > best.dailyLimit ? current : best;
+  }, rules[0]);
+
+  return bestRule;
 }
 
 /**

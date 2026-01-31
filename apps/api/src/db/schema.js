@@ -738,11 +738,9 @@ export const invitationRules = pgTable(
     maxUsesPerCode: integer('max_uses_per_code').notNull().default(1),
     expireDays: integer('expire_days').notNull().default(30),
     pointsCost: integer('points_cost').notNull().default(0),
-    isActive: boolean('is_active').notNull().default(true),
   },
   (table) => [
     index('invitation_rules_role_idx').on(table.role),
-    index('invitation_rules_is_active_idx').on(table.isActive),
   ]
 );
 
