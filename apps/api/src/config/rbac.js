@@ -615,7 +615,7 @@ export const ROLE_PERMISSION_CONDITIONS = {
     
     // 上传权限
     'upload.create': { 
-      uploadTypes: ['avatars', 'topics'],
+      uploadTypes: ['avatars'],
       maxFileSize: 5120, // 5MB (单位：KB)
       allowedFileTypes: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
     },
