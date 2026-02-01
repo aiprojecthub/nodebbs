@@ -61,14 +61,6 @@ async function authPlugin(fastify) {
   const permissionService = createPermissionService(fastify);
   fastify.decorate('permissionService', permissionService);
   
-  // 增强用户对象，添加权限辅助属性
-  function enhanceUser(user) {
-    if (!user) return null;
-
-    user.isAdmin = user.role === ROLE_ADMIN;
-
-    return user;
-  }
 
   /**
    * 检查用户封禁状态（支持临时封禁）
@@ -196,8 +188,8 @@ async function authPlugin(fastify) {
       }
     }
 
-    request.user = enhanceUser(user);
-    return user;
+    request.user = await permissionService.enhanceUserWithPermissions(user);
+    return request.user;
   }
 
   // Decorate fastify with auth utilities
@@ -227,7 +219,7 @@ async function authPlugin(fastify) {
     const user = await resolveUser(request, reply, { checkBan: true });
     if (!user) return;
 
-    if (user.role !== ROLE_ADMIN) {
+    if (!request.user?.isAdmin) {
       return reply.code(403).send({ error: '禁止访问', message: '需要管理员权限' });
     }
   });
@@ -412,8 +404,8 @@ async function authPlugin(fastify) {
       const user = await getUserInfo(request.user.id);
       
       if (user) {
-        // 更新 request.user 为最新的用户信息
-        request.user = enhanceUser(user);
+        // 更新 request.user 为最新的用户信息（带权限）
+        request.user = await permissionService.enhanceUserWithPermissions(user);
       } else {
         request.user = null;
       }

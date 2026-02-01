@@ -2,6 +2,7 @@ import { userEnricher } from '../../services/userEnricher.js';
 import db from '../../db/index.js';
 import { users, accounts } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
+import env from '../../config/env.js';
 
 export default async function userRoute(fastify, options) {
   const { permissionService } = fastify;
@@ -119,23 +120,16 @@ export default async function userRoute(fastify, options) {
       const userId = request.user.id;
       const cacheKey = `user:full:${userId}`;
 
-      const USER_CACHE_TTL = parseInt(process.env.USER_CACHE_TTL || '120', 10);
+      const USER_CACHE_TTL = env.cache.userTtl;
       return await fastify.cache.remember(cacheKey, USER_CACHE_TTL, async () => {
-        // 使用 request.user (由 authenticate 中间件提供)，避免重复查询数据库
-        // 注意：需要浅拷贝一份，避免修改 request.user 影响后续处理（虽然在此处是最后一步）
+        // 直接利用 request.user (由 auth 插件中的 authenticate preHandler 提供)
+        // authenticate 已经通过 permissionService.enhanceUserWithPermissions 注入了完整的 RBAC 数据
         const user = { ...request.user };
 
-        if (!user) {
-          // 理论上 authenticate 已处理，但保留作为保险
-          return reply.code(404).send({ error: '用户不存在' });
-        }
-
-        // 并行获取用户丰富信息、OAuth 账号、密码状态和 RBAC 权限
-        const [userAccounts, pwdResult, userRoles, userPermissions] = await Promise.all([
+        // 并行获取 OAuth 账号和密码状态（这些不属于 RBAC 增强范畴，仅在此接口需要）
+        const [userAccounts, pwdResult] = await Promise.all([
           db.select().from(accounts).where(eq(accounts.userId, user.id)),
           db.select({ passwordHash: users.passwordHash }).from(users).where(eq(users.id, userId)).limit(1),
-          permissionService.getUserRoles(userId),
-          permissionService.getUserPermissions(userId),
         ]);
 
         // 丰富用户信息（徽章、头像框等）
@@ -144,27 +138,16 @@ export default async function userRoute(fastify, options) {
         const oauthProviders = userAccounts.map(acc => acc.provider);
         const userHasPassword = !!(pwdResult[0]?.passwordHash);
 
-        // 获取展示角色（最高优先级且允许展示的角色）
-        const displayRole = userRoles
-          .filter(r => r.isDisplayed)
-          .sort((a, b) => b.priority - a.priority)[0] || null;
-
         return {
           ...user,
           hasPassword: userHasPassword,
           oauthProviders,
-          // RBAC 权限数据
-          userRoles,
-          permissions: userPermissions.map(p => ({
+          // userRoles, permissions, displayRole 已经在 user 对象中（由 auth 插件注入）
+          // 保持 API 返回的权限结构兼容性
+          permissions: user.permissions.map(p => ({
             slug: p.slug,
             conditions: p.conditions || null,
           })),
-          displayRole: displayRole ? {
-            slug: displayRole.slug,
-            name: displayRole.name,
-            color: displayRole.color,
-            icon: displayRole.icon,
-          } : null,
         };
       });
     }

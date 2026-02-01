@@ -82,8 +82,9 @@ export function RolesTab() {
         rbacApi.admin.getRoles(),
         rbacApi.admin.getPermissions(),
         rbacApi.getConfig(),
-        categoryApi.getAll().catch(() => []), // 获取分类列表，失败时返回空数组
+        categoryApi.getAll().catch(() => []),
       ]);
+
       setRoles(rolesData);
       setPermissions(permsData.permissions || []);
       setConditionTypes(configData.conditionTypes || {});

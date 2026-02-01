@@ -700,7 +700,7 @@ class PermissionService {
       ...user,
       // RBAC 数据
       userRoles: userRolesList,
-      permissions: userPermissions.map(p => p.slug),
+      permissions: userPermissions,
       displayRole: displayRole ? {
         slug: displayRole.slug,
         name: displayRole.name,
