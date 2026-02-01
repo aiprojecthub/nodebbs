@@ -53,10 +53,11 @@ export default async function uploadRoutes(fastify) {
 
     // 获取具体限制数值（从 RBAC 条件中读取或使用合理的后备默认值）
     const maxFileSizeKB = conditions.maxFileSize || MAX_UPLOAD_SIZE_DEFAULT_KB; 
-    // allowedFileTypes 为 null 表示无限制（如管理员），undefined 则使用默认白名单
-    const allowedExts = conditions.allowedFileTypes === null 
-      ? null 
-      : (conditions.allowedFileTypes || DEFAULT_ALLOWED_EXTENSIONS);
+    // allowedFileTypes: ['*'] 表示无限制（如管理员），未设置则使用默认白名单
+    const rawAllowedTypes = conditions.allowedFileTypes;
+    const allowedExts = rawAllowedTypes?.includes('*') 
+      ? null  // ['*'] 表示无限制
+      : (rawAllowedTypes || DEFAULT_ALLOWED_EXTENSIONS);
 
     // 3. 处理文件流
     const data = await request.file();
