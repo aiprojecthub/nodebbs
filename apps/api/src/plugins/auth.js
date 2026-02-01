@@ -6,7 +6,6 @@ import { users } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import ms from 'ms';
 import env from '../config/env.js';
-import { ROLE_ADMIN } from '../constants/roles.js';
 import { createPermissionService } from '../services/permissionService.js';
 
 async function authPlugin(fastify) {
@@ -60,7 +59,8 @@ async function authPlugin(fastify) {
   // 初始化权限服务
   const permissionService = createPermissionService(fastify);
   fastify.decorate('permissionService', permissionService);
-  
+
+  // ============ 封禁状态检查 ============
 
   /**
    * 检查用户封禁状态（支持临时封禁）
@@ -121,6 +121,8 @@ async function authPlugin(fastify) {
   fastify.decorate('checkUserBanStatus', checkUserBanStatus);
   fastify.decorate('getBanMessage', getBanMessage);
 
+  // ============ 用户信息获取与缓存 ============
+
   // 获取用户信息（带缓存）
   async function getUserInfo(userId) {
     const cacheKey = `user:${userId}`;
@@ -151,7 +153,7 @@ async function authPlugin(fastify) {
   });
 
   /**
-   * 公共用户解析：JWT 验证 → 获取用户 → 删除/封禁检查 → enhanceUser
+   * 公共用户解析：JWT 验证 → 获取用户 → 删除/封禁检查 → RBAC 权限增强
    * 所有需要认证的 preHandler 共用此逻辑
    *
    * @param {Object} request - Fastify request 对象
@@ -192,15 +194,23 @@ async function authPlugin(fastify) {
     return request.user;
   }
 
-  // Decorate fastify with auth utilities
+  // ============ 认证装饰器 ============
+
+  /**
+   * 基础认证：验证 JWT 并注入用户信息到 request.user
+   * 注意：不检查封禁状态，被封禁用户仍可通过认证（可查看内容）
+   * 写操作需配合 checkBanned 使用：preHandler: [fastify.authenticate, fastify.checkBanned]
+   */
   fastify.decorate('authenticate', async function(request, reply) {
     await resolveUser(request, reply);
   });
 
-  // Check if user is banned (use after authenticate)
-  // 支持临时封禁自动解除
+  /**
+   * 封禁检查：需在 authenticate 之后使用
+   * 用于写操作（发帖、回复等），阻止被封禁用户执行
+   * 支持临时封禁自动解除
+   */
   fastify.decorate('checkBanned', async function(request, reply) {
-    // Ensure user is authenticated first
     if (!request.user || !request.user.id) {
       return reply.code(401).send({ error: '未授权', message: '请先登录' });
     }
@@ -214,13 +224,34 @@ async function authPlugin(fastify) {
     }
   });
 
-  // Check if user is admin
+  /**
+   * 管理员认证：验证 JWT + 检查封禁 + 检查管理员权限
+   */
   fastify.decorate('requireAdmin', async function(request, reply) {
     const user = await resolveUser(request, reply, { checkBan: true });
     if (!user) return;
 
     if (!request.user?.isAdmin) {
       return reply.code(403).send({ error: '禁止访问', message: '需要管理员权限' });
+    }
+  });
+
+  /**
+   * 可选认证：不要求登录，但如已登录则注入用户信息
+   * 用于公开页面需要根据登录状态显示不同内容的场景
+   */
+  fastify.decorate('optionalAuth', async function(request) {
+    try {
+      await request.jwtVerify();
+      const user = await getUserInfo(request.user.id);
+
+      if (user) {
+        request.user = await permissionService.enhanceUserWithPermissions(user);
+      } else {
+        request.user = null;
+      }
+    } catch (err) {
+      request.user = null;
     }
   });
 
@@ -283,54 +314,24 @@ async function authPlugin(fastify) {
   }
 
   /**
-   * 权限检查（用于 handler 内部，在获取资源后调用）
-   * 适用于需要资源上下文的条件权限检查
-   *
-   * 设计原则：
-   * - 认证(Authentication)由 preHandler 处理：authenticate / optionalAuth
-   * - 授权(Authorization)由本方法处理：检查用户角色是否有权限
-   * - 未登录用户自动使用 guest 角色（userId = null）
+   * 权限检查（用于 handler 内部）
+   * 无权限时抛出 403 错误
    *
    * @param {Object} request - Fastify request 对象
-   * @param {string|string[]} permissionSlug - 权限标识或权限标识数组
+   * @param {string|string[]} permissionSlug - 权限标识或权限数组
    * @param {Object} context - 权限检查上下文，根据权限条件传递对应字段
-   * @param {number} [context.ownerId] - 资源所有者ID，用于 `own: true` 条件（检查是否操作自己的资源）
-   * @param {number} [context.categoryId] - 分类ID，用于 `categories: [1,2,3]` 条件（检查是否在允许的分类内）
-   * @param {Date|string} [context.userCreatedAt] - 用户注册时间，用于 `accountAge: 30` 条件（自动注入，无需手动传递）
-   * @param {number} [context.fileSize] - 文件大小（字节），用于 `maxFileSize: 1024` 条件（检查上传文件大小限制，单位KB）
-   * @param {string} [context.fileType] - 文件类型/扩展名，用于 `allowedFileTypes: ["jpg","png"]` 条件
-   * @param {string} [context.uploadType] - 上传目录类型，用于 `uploadTypes: ["avatar","topic"]` 条件
+   * @param {number} [context.ownerId] - 资源所有者ID，用于 `own: true` 条件
+   * @param {number} [context.categoryId] - 分类ID，用于 `categories: [1,2,3]` 条件
+   * @param {Date|string} [context.userCreatedAt] - 用户注册时间，用于 `accountAge` 条件（自动注入）
+   * @param {number} [context.fileSize] - 文件大小（字节），用于 `maxFileSize` 条件
+   * @param {string} [context.fileType] - 文件类型/扩展名，用于 `allowedFileTypes` 条件
+   * @param {string} [context.uploadType] - 上传目录类型，用于 `uploadTypes` 条件
    * @param {Object} options - 配置选项
-   * @param {boolean} options.any - 满足任一权限即可（用于权限数组）
-   * @returns {Promise<void>}
+   * @param {boolean} options.any - 满足任一权限即可
    * @throws {Error} 无权限时抛出 403 错误
    *
-   * @note 不需要 context 的条件：
-   *   - `timeRange: { start, end }` - 自动使用当前时间判断
-   *   - `rateLimit: { count, period }` - 使用内部缓存计数器
-   *
    * @example
-   * // 基本用法 - 无权限时抛 403
-   * await fastify.checkPermission(request, 'topic.create');
-   *
-   * @example
-   * // 带上下文的权限检查（检查是否是自己的资源）
-   * await fastify.checkPermission(request, 'topic.update', {
-   *   ownerId: topic.userId,
-   *   categoryId: topic.categoryId
-   * });
-   *
-   * @example
-   * // 检查上传权限
-   * await fastify.checkPermission(request, 'upload.create', {
-   *   fileSize: file.size,
-   *   fileType: file.mimetype,
-   *   uploadType: 'topic'
-   * });
-   *
-   * @example
-   * // 多权限检查（满足任一）
-   * await fastify.checkPermission(request, ['topic.update', 'topic.delete'], {}, { any: true });
+   * await fastify.checkPermission(request, 'topic.update', { ownerId: topic.userId });
    */
   fastify.decorate('checkPermission', async function(request, permissionSlug, context = {}, options = {}) {
     const prepared = preparePermissionCheck(request, context);
@@ -346,29 +347,15 @@ async function authPlugin(fastify) {
 
   /**
    * 权限检查（不抛异常版本）
-   * 返回布尔值，由调用方决定如何处理
-   *
-   * 使用场景：
-   * - 需要返回 404 而非 403（隐藏资源存在性）
-   * - 需要根据权限结果做条件判断而非中断流程
+   * 返回布尔值，适用于需要返回 404 或条件判断的场景
    *
    * @param {Object} request - Fastify request 对象
    * @param {string} permissionSlug - 权限标识
-   * @param {Object} context - 权限检查上下文（同 checkPermission）
+   * @param {Object} context - 权限检查上下文
    * @returns {Promise<boolean>} 是否有权限
    *
    * @example
-   * // 读操作返回 404（隐藏资源存在性）
-   * if (!await fastify.hasPermission(request, 'topic.read', { categoryId })) {
-   *   return reply.code(404).send({ error: '话题不存在' });
-   * }
-   *
-   * @example
-   * // 条件判断
    * const canEdit = await fastify.hasPermission(request, 'topic.update', { ownerId: topic.userId });
-   * if (canEdit) {
-   *   // 显示编辑按钮
-   * }
    */
   fastify.decorate('hasPermission', async function(request, permissionSlug, context = {}) {
     const prepared = preparePermissionCheck(request, context);
@@ -395,32 +382,12 @@ async function authPlugin(fastify) {
     return permissionService.getAllowedCategoryIds(userId, permissionSlug);
   });
 
-  // Optional authentication (doesn't fail if no token)
-  fastify.decorate('optionalAuth', async function(request) {
-    try {
-      await request.jwtVerify();
-      
-      // 从缓存或数据库获取最新的用户信息
-      const user = await getUserInfo(request.user.id);
-      
-      if (user) {
-        // 更新 request.user 为最新的用户信息（带权限）
-        request.user = await permissionService.enhanceUserWithPermissions(user);
-      } else {
-        request.user = null;
-      }
-    } catch (err) {
-      // Ignore error, make user undefined
-      request.user = null;
-    }
-  });
+  // ============ 密码工具 ============
 
-  // Hash password utility
   fastify.decorate('hashPassword', async function(password) {
     return await bcrypt.hash(password, 10);
   });
 
-  // Verify password utility
   fastify.decorate('verifyPassword', async function(password, hash) {
     return await bcrypt.compare(password, hash);
   });
