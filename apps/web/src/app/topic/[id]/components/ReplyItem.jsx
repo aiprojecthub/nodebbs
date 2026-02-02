@@ -65,6 +65,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
     isOwnReply,
     canInteract,
     canEdit,
+    canDelete,
     isEditing,
     editContent,
     setEditContent,
@@ -449,47 +450,44 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align='end' className="w-48">
+                  {/* 编辑选项 */}
+                  {canEdit && (
+                    <DropdownMenuItem
+                      onClick={handleStartEdit}
+                      disabled={isEditing}
+                      className="cursor-pointer"
+                    >
+                      <Pencil className='h-4 w-4' />
+                      编辑回复
+                    </DropdownMenuItem>
+                  )}
                   {/* 删除选项 */}
-                  {isAuthenticated &&
-                    (user?.id === localReply.userId || user?.isAdmin) && (
-                      <>
-                        {/* 编辑选项 */}
-                        {canEdit && (
-                          <DropdownMenuItem
-                            onClick={handleStartEdit}
-                            disabled={isEditing}
-                            className="cursor-pointer"
-                          >
-                            <Pencil className='h-4 w-4' />
-                            编辑回复
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem
-                          onClick={(e) =>
-                            handleDeletePost(
-                              e,
-                              localReply.id,
-                              localReply.postNumber
-                            )
-                          }
-                          disabled={deletingPostId === localReply.id}
-                          className='text-destructive focus:text-destructive cursor-pointer'
-                        >
-                          {deletingPostId === localReply.id ? (
-                            <>
-                              <Loader2 className='h-4 w-4 animate-spin' />
-                              删除中...
-                            </>
-                          ) : (
-                            <>
-                              <Trash2 className='h-4 w-4' />
-                              删除回复
-                            </>
-                          )}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                      </>
-                    )}
+                  {canDelete && (
+                    <DropdownMenuItem
+                      onClick={(e) =>
+                        handleDeletePost(
+                          e,
+                          localReply.id,
+                          localReply.postNumber
+                        )
+                      }
+                      disabled={deletingPostId === localReply.id}
+                      className='text-destructive focus:text-destructive cursor-pointer'
+                    >
+                      {deletingPostId === localReply.id ? (
+                        <>
+                          <Loader2 className='h-4 w-4 animate-spin' />
+                          删除中...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className='h-4 w-4' />
+                          删除回复
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                  )}
+                  {(canEdit || canDelete) && <DropdownMenuSeparator />}
                   <DropdownMenuItem
                     onClick={() => openReportDialog('post', localReply.id, `回复 #${localReply.postNumber}`)}
                     disabled={!isAuthenticated}

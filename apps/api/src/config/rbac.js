@@ -14,7 +14,7 @@ export const MODULE_OPTIONS = [
   { value: 'topic', label: '话题' },
   { value: 'post', label: '回复' },
   { value: 'user', label: '用户' },
-  { value: 'category', label: '分类' },
+  // category 模块已移除，由 dashboard.categories 和 topic.read 控制
   { value: 'upload', label: '上传' },
   { value: 'invitation', label: '邀请' },
   { value: 'dashboard', label: '管理后台' },
@@ -31,14 +31,14 @@ export const COMMON_ACTIONS = [
 // 模块特殊操作
 export const MODULE_SPECIAL_ACTIONS = {
   topic: [
-    { value: 'pin', label: '置顶' },
+    // pin 已移除，置顶功能由 dashboard.topics 统一控制
     { value: 'close', label: '关闭' },
   ],
   post: [],
   user: [
-    { value: 'ban', label: '封禁' },
+    // ban 已移除，封禁功能由 dashboard.users 统一控制
   ],
-  category: [],
+  // category 模块已移除
   upload: [],
   invitation: [],
   dashboard: [
@@ -79,18 +79,6 @@ export const MODULE_SPECIAL_ACTIONS = {
  * 注意：哪个权限能用哪些条件，由 SYSTEM_PERMISSIONS.conditions 决定
  */
 export const CONDITION_TYPES = {
-  // ===== 通用条件 =====
-  
-  // ===== 操作范围 =====
-  ownOnly: {
-    key: 'ownOnly',
-    label: '仅限自己',
-    type: 'boolean',
-    component: 'switch',
-    description: '开启后只能操作自己的内容',
-    excludeRoles: ['guest'],
-  },
-
   // ===== 范围限制 =====
   categories: {
     key: 'categories',
@@ -191,7 +179,7 @@ export const CONDITION_TYPES = {
  *
  * conditions 设计原则：
  * - 内容创建类：支持 categories（分类限制）、rateLimit（频率限制）、accountAge（账号门槛）、timeRange（时间段）
- * - 内容修改类：支持 ownOnly（仅自己）、categories（分类限制）、timeRange（时间段）
+ * - 内容修改类：支持 categories（分类限制）、timeRange（时间段）；owner检查在路由层
  * - 内容查看类：支持 categories（分类限制）
  * - 管理操作类：支持 categories（分类限制，若适用）
  * - 上传类：支持完整的上传限制条件
@@ -225,7 +213,7 @@ export const SYSTEM_PERMISSIONS = [
     isSystem: true,
     // 场景：普通用户只能编辑自己的话题、限制编辑时间段
     // 分类限制继承自 topic.read
-    conditions: ['ownOnly', 'timeRange'],
+    conditions: ['timeRange'],
   },
   {
     slug: 'topic.delete',
@@ -235,17 +223,9 @@ export const SYSTEM_PERMISSIONS = [
     isSystem: true,
     // 场景：普通用户只能删除自己的话题
     // 分类限制继承自 topic.read
-    conditions: ['ownOnly'],
+    conditions: [],
   },
-  {
-    slug: 'topic.pin',
-    name: '置顶话题',
-    module: 'topic',
-    action: 'pin',
-    isSystem: true,
-    // 场景：版主只能置顶自己管辖分类的话题
-    conditions: ['categories'],
-  },
+  // topic.pin 已移除，置顶功能由 dashboard.topics 统一控制
   {
     slug: 'topic.close',
     name: '关闭话题',
@@ -253,7 +233,7 @@ export const SYSTEM_PERMISSIONS = [
     action: 'close',
     isSystem: true,
     // 场景：用户可关闭自己的话题、版主可关闭特定分类的话题
-    conditions: ['ownOnly', 'categories'],
+    conditions: ['categories'],
   },
 
   // ========== 回复权限 ==========
@@ -284,7 +264,7 @@ export const SYSTEM_PERMISSIONS = [
     isSystem: true,
     // 回复依附于话题，分类限制由 topic.read 统一控制
     // 场景：普通用户只能编辑自己的回复、限制编辑时间段
-    conditions: ['ownOnly', 'timeRange'],
+    conditions: ['timeRange'],
   },
   {
     slug: 'post.delete',
@@ -294,7 +274,7 @@ export const SYSTEM_PERMISSIONS = [
     isSystem: true,
     // 回复依附于话题，分类限制由 topic.read 统一控制
     // 场景：普通用户只能删除自己的回复
-    conditions: ['ownOnly'],
+    conditions: [],
   },
 
   // ========== 用户权限 ==========
@@ -314,7 +294,7 @@ export const SYSTEM_PERMISSIONS = [
     action: 'update',
     isSystem: true,
     // 场景：普通用户只能编辑自己的资料
-    conditions: ['ownOnly'],
+    conditions: [],
   },
   {
     slug: 'user.delete',
@@ -322,56 +302,15 @@ export const SYSTEM_PERMISSIONS = [
     module: 'user',
     action: 'delete',
     isSystem: true,
-    // 场景：用户可注销自己的账号（ownOnly: true）、管理员可删除任意用户
-    conditions: ['ownOnly'],
+    // 场景：用户可注销自己的账号（路由层检查owner）、管理员可删除任意用户
+    conditions: [],
   },
-  {
-    slug: 'user.ban',
-    name: '封禁用户',
-    module: 'user',
-    action: 'ban',
-    isSystem: true,
-    // 场景：管理操作，可限制频率防止滥用
-    conditions: ['rateLimit'],
-  },
+  // user.ban 已移除，封禁功能由 dashboard.users 统一控制
 
   // ========== 分类权限 ==========
-  {
-    slug: 'category.create',
-    name: '创建分类',
-    module: 'category',
-    action: 'create',
-    isSystem: true,
-    // 场景：管理操作，通常无限制
-    conditions: [],
-  },
-  {
-    slug: 'category.read',
-    name: '查看分类',
-    module: 'category',
-    action: 'read',
-    isSystem: true,
-    // 场景：通常无限制
-    conditions: [],
-  },
-  {
-    slug: 'category.update',
-    name: '编辑分类',
-    module: 'category',
-    action: 'update',
-    isSystem: true,
-    // 场景：管理操作，通常无限制
-    conditions: [],
-  },
-  {
-    slug: 'category.delete',
-    name: '删除分类',
-    module: 'category',
-    action: 'delete',
-    isSystem: true,
-    // 场景：管理操作，通常无限制
-    conditions: [],
-  },
+  // category 模块权限已全部移除：
+  // - category.create/update/delete 由 dashboard.categories 统一控制
+  // - category.read 由 topic.read 的 categories 条件控制
 
   // ========== 上传权限 ==========
   {
@@ -412,7 +351,8 @@ export const SYSTEM_PERMISSIONS = [
     action: 'topics',
     isSystem: true,
     description: '管理后台话题列表和操作',
-    conditions: [],
+    // 场景：版主只能管理指定分类的话题
+    conditions: ['categories'],
   },
   {
     slug: 'dashboard.posts',
@@ -421,7 +361,8 @@ export const SYSTEM_PERMISSIONS = [
     action: 'posts',
     isSystem: true,
     description: '管理后台回复列表和操作',
-    conditions: [],
+    // 场景：版主只能管理指定分类的回复
+    conditions: ['categories'],
   },
   {
     slug: 'dashboard.categories',
@@ -588,8 +529,6 @@ export const ROLE_PERMISSION_MAP = {
     'post.create', 'post.read', 'post.update', 'post.delete',
     // 用户：查看、编辑、注销自己的资料
     'user.read', 'user.update', 'user.delete',
-    // 分类：查看
-    'category.read',
     // 上传
     'upload.create',
     // 邀请
@@ -601,28 +540,16 @@ export const ROLE_PERMISSION_MAP = {
     'topic.read',
     'post.read',
     'user.read',
-    'category.read',
   ],
 };
 
 /**
  * 角色权限条件配置
  * 定义角色对某些权限的限制条件
+ * 注：owner 检查已移至路由层，此处只需配置其他条件（如上传限制）
  */
 export const ROLE_PERMISSION_CONDITIONS = {
   user: {
-    // 话题权限
-    'topic.update': { ownOnly: true },  // 只能编辑自己的话题
-    'topic.delete': { ownOnly: true },  // 只能删除自己的话题
-
-    // 回复权限
-    'post.update': { ownOnly: true },   // 只能编辑自己的回复
-    'post.delete': { ownOnly: true },   // 只能删除自己的回复
-
-    // 用户权限
-    'user.update': { ownOnly: true },   // 只能编辑自己的资料
-    'user.delete': { ownOnly: true },   // 只能删除自己的账号
-
     // 上传权限
     'upload.create': {
       uploadTypes: ['avatars'],
@@ -630,7 +557,6 @@ export const ROLE_PERMISSION_CONDITIONS = {
       allowedFileTypes: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
     },
   },
-  // guest 角色不需要 ownOnly 限制（路由层已控制）
 };
 
 /**
@@ -643,11 +569,10 @@ export const ALLOWED_ROLES_PERMISSIONS = {
     'topic.read',
     'post.read',
     'user.read',
-    'category.read',
   ],
   user: SYSTEM_PERMISSIONS
     .filter(p => !p.slug.startsWith('dashboard.') && // 排除所有后台权限
-                 !['topic.pin', 'topic.close', 'user.ban', 'category.create', 'category.update', 'category.delete'].includes(p.slug))
+                 !['topic.close'].includes(p.slug)) // topic.close 需要单独授权
     .map(p => p.slug),
 };
 

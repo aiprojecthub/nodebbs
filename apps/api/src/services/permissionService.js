@@ -47,11 +47,6 @@ function mergePermissionConditions(cond1, cond2) {
     }
     
     switch (key) {
-      case 'ownOnly':
-        // ownOnly: 任一为 false 则结果为 false（更宽松）
-        merged.ownOnly = val1 && val2;
-        break;
-
       case 'categories':
         // categories: 取并集（更多分类 = 更宽松）
         if (Array.isArray(val1) && Array.isArray(val2)) {
@@ -363,42 +358,19 @@ class PermissionService {
     // 检查条件
     const conditions = permission.conditions || {};
 
-    // ownOnly: true 表示只能操作自己的内容
-    if (conditions.ownOnly) {
-      const { ownerId } = context;
-      if (ownerId !== undefined && ownerId !== userId) {
+    // categories: [1, 2, 3] 表示只能在指定父分类（及其子分类）操作
+    if (context.categoryId !== undefined && conditions.categories) {
+      const allowedIds = await this._expandCategoryIds(conditions.categories);
+      if (!allowedIds.has(context.categoryId)) {
         return {
           granted: false,
-          code: 'NOT_OWNER',
-          reason: '只能操作自己的内容',
+          code: 'CATEGORY_NOT_ALLOWED',
+          reason: '你没有在该分类下操作的权限',
         };
       }
     }
 
-      // categories: [1, 2, 3] 表示只能在指定父分类（及其子分类）操作
-      // topic.create/update/delete 继承 topic.read 的分类限制
-      if (context.categoryId !== undefined) {
-        let categoryConditions = conditions.categories;
-
-        // 如果当前权限没有 categories 限制，且是 topic.create/update/delete，则继承 topic.read
-        if (!categoryConditions && ['topic.create', 'topic.update', 'topic.delete'].includes(permissionSlug)) {
-          const readPermission = userPermissions.find(p => p.slug === 'topic.read');
-          categoryConditions = readPermission?.conditions?.categories;
-        }
-
-        if (categoryConditions) {
-          const allowedIds = await this._expandCategoryIds(categoryConditions);
-          if (!allowedIds.has(context.categoryId)) {
-            return {
-              granted: false,
-              code: 'CATEGORY_NOT_ALLOWED',
-              reason: '你没有在该分类下操作的权限',
-            };
-          }
-        }
-      }
-
-      // accountAge: 30 表示账号注册天数需达到指定值
+    // accountAge: 30 表示账号注册天数需达到指定值
       if (conditions.accountAge !== undefined && context.userCreatedAt !== undefined) {
         const accountAgeDays = Math.floor(
           (Date.now() - new Date(context.userCreatedAt).getTime()) / (1000 * 60 * 60 * 24)

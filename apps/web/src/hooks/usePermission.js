@@ -140,7 +140,8 @@ export function usePermission() {
       if (!user) return false;
       // 优先使用后端返回的权限标志
       if (topic?.canPin !== undefined) return topic.canPin;
-      return hasPermission('topic.pin');
+      // 置顶功能由 dashboard.topics 控制
+      return hasPermission('dashboard.topics');
     };
 
     /**
@@ -158,7 +159,6 @@ export function usePermission() {
 
     /**
      * 检查用户是否可以编辑帖子
-     * 依赖后端返回的 canEdit 字段，如果没有则基于权限判断
      * @param {Object} post - 帖子对象
      * @returns {boolean}
      */
@@ -166,8 +166,8 @@ export function usePermission() {
       if (!user || !post) return false;
       // 优先使用后端返回的权限标志
       if (post.canEdit !== undefined) return post.canEdit;
-      // 管理员可以编辑所有帖子
-      if (isAdmin) return true;
+      // 管理员/有 dashboard.posts 权限的版主可以编辑所有帖子
+      if (isAdmin || hasPermission('dashboard.posts')) return true;
       // 作者可以编辑自己的帖子（如果有权限）
       if (post.userId === user.id) {
         return hasPermission('post.update');
@@ -177,7 +177,6 @@ export function usePermission() {
 
     /**
      * 检查用户是否可以删除帖子
-     * 依赖后端返回的 canDelete 字段，如果没有则基于权限判断
      * @param {Object} post - 帖子对象
      * @returns {boolean}
      */
@@ -185,8 +184,8 @@ export function usePermission() {
       if (!user || !post) return false;
       // 优先使用后端返回的权限标志
       if (post.canDelete !== undefined) return post.canDelete;
-      // 管理员可以删除所有帖子
-      if (isAdmin) return true;
+      // 管理员/有 dashboard.posts 权限的版主可以删除所有帖子
+      if (isAdmin || hasPermission('dashboard.posts')) return true;
       // 作者可以删除自己的帖子（如果有权限）
       if (post.userId === user.id) {
         return hasPermission('post.delete');

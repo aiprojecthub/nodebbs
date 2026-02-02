@@ -909,10 +909,20 @@ export default async function postRoutes(fastify, options) {
       return reply.code(404).send({ error: '帖子不存在' });
     }
 
-    // 检查更新权限
-    await fastify.checkPermission(request, 'post.update', {
-      ownerId: post.userId,
+    // 权限检查：dashboard.posts 或 owner
+    const hasDashboardAccess = await fastify.hasPermission(request, 'dashboard.posts', {
+      categoryId: topic?.categoryId,
     });
+    const isOwner = request.user.id === post.userId;
+
+    if (!hasDashboardAccess && !isOwner) {
+      return reply.code(403).send({ error: '没有权限编辑此回复' });
+    }
+
+    // 如果是普通用户（owner），检查 post.update 权限（可能有 timeRange 等条件限制）
+    if (!hasDashboardAccess) {
+      await fastify.checkPermission(request, 'post.update');
+    }
 
     // 检查是否开启内容审核
     const contentModerationEnabled = await fastify.settings.get(
@@ -933,7 +943,6 @@ export default async function postRoutes(fastify, options) {
     let statusChanged = false;
     let needsReapproval = false; // 区分是已批准内容的编辑还是被拒绝内容的重新提交
     const previousStatus = post.approvalStatus;
-    const isOwner = post.userId === request.user.id;
 
     // 如果内容审核开启，且编辑者是普通用户（非管理员）
     if (contentModerationEnabled && isOwner && !request.user.isAdmin) {
@@ -1030,10 +1039,20 @@ export default async function postRoutes(fastify, options) {
       return reply.code(404).send({ error: '帖子不存在' });
     }
 
-    // 检查删除权限
-    await fastify.checkPermission(request, 'post.delete', {
-      ownerId: post.userId,
+    // 权限检查：dashboard.posts 或 owner
+    const hasDashboardAccess = await fastify.hasPermission(request, 'dashboard.posts', {
+      categoryId: topic?.categoryId,
     });
+    const isOwner = request.user.id === post.userId;
+
+    if (!hasDashboardAccess && !isOwner) {
+      return reply.code(403).send({ error: '没有权限删除此回复' });
+    }
+
+    // 如果是普通用户（owner），检查 post.delete 权限
+    if (!hasDashboardAccess) {
+      await fastify.checkPermission(request, 'post.delete');
+    }
 
     // 无法删除第一条帖子（请改为删除话题）
     if (post.postNumber === 1) {

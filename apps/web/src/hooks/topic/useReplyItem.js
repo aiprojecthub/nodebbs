@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermission } from '@/hooks/usePermission';
 import { postApi } from '@/lib/api';
 import { toast } from 'sonner';
 import { confirm } from '@/components/common/ConfirmPopover';
@@ -35,6 +36,7 @@ export function useReplyItem({
   onRewardSuccess
 }) {
   const { user, isAuthenticated, openLoginDialog } = useAuth();
+  const { canEditPost, canDeletePost } = usePermission();
   const [likingPostIds, setLikingPostIds] = useState(new Set());
   const [deletingPostId, setDeletingPostId] = useState(null);
   const [replyingToPostId, setReplyingToPostId] = useState(null);
@@ -75,8 +77,10 @@ export function useReplyItem({
   const isOwnReply = user?.id === localReply.userId;
   const isAdmin = user?.isAdmin;
   const canInteract = !isPending && !isRejected;
-  // 编辑权限：作者本人 或 管理员
-  const canEdit = isAuthenticated && (isOwnReply || isAdmin);
+  // 编辑权限：使用 RBAC 权限检查
+  const canEdit = canEditPost(localReply);
+  // 删除权限：使用 RBAC 权限检查
+  const canDelete = canDeletePost(localReply);
 
   /**
    * 切换楼层点赞状态
@@ -367,6 +371,8 @@ export function useReplyItem({
     canInteract,
     /** 是否有编辑权限 */
     canEdit,
+    /** 是否有删除权限 */
+    canDelete,
     /** 是否处于编辑模式 */
     isEditing,
     /** 编辑中的内容 */

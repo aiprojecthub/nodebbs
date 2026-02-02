@@ -303,12 +303,12 @@ export default async function moderationRoutes(fastify, options) {
     };
   });
 
-  // Ban user (admin only)
+  // Ban user (需要 dashboard.users 权限)
   fastify.post('/users/:id/ban', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.authenticate],
     schema: {
       tags: ['moderation'],
-      description: '封禁用户（仅管理员），支持临时封禁',
+      description: '封禁用户，支持临时封禁',
       security: [{ bearerAuth: [] }],
       params: {
         type: 'object',
@@ -328,6 +328,9 @@ export default async function moderationRoutes(fastify, options) {
   }, async (request, reply) => {
     const { id } = request.params;
     const { duration, reason } = request.body || {};
+
+    // 检查 dashboard.users 权限
+    await fastify.checkPermission(request, 'dashboard.users');
 
     const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
 
@@ -397,12 +400,12 @@ export default async function moderationRoutes(fastify, options) {
     };
   });
 
-  // Unban user (admin only)
+  // Unban user (需要 dashboard.users 权限)
   fastify.post('/users/:id/unban', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.authenticate],
     schema: {
       tags: ['moderation'],
-      description: '解封用户（仅管理员）',
+      description: '解封用户',
       security: [{ bearerAuth: [] }],
       params: {
         type: 'object',
@@ -414,6 +417,9 @@ export default async function moderationRoutes(fastify, options) {
     }
   }, async (request, reply) => {
     const { id } = request.params;
+
+    // 检查 dashboard.users 权限
+    await fastify.checkPermission(request, 'dashboard.users');
 
     const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
 

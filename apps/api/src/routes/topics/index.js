@@ -22,6 +22,10 @@ import { shouldHideUserInfo } from '../../utils/visibility.js';
 
 /**
  * 计算用户对话题的操作权限
+ * 权限检查逻辑：
+ * 1. dashboard.topics 权限 → 版主/管理员，可操作所有
+ * 2. 作者本人 → 可编辑/删除/关闭自己的话题
+ *
  * @param {Object} params - 参数
  * @param {Object} params.permissionService - 权限服务实例
  * @param {Object} params.user - 当前用户
@@ -39,23 +43,49 @@ async function getTopicPermissions({ permissionService, user, topic }) {
     };
   }
 
-  const context = {
-    ownerId: topic.userId,
-    categoryId: topic.categoryId,
-  };
+  const categoryContext = { categoryId: topic.categoryId };
 
-  // 并行检查所有权限
-  const [editResult, deleteResult, pinResult, closeResult] = await Promise.all([
-    permissionService.checkPermissionWithReason(user.id, 'topic.update', context),
-    permissionService.checkPermissionWithReason(user.id, 'topic.delete', context),
-    permissionService.checkPermissionWithReason(user.id, 'topic.pin', { categoryId: topic.categoryId }),
-    permissionService.checkPermissionWithReason(user.id, 'topic.close', context),
+  // 检查 dashboard.topics 权限（版主/管理员）
+  const dashboardResult = await permissionService.checkPermissionWithReason(
+    user.id,
+    'dashboard.topics',
+    categoryContext
+  );
+
+  if (dashboardResult.granted) {
+    // 有后台管理权限，可以执行所有操作
+    return {
+      canEdit: true,
+      canDelete: true,
+      canPin: true,
+      canClose: true,
+    };
+  }
+
+  // 检查是否是作者
+  const isOwner = user.id === topic.userId;
+
+  if (!isOwner) {
+    // 非作者、非版主，无任何操作权限
+    return {
+      canEdit: false,
+      canDelete: false,
+      canPin: false,
+      canClose: false,
+    };
+  }
+
+  // 作者：检查各项权限（可能有 timeRange 等条件限制）
+  const [editResult, deleteResult, closeResult] = await Promise.all([
+    permissionService.checkPermissionWithReason(user.id, 'topic.update', categoryContext),
+    permissionService.checkPermissionWithReason(user.id, 'topic.delete', categoryContext),
+    permissionService.checkPermissionWithReason(user.id, 'topic.close', categoryContext),
   ]);
 
   return {
     canEdit: editResult.granted,
     canDelete: deleteResult.granted,
-    canPin: pinResult.granted,
+    canPin: false,  // 作者不能置顶，需要 dashboard.topics 权限
     canClose: closeResult.granted,
   };
 }
@@ -826,25 +856,35 @@ export default async function topicRoutes(fastify, options) {
         return reply.code(404).send({ error: '话题不存在' });
       }
 
-      // 检查更新权限（复用已查询的 topic）
-      await fastify.checkPermission(request, 'topic.update', {
-        ownerId: topic.userId,
+      // 检查更新权限：版主/管理员 或 作者本人
+      const hasDashboardAccess = await fastify.hasPermission(request, 'dashboard.topics', {
         categoryId: topic.categoryId,
       });
+      const isOwner = request.user.id === topic.userId;
 
-      // 置顶话题需要 topic.pin 权限
-      if (request.body.isPinned !== undefined) {
-        await fastify.checkPermission(request, 'topic.pin', {
+      if (!hasDashboardAccess && !isOwner) {
+        return reply.code(403).send({ error: '没有权限编辑此话题' });
+      }
+
+      // 作者编辑自己的话题，需要检查 topic.update 权限（可能有 timeRange 等条件）
+      if (!hasDashboardAccess && isOwner) {
+        await fastify.checkPermission(request, 'topic.update', {
           categoryId: topic.categoryId,
         });
       }
 
-      // 关闭话题需要 topic.close 权限（作者可关闭自己的话题）
-      if (request.body.isClosed !== undefined) {
-        await fastify.checkPermission(request, 'topic.close', {
-          ownerId: topic.userId,
+      // 置顶话题需要 dashboard.topics 权限（版主/管理员）
+      if (request.body.isPinned !== undefined) {
+        await fastify.checkPermission(request, 'dashboard.topics', {
           categoryId: topic.categoryId,
         });
+      }
+
+      // 关闭话题：版主可关闭，或作者可关闭自己的话题
+      if (request.body.isClosed !== undefined) {
+        if (!hasDashboardAccess && !isOwner) {
+          return reply.code(403).send({ error: '没有权限关闭此话题' });
+        }
       }
 
       // 检查是否开启内容审核
@@ -866,7 +906,6 @@ export default async function topicRoutes(fastify, options) {
       let statusChanged = false;
       let needsReapproval = false; // 区分是已批准内容的编辑还是被拒绝内容的重新提交
       const previousStatus = topic.approvalStatus;
-      const isOwner = topic.userId === request.user.id;
 
       // 如果内容审核开启，且编辑者是普通用户（非管理员）
       if (contentModerationEnabled && isOwner && !request.user.isAdmin) {
@@ -1056,11 +1095,22 @@ export default async function topicRoutes(fastify, options) {
         return reply.code(404).send({ error: '话题不存在' });
       }
 
-      // 检查删除权限（复用已查询的 topic）
-      await fastify.checkPermission(request, 'topic.delete', {
-        ownerId: topic.userId,
+      // 检查删除权限：版主/管理员 或 作者本人
+      const hasDashboardAccess = await fastify.hasPermission(request, 'dashboard.topics', {
         categoryId: topic.categoryId,
       });
+      const isOwner = request.user.id === topic.userId;
+
+      if (!hasDashboardAccess && !isOwner) {
+        return reply.code(403).send({ error: '没有权限删除此话题' });
+      }
+
+      // 作者删除自己的话题，需要检查 topic.delete 权限
+      if (!hasDashboardAccess && isOwner) {
+        await fastify.checkPermission(request, 'topic.delete', {
+          categoryId: topic.categoryId,
+        });
+      }
 
       // 仅管理员可以永久删除话题
       if (permanent && !request.user.isAdmin) {
