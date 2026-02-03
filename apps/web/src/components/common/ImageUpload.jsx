@@ -12,16 +12,16 @@ import { MAX_UPLOAD_SIZE_ADMIN_KB, MAX_UPLOAD_SIZE_DEFAULT_KB, DEFAULT_ALLOWED_E
  * @param {Object} props
  * @param {string} props.value - 当前图片 URL
  * @param {Function} props.onChange - 图片上传成功后的回调 (url) => void
- * @param {'avatars' | 'badges' | 'topics' | 'items' | 'frames' | 'emojis' | 'assets'} props.type - 上传类型
+ * @param {'avatars' | 'badges' | 'topics' | 'items' | 'frames' | 'emojis' | 'assets'} props.category - 上传分类
  * @param {string} props.className - 容器类名
  * @param {string} props.placeholder - 占位文本
  */
-export function ImageUpload({ 
-  value, 
-  onChange, 
-  type = 'assets', 
+export function ImageUpload({
+  value,
+  onChange,
+  category = 'assets',
   className,
-  placeholder = "点击或拖拽上传图片" 
+  placeholder = "点击或拖拽上传图片"
 }) {
   const { getPermissionConditions, isAdmin } = usePermission();
   const [loading, setLoading] = useState(false);
@@ -98,7 +98,7 @@ export function ImageUpload({
 
     try {
       setLoading(true);
-      const res = await uploadApi.upload(file, type);
+      const res = await uploadApi.upload(file, category);
       onChange(`${res.url}`);
       toast.success('上传成功');
     } catch (error) {

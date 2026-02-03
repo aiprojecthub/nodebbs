@@ -3,8 +3,10 @@ import { Transform } from 'stream';
 import fs from 'fs';
 import path from 'path';
 import { randomUUID } from 'crypto';
+import sharp from 'sharp';
 import { dirname } from '../../utils/index.js';
 import { MAX_UPLOAD_SIZE_DEFAULT_KB, DEFAULT_ALLOWED_EXTENSIONS, EXT_MIME_MAP } from '../../constants/upload.js';
+import { files } from '../../db/schema.js';
 
 export default async function uploadRoutes(fastify) {
   fastify.post('/', {
@@ -16,7 +18,7 @@ export default async function uploadRoutes(fastify) {
       querystring: {
         type: 'object',
         properties: {
-          type: {
+          category: {
             type: 'string',
             enum: ['assets', 'avatars', 'badges', 'topics', 'items', 'frames', 'emojis'],
             default: 'assets'
@@ -27,23 +29,28 @@ export default async function uploadRoutes(fastify) {
         200: {
           type: 'object',
           properties: {
+            id: { type: 'integer' },
             url: { type: 'string' },
             filename: { type: 'string' },
+            originalName: { type: 'string' },
             mimetype: { type: 'string' },
-            type: { type: 'string' },
-            size: { type: 'number' }
+            category: { type: 'string' },
+            size: { type: 'number' },
+            width: { type: ['integer', 'null'] },
+            height: { type: ['integer', 'null'] }
           }
         }
       }
     }
   }, async (request, reply) => {
-    const uploadType = request.query.type || 'assets';
+    const category = request.query.category || 'assets';
 
     // 1. 验证权限并获取条件限制（包含频率限制、账号时长、上传目录类型等检查）
     // 注意：此调用会触发 Rate Limit 计数增加
     let conditions = {};
     try {
-      const result = await fastify.permission.check(request, 'upload.create', { uploadType });
+      // 权限系统内部使用 uploadType 作为上下文参数名
+      const result = await fastify.permission.check(request, 'upload.create', { uploadType: category });
       conditions = result.conditions || {};
     } catch (err) {
       return reply.code(403).send({ error: err.message });
@@ -76,16 +83,16 @@ export default async function uploadRoutes(fastify) {
     // 4b. 验证 MIME 类型一致性 (双重校验，防止伪装绕过)
     const expectedMimes = EXT_MIME_MAP[ext];
     if (expectedMimes && !expectedMimes.includes(data.mimetype)) {
-      fastify.log.warn(`文件上传伪装尝试：ext=${ext}, mimetype=${data.mimetype}, user=${userId}`);
+      fastify.log.warn(`文件上传伪装尝试：ext=${ext}, mimetype=${data.mimetype}, user=${request.user.id}`);
       return reply.code(400).send({ error: '文件内容与后缀不匹配，请上传正确的图片文件' });
     }
 
     // 5. 生成唯一文件名
     const filename = `${randomUUID()}.${ext}`;
-    
+
     // 6. 确保上传子目录存在
     const __dirname = dirname(import.meta.url);
-    const uploadDir = path.join(__dirname, '../../../uploads', uploadType);
+    const uploadDir = path.join(__dirname, '../../../uploads', category);
     await fs.promises.mkdir(uploadDir, { recursive: true });
     const filepath = path.join(uploadDir, filename);
 
@@ -116,7 +123,7 @@ export default async function uploadRoutes(fastify) {
       } catch (e) {
         // Ignore if file doesn't exist
       }
-      
+
       if (err.code === 'FILE_TOO_LARGE') {
         const readableLimit = maxFileSizeKB >= 1024 ? (maxFileSizeKB / 1024).toFixed(1) + 'MB' : maxFileSizeKB + 'KB';
         return reply.code(400).send({ error: `文件大小超过限制，当前等级最大允许 ${readableLimit}` });
@@ -130,14 +137,44 @@ export default async function uploadRoutes(fastify) {
       return reply.code(500).send({ error: '文件上传失败' });
     }
 
-    // 8. 返回访问 URL 和文件元数据
-    const url = `/uploads/${uploadType}/${filename}`;
+    // 8. 提取图片元数据（宽高）
+    let width = null;
+    let height = null;
+    if (data.mimetype.startsWith('image/') && !['image/svg+xml'].includes(data.mimetype)) {
+      try {
+        const imageMetadata = await sharp(filepath).metadata();
+        width = imageMetadata.width || null;
+        height = imageMetadata.height || null;
+      } catch (err) {
+        fastify.log.warn('Failed to extract image metadata:', err.message);
+      }
+    }
+
+    // 9. 保存文件记录到数据库
+    const url = `/uploads/${category}/${filename}`;
+    const [file] = await fastify.db.insert(files).values({
+      userId: request.user.id,
+      filename,
+      originalName: data.filename,
+      url,
+      category,
+      mimetype: data.mimetype,
+      size: byteCount,
+      width,
+      height,
+    }).returning();
+
+    // 10. 返回访问 URL 和文件元数据
     return {
+      id: file.id,
       url,
       filename,
+      originalName: data.filename,
       mimetype: data.mimetype,
-      type: uploadType,
-      size: byteCount
+      category,
+      size: byteCount,
+      width,
+      height,
     };
   });
 }

@@ -371,7 +371,7 @@ export function ShopItemFormDialog({ open, onOpenChange, mode, initialData, onSu
             <ImageUpload
               value={formData.imageUrl}
               onChange={(url) => setFormData(prev => ({ ...prev, imageUrl: url }))}
-              type={formData.type === ITEM_TYPES.AVATAR_FRAME ? 'frames' : 'items'}
+              category={formData.type === ITEM_TYPES.AVATAR_FRAME ? 'frames' : 'items'}
               placeholder="上传商品图片"
             />
             <div className="flex gap-2">

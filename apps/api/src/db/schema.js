@@ -86,6 +86,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     relationName: 'createdInvitations',
   }),
   usedInvitations: many(invitationCodes, { relationName: 'usedInvitations' }),
+  files: many(files),
   // 积分系统关联
   // 积分/奖励系统关联 - 为避免循环依赖已移除。通过扩展 schema 访问。
   // userItems: many(userItems),
@@ -857,6 +858,46 @@ export const verifications = pgTable(
 export const verificationsRelations = relations(verifications, ({ one }) => ({
   user: one(users, {
     fields: [verifications.userId],
+    references: [users.id],
+  }),
+}));
+
+// ============ Files (文件管理) ============
+export const files = pgTable(
+  'files',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+
+    // 文件信息
+    filename: varchar('filename', { length: 255 }).notNull(), // UUID.ext
+    originalName: varchar('original_name', { length: 255 }), // 原始文件名
+    url: varchar('url', { length: 500 }).notNull(), // 访问路径
+    category: varchar('category', { length: 50 }).notNull(), // avatars/topics/assets
+    mimetype: varchar('mimetype', { length: 100 }).notNull(),
+    size: integer('size').notNull(), // 字节
+
+    // 图片属性（独立字段，查询频繁）
+    width: integer('width'),
+    height: integer('height'),
+
+    // 扩展元数据（JSON）
+    metadata: text('metadata'), // blurhash, exif, duration 等
+
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index('files_user_id_idx').on(table.userId),
+    index('files_category_idx').on(table.category),
+    index('files_created_at_idx').on(table.createdAt),
+  ]
+);
+
+export const filesRelations = relations(files, ({ one }) => ({
+  user: one(users, {
+    fields: [files.userId],
     references: [users.id],
   }),
 }));

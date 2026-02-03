@@ -15,6 +15,13 @@
       "when": 1768889750647,
       "tag": "0001_rich_mephistopheles",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1738569600000,
+      "tag": "0004_files_table",
+      "breakpoints": true
     }
   ]
 }

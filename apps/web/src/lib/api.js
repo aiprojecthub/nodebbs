@@ -840,12 +840,12 @@ export const dashboardApi = {
 
 // ============= 通用上传 API =============
 export const uploadApi = {
-  async upload(file, type = 'assets') {
+  async upload(file, category = 'assets') {
     const formData = new FormData();
     formData.append('file', file);
 
-    // 构建 URL，包含 type 参数
-    const url = `${apiClient.baseURL}/upload?type=${type}`;
+    // 构建 URL，包含 category 参数
+    const url = `${apiClient.baseURL}/upload?category=${category}`;
 
     const response = await fetch(url, {
       method: 'POST',
@@ -859,6 +859,19 @@ export const uploadApi = {
     }
 
     return response.json();
+  },
+};
+
+// ============= 文件管理 API =============
+export const filesApi = {
+  // 获取文件列表（管理员）
+  async getList(params) {
+    return apiClient.get('/files', params);
+  },
+
+  // 删除文件（管理员）
+  async delete(id) {
+    return apiClient.delete(`/files/${id}`);
   },
 };
 

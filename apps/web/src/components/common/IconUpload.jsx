@@ -14,20 +14,20 @@ import { MAX_UPLOAD_SIZE_ADMIN_KB, MAX_UPLOAD_SIZE_DEFAULT_KB, DEFAULT_ALLOWED_E
  * @param {Object} props
  * @param {string} props.value - 当前图片 URL
  * @param {Function} props.onChange - 图片上传成功后的回调 (url) => void
- * @param {string} props.type - 上传类型，默认 'site'
+ * @param {string} props.category - 上传分类，默认 'assets'
  * @param {string} props.accept - 接受的文件类型
  * @param {string} props.placeholder - 占位图标路径（默认兜底）
  * @param {string} props.hint - 提示文本
  * @param {string} props.className - 容器类名
  */
-export function IconUpload({ 
-  value, 
-  onChange, 
-  type = 'assets', 
+export function IconUpload({
+  value,
+  onChange,
+  category = 'assets',
   accept = 'image/*',
   placeholder,
   hint = '点击上传',
-  className 
+  className
 }) {
   const { getPermissionConditions, isAdmin } = usePermission();
   const [loading, setLoading] = useState(false);
@@ -106,7 +106,7 @@ export function IconUpload({
 
     try {
       setLoading(true);
-      const res = await uploadApi.upload(file, type);
+      const res = await uploadApi.upload(file, category);
       onChange(res.url);
       toast.success('上传成功');
     } catch (error) {

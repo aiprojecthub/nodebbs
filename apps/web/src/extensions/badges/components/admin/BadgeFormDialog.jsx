@@ -216,7 +216,7 @@ export function BadgeFormDialog({ open, onOpenChange, mode, initialData, onSubmi
                       <ImageUpload
                         value={field.value}
                         onChange={field.onChange}
-                        type="badges"
+                        category="badges"
                         placeholder="上传勋章图标"
                       />
                       <Input 

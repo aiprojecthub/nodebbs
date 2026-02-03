@@ -333,6 +333,14 @@ export const SYSTEM_PERMISSIONS = [
     conditions: [],
   },
   {
+    slug: 'dashboard.files',
+    name: '文件管理',
+    module: 'dashboard',
+    action: 'files',
+    isSystem: true,
+    conditions: [],
+  },
+  {
     slug: 'dashboard.users',
     name: '用户管理',
     module: 'dashboard',
