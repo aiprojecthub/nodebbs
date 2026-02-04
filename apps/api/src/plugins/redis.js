@@ -14,7 +14,7 @@ export const redisPlugin = async (fastify) => {
   fastify.addHook('onReady', async () => {
     try {
       await fastify.redis.ping()
-      fastify.log.info('✅ Redis connected successfully')
+      fastify.log.info('✅ Redis 连接成功')
     } catch (err) {
       fastify.log.error('❌ Redis connection failed:', err)
     }

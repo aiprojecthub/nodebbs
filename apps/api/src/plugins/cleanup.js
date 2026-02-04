@@ -20,7 +20,7 @@ export default fp(async function (fastify, opts) {
       fastify.log.warn(`Cleanup task ${name} already registered, overwriting.`);
     }
     tasks.set(name, taskFn);
-    fastify.log.debug(`Registered cleanup task: ${name}`);
+    fastify.log.debug(`已注册清理任务: ${name}`);
   }
 
   /**
@@ -73,7 +73,7 @@ export default fp(async function (fastify, opts) {
     clearInterval(interval);
   });
 
-  fastify.log.info('Cleanup plugin registered with task runner');
+  fastify.log.info('清理插件已注册到任务调度器');
 }, {
   name: 'cleanup-plugin'
 });

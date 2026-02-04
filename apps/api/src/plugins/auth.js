@@ -8,8 +8,12 @@ import ms from 'ms';
 import env from '../config/env.js';
 import { createPermissionService } from '../services/permissionService.js';
 import registerRbacEnricher from '../services/rbacEnricher.js';
+import { userEnricher } from '../services/userEnricher.js';
 
 async function authPlugin(fastify) {
+  // 注入日志实例到 userEnricher（需在注册 enrichers 之前）
+  userEnricher.setLogger(fastify.log);
+
   // 注册 RBAC 用户增强器（为用户添加 displayRole）
   registerRbacEnricher(fastify);
 

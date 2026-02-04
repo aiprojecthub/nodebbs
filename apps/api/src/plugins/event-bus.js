@@ -11,11 +11,11 @@ async function eventBusPlugin(fastify, options) {
   // Decorate fastify instance with event bus methods
   fastify.decorate('eventBus', {
     emit: (event, ...args) => {
-      fastify.log.debug(`[EventBus] Emitting event: ${event}`);
+      fastify.log.debug(`[事件总线] 触发事件: ${event}`);
       emitter.emit(event, ...args);
     },
     on: (event, listener) => {
-      fastify.log.debug(`[EventBus] Registering listener for: ${event}`);
+      fastify.log.debug(`[事件总线] 注册监听器: ${event}`);
       emitter.on(event, listener);
     },
     off: (event, listener) => {

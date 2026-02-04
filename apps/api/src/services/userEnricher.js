@@ -1,37 +1,56 @@
-
 /**
- * 允许不同功能向用户对象补充额外数据（如勋章、积分、设置等）的服务。
+ * 用户数据增强服务
+ *
+ * 允许不同功能模块向用户对象补充额外数据（如勋章、积分、头像框等）。
+ * 支持单用户增强和批量增强两种模式。
  */
 class UserEnricher {
   constructor() {
     this.enrichers = [];
     this.batchEnrichers = [];
+    // 默认使用静默 logger（不输出注册日志，仅输出错误）
+    this.logger = {
+      debug: () => {},
+      info: () => {},
+      warn: console.warn.bind(console),
+      error: console.error.bind(console),
+    };
   }
 
   /**
-   * 注册一个新的增强器。
-   * @param {string} name - 增强器的唯一名称。
-   * @param {function} callback - 异步函数 (user) => Promise<void>。直接修改用户对象。
+   * 设置日志实例
+   * 应在 Fastify 初始化时调用：userEnricher.setLogger(fastify.log)
+   * @param {object} logger - 日志实例（fastify.log 或 pino 实例）
+   */
+  setLogger(logger) {
+    this.logger = logger;
+  }
+
+  /**
+   * 注册一个新的增强器
+   * @param {string} name - 增强器的唯一名称
+   * @param {function} callback - 异步函数 (user, context) => Promise<void>，直接修改用户对象
    */
   register(name, callback) {
-    console.log(`[UserEnricher] Registered: ${name}`);
     this.enrichers.push({ name, callback });
+    this.logger.debug(`[用户增强] 已注册: ${name}`);
   }
 
   /**
-   * 注册一个新的批量增强器。
-   * @param {string} name - 增强器的唯一名称。
-   * @param {function} callback - 异步函数 (users[]) => Promise<void>。直接修改数组中的用户对象。
+   * 注册一个新的批量增强器
+   * @param {string} name - 增强器的唯一名称
+   * @param {function} callback - 异步函数 (users[], context) => Promise<void>，直接修改数组中的用户对象
    */
   registerBatch(name, callback) {
-    console.log(`[UserEnricher] Registered Batch: ${name}`);
     this.batchEnrichers.push({ name, callback });
+    this.logger.debug(`[用户增强] 已注册批量处理器: ${name}`);
   }
 
   /**
-   * 在用户对象上运行所有注册的增强器。
-   * @param {object} user - 要增强的用户对象。
-   * @param {object} context - 可选上下文（例如 request 对象）。
+   * 在用户对象上运行所有注册的增强器
+   * @param {object} user - 要增强的用户对象
+   * @param {object} context - 可选上下文（例如 request 对象）
+   * @returns {Promise<object>} 增强后的用户对象
    */
   async enrich(user, context = {}) {
     if (!user) return;
@@ -42,19 +61,20 @@ class UserEnricher {
         try {
           await callback(user, context);
         } catch (err) {
-          console.error(`[UserEnricher] Error in ${name}:`, err);
           // 如果一个增强器失败，不要导致整个请求失败
+          this.logger.error(`[用户增强] ${name} 执行失败: ${err.message}`);
         }
       })
     );
-    
+
     return user;
   }
 
   /**
-   * 在用户列表上运行所有注册的批量增强器。
-   * @param {object[]} users - 要增强的用户对象列表。
-   * @param {object} context - 可选上下文。
+   * 在用户列表上运行所有注册的批量增强器
+   * @param {object[]} users - 要增强的用户对象列表
+   * @param {object} context - 可选上下文
+   * @returns {Promise<object[]>} 增强后的用户对象列表
    */
   async enrichMany(users, context = {}) {
     if (!users || users.length === 0) return users;
@@ -65,7 +85,7 @@ class UserEnricher {
         try {
           await callback(users, context);
         } catch (err) {
-          console.error(`[UserEnricher] Error in batch ${name}:`, err);
+          this.logger.error(`[用户增强] 批量处理器 ${name} 执行失败: ${err.message}`);
         }
       })
     );
@@ -75,3 +95,4 @@ class UserEnricher {
 }
 
 export const userEnricher = new UserEnricher();
+

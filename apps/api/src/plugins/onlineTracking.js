@@ -178,7 +178,7 @@ export default fp(async function (fastify, opts) {
   // 4. 服务器关闭钩子
   fastify.addHook('onClose', async () => {
     tracker.stopCleanup();
-    fastify.log.info('Online tracking plugin closed');
+    fastify.log.info('在线追踪插件已关闭');
   });
 
   // 5. 核心逻辑: 记录请求
@@ -223,7 +223,7 @@ export default fp(async function (fastify, opts) {
     return await tracker.cleanup();
   });
 
-  fastify.log.info('Online tracking plugin registered (Redis ZSET mode)');
+  fastify.log.info('在线追踪插件已注册 (Redis ZSET 模式)');
 
 }, {
   name: 'online-tracking',

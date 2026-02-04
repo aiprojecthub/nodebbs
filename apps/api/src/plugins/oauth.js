@@ -9,7 +9,7 @@ import { eq } from 'drizzle-orm';
  * 从数据库动态读取配置，无需重启即可生效
  */
 async function oauthPlugin(fastify, opts) {
-  fastify.log.info('Initializing OAuth plugin with database configuration');
+  fastify.log.info('正在初始化 OAuth 插件（数据库配置）');
 
   // 添加一个装饰器方法，用于获取提供商配置
   // 这个方法会实时从数据库读取最新配置
@@ -23,7 +23,7 @@ async function oauthPlugin(fastify, opts) {
     return result[0] || null;
   });
 
-  fastify.log.info('OAuth plugin initialized successfully');
+  fastify.log.info('OAuth 插件初始化完成');
 }
 
 

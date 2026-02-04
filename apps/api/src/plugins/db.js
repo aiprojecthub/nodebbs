@@ -13,7 +13,7 @@ async function dbPlugin(fastify, options) {
   try {
     const client = await pool.connect();
     client.release();
-    fastify.log.info('✅ Database connected successfully');
+    fastify.log.info('✅ 数据库连接成功');
   } catch (err) {
     fastify.log.error('❌ Database connection failed:', err);
     throw err;
