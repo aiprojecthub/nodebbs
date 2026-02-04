@@ -1,14 +1,6 @@
 /**
  * Email 提供商索引
- * 统一导出所有邮件提供商
- */
-
-export { sendViaSMTP } from './smtp.js';
-export { sendViaSendGrid } from './sendgrid.js';
-export { sendViaResend } from './resend.js';
-
-/**
- * 提供商发送函数映射
+ * 使用动态导入实现按需加载，避免未配置的提供商依赖导致启动失败
  */
 export const emailProviderSenders = {
   smtp: async (config, options) => {

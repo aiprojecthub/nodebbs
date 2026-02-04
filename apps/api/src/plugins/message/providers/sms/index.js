@@ -1,13 +1,6 @@
 /**
  * SMS 提供商索引
- * 统一导出所有短信提供商
- */
-
-export { sendViaAliyun } from './aliyun.js';
-export { sendViaTencent } from './tencent.js';
-
-/**
- * 提供商发送函数映射
+ * 使用动态导入实现按需加载，避免未配置的提供商依赖导致启动失败
  */
 export const smsProviderSenders = {
   aliyun: async (config, options) => {
