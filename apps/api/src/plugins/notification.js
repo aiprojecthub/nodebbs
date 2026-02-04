@@ -11,7 +11,7 @@ async function notificationPlugin(fastify, options) {
   // 注册通知服务
   fastify.decorate('notification', notificationService);
 
-  fastify.log.info('[Notification] 通知服务已注册');
+  fastify.log.info('[通知] 服务已注册');
 }
 
 export default fp(notificationPlugin, {

@@ -2,13 +2,13 @@ import fp from 'fastify-plugin';
 import { EventEmitter } from 'node:events';
 
 /**
- * Event Bus Plugin
- * Provides a simple event bus for decoupling modules.
+ * 事件总线插件
+ * 提供简易事件总线，用于模块解耦。
  */
 async function eventBusPlugin(fastify, options) {
   const emitter = new EventEmitter();
 
-  // Decorate fastify instance with event bus methods
+  // 为 fastify 实例挂载事件总线方法
   fastify.decorate('eventBus', {
     emit: (event, ...args) => {
       fastify.log.debug(`[事件总线] 触发事件: ${event}`);

@@ -5,11 +5,11 @@ import { eq } from 'drizzle-orm';
 
 /**
  * OAuth 2.0 插件配置
- * 支持 GitHub, Google, Apple 等提供商
+ * 支持 GitHub、Google、Apple 等提供商
  * 从数据库动态读取配置，无需重启即可生效
  */
 async function oauthPlugin(fastify, opts) {
-  fastify.log.info('正在初始化 OAuth 插件（数据库配置）');
+  fastify.log.info('[OAuth] 正在初始化插件（基于数据库配置）');
 
   // 添加一个装饰器方法，用于获取提供商配置
   // 这个方法会实时从数据库读取最新配置
@@ -23,7 +23,7 @@ async function oauthPlugin(fastify, opts) {
     return result[0] || null;
   });
 
-  fastify.log.info('OAuth 插件初始化完成');
+  fastify.log.info('[OAuth] 插件初始化完成');
 }
 
 

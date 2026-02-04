@@ -268,7 +268,7 @@ export async function checkBadgeConditions(userId) {
         }
       }
     } catch (e) {
-      console.error(`Failed to parse condition for badge ${badge.id}:`, e);
+      console.error(`[勋章] 解析勋章 ${badge.id} 的解锁条件失败:`, e);
     }
   }
 
@@ -365,7 +365,7 @@ export async function getPassiveEffects(userId) {
           }
         }
       } catch (e) {
-        console.warn(`Badge ${badge.id} metadata parse error:`, e);
+        console.warn(`[勋章] 勋章 ${badge.id} 元数据解析错误:`, e);
       }
     }
 
@@ -374,7 +374,7 @@ export async function getPassiveEffects(userId) {
 
     return effects;
   } catch (error) {
-    console.error('[Badge] Get passive effects failed:', error);
+    console.error('[勋章] 获取被动效果失败:', error);
     return {};
   }
 }

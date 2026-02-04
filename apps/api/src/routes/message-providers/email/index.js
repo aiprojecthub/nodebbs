@@ -3,14 +3,14 @@ import { messageProviders } from '../../../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 
 /**
- * Email 提供商配置路由
+ * 邮件提供商配置路由
  * 路径: /api/message-providers/email
  */
 export default async function emailProvidersRoutes(fastify, options) {
   const CHANNEL = 'email';
 
   /**
-   * 获取 Email 提供商配置
+   * 获取邮件提供商配置
    * 公开接口：只返回已启用的提供商（不含敏感信息）
    * 管理员：返回所有提供商（含完整配置）
    */
@@ -20,7 +20,7 @@ export default async function emailProvidersRoutes(fastify, options) {
       preHandler: [fastify.optionalAuth],
       schema: {
         tags: ['message-providers'],
-        description: '获取 Email 提供商配置',
+        description: '获取邮件提供商配置',
         response: {
           200: {
             type: 'object',
@@ -83,14 +83,14 @@ export default async function emailProvidersRoutes(fastify, options) {
 
         return { items };
       } catch (error) {
-        fastify.log.error(error);
-        return reply.code(500).send({ error: '获取 Email 配置失败' });
+        fastify.log.error('[消息] 获取邮件配置失败:', error);
+        return reply.code(500).send({ error: '获取邮件配置失败' });
       }
     }
   );
 
   /**
-   * 更新 Email 提供商配置（管理员）
+   * 更新邮件提供商配置（管理员）
    */
   fastify.patch(
     '/:provider',
@@ -98,7 +98,7 @@ export default async function emailProvidersRoutes(fastify, options) {
       preHandler: [fastify.requireAdmin],
       schema: {
         tags: ['message-providers', 'admin'],
-        description: '更新 Email 提供商配置（仅管理员）',
+        description: '更新邮件提供商配置（仅管理员）',
         security: [{ bearerAuth: [] }],
         params: {
           type: 'object',
@@ -141,7 +141,7 @@ export default async function emailProvidersRoutes(fastify, options) {
           .limit(1);
 
         if (existing.length === 0) {
-          return reply.code(404).send({ error: 'Email 提供商不存在' });
+          return reply.code(404).send({ error: '邮件提供商不存在' });
         }
 
         if (updateData.isDefault === true) {
@@ -174,20 +174,20 @@ export default async function emailProvidersRoutes(fastify, options) {
             eq(messageProviders.provider, provider)
           ));
 
-        fastify.log.info(`Email provider ${provider} configuration updated`);
+        fastify.log.info(`[消息] 邮件提供商 ${provider} 配置已更新`);
 
         return {
-          message: 'Email 配置已更新',
+          message: '邮件配置已更新',
         };
       } catch (error) {
-        fastify.log.error(error);
-        return reply.code(500).send({ error: '更新 Email 配置失败' });
+        fastify.log.error('[消息] 更新邮件配置失败:', error);
+        return reply.code(500).send({ error: '更新邮件配置失败' });
       }
     }
   );
 
   /**
-   * 测试 Email 配置（管理员）
+   * 测试邮件配置（管理员）
    */
   fastify.post(
     '/:provider/test',
@@ -195,7 +195,7 @@ export default async function emailProvidersRoutes(fastify, options) {
       preHandler: [fastify.requireAdmin],
       schema: {
         tags: ['message-providers', 'admin'],
-        description: '测试 Email 提供商配置（仅管理员）',
+        description: '测试邮件提供商配置（仅管理员）',
         security: [{ bearerAuth: [] }],
         params: {
           type: 'object',
@@ -235,7 +235,7 @@ export default async function emailProvidersRoutes(fastify, options) {
           .limit(1);
 
         if (results.length === 0) {
-          return reply.code(404).send({ error: 'Email 提供商不存在' });
+          return reply.code(404).send({ error: '邮件提供商不存在' });
         }
 
         const providerRecord = results[0];
@@ -267,15 +267,15 @@ export default async function emailProvidersRoutes(fastify, options) {
 
             return { success: true, message: `测试邮件已发送到 ${testEmail}` };
           } catch (error) {
-            fastify.log.error('Test email failed:', error);
+            fastify.log.error('[消息] 发送测试邮件失败:', error);
             return { success: false, message: `发送测试邮件失败: ${error.message}` };
           }
         }
 
-        return { success: true, message: 'Email 配置验证通过' };
+        return { success: true, message: '邮件配置验证通过' };
       } catch (error) {
-        fastify.log.error(error);
-        return reply.code(500).send({ error: '测试 Email 配置失败' });
+        fastify.log.error('[消息] 测试邮件配置失败:', error);
+        return reply.code(500).send({ error: '测试邮件配置失败' });
       }
     }
   );

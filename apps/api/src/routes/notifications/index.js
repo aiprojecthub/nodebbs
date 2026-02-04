@@ -3,7 +3,7 @@ import { notifications, users, topics, posts } from '../../db/schema.js';
 import { eq, sql, desc, and, like, count } from 'drizzle-orm';
 
 export default async function notificationRoutes(fastify, options) {
-  // Get user notifications
+  // 获取用户通知
   fastify.get('/', {
     preHandler: [fastify.authenticate],
     schema: {
@@ -63,7 +63,7 @@ export default async function notificationRoutes(fastify, options) {
       .limit(limit)
       .offset(offset);
 
-    // Get total count with same conditions
+    // 按相同条件获取总数
     const totalCountConditions = [eq(notifications.userId, request.user.id)];
 
     if (search && search.trim()) {
@@ -79,7 +79,7 @@ export default async function notificationRoutes(fastify, options) {
       .from(notifications)
       .where(and(...totalCountConditions));
 
-    // Get unread count
+    // 获取未读数量
     const [{ count: unreadCount }] = await db
       .select({ count: count() })
       .from(notifications)
@@ -97,7 +97,7 @@ export default async function notificationRoutes(fastify, options) {
     };
   });
 
-  // Mark notification as read
+  // 标记通知为已读
   fastify.patch('/:id/read', {
     preHandler: [fastify.authenticate],
     schema: {
@@ -137,7 +137,7 @@ export default async function notificationRoutes(fastify, options) {
     return updated;
   });
 
-  // Mark all notifications as read
+  // 标记所有通知为已读
   fastify.post('/read-all', {
     preHandler: [fastify.authenticate],
     schema: {
@@ -170,7 +170,7 @@ export default async function notificationRoutes(fastify, options) {
     };
   });
 
-  // Delete notification
+  // 删除通知
   fastify.delete('/:id', {
     preHandler: [fastify.authenticate],
     schema: {
@@ -203,7 +203,7 @@ export default async function notificationRoutes(fastify, options) {
     return { message: '通知删除成功' };
   });
 
-  // Delete all read notifications
+  // 删除所有已读通知
   fastify.delete('/read/all', {
     preHandler: [fastify.authenticate],
     schema: {

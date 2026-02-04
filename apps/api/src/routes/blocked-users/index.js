@@ -3,7 +3,7 @@ import { blockedUsers, users } from '../../db/schema.js';
 import { eq, and, or, sql, count } from 'drizzle-orm';
 
 export default async function blockedUsersRoutes(fastify) {
-  // Get blocked users list
+  // 获取拉黑用户列表
   fastify.get(
     '/',
     {
@@ -26,13 +26,13 @@ export default async function blockedUsersRoutes(fastify) {
       const limit = parseInt(request.query.limit) || 20;
       const offset = (page - 1) * limit;
 
-      // Get total count
+      // 获取总数量
       const [{ count: total }] = await db
         .select({ count: count() })
         .from(blockedUsers)
         .where(eq(blockedUsers.userId, request.user.id));
 
-      // Get paginated list
+      // 获取分页列表
       const blockedList = await db
         .select({
           id: blockedUsers.id,
@@ -59,7 +59,7 @@ export default async function blockedUsersRoutes(fastify) {
     }
   );
 
-  // Block a user
+  // 拉黑用户
   fastify.post(
     '/:userId',
     {
@@ -87,12 +87,12 @@ export default async function blockedUsersRoutes(fastify) {
       const userId = parseInt(request.params.userId);
       const { reason } = request.body;
 
-      // Cannot block yourself
+      // 不能拉黑自己
       if (userId === request.user.id) {
         return reply.code(400).send({ error: '不能拉黑自己' });
       }
 
-      // Check if user exists
+      // 检查用户是否存在
       const [targetUser] = await db
         .select({ id: users.id })
         .from(users)
@@ -103,7 +103,7 @@ export default async function blockedUsersRoutes(fastify) {
         return reply.code(404).send({ error: '用户不存在' });
       }
 
-      // Check if already blocked
+      // 检查是否已拉黑
       const [existing] = await db
         .select()
         .from(blockedUsers)
@@ -119,7 +119,7 @@ export default async function blockedUsersRoutes(fastify) {
         return reply.code(400).send({ error: '用户已被拉黑' });
       }
 
-      // Block the user
+      // 创建拉黑关系
       const [blocked] = await db
         .insert(blockedUsers)
         .values({
@@ -133,7 +133,7 @@ export default async function blockedUsersRoutes(fastify) {
     }
   );
 
-  // Unblock a user
+  // 取消拉黑用户
   fastify.delete(
     '/:userId',
     {
@@ -172,7 +172,7 @@ export default async function blockedUsersRoutes(fastify) {
     }
   );
 
-  // Check if a user is blocked
+  // 检查用户是否被拉黑
   fastify.get(
     '/check/:userId',
     {
@@ -193,7 +193,7 @@ export default async function blockedUsersRoutes(fastify) {
     async (request) => {
       const userId = parseInt(request.params.userId);
 
-      // Check both directions: if current user blocked target, or target blocked current user
+      // 双向检查：当前用户拉黑对方，或对方拉黑当前用户
       const [blocked] = await db
         .select()
         .from(blockedUsers)

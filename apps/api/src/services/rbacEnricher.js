@@ -34,7 +34,7 @@ export default function registerRbacEnricher(fastify) {
       const userRolesList = await permissionService.getUserRoles(user.id);
       user.displayRole = extractDisplayRole(userRolesList);
     } catch (err) {
-      console.error(`[RbacEnricher] Failed to enrich user ${user.id}:`, err);
+      console.error(`[RBAC增强] 补充用户 ${user.id} 的角色信息失败:`, err);
       user.displayRole = null;
     }
   };
@@ -59,7 +59,7 @@ export default function registerRbacEnricher(fastify) {
           const userRolesList = await permissionService.getUserRoles(user.id);
           user.displayRole = extractDisplayRole(userRolesList);
         } catch (err) {
-          console.error(`[RbacEnricher] Failed to enrich user ${user.id}:`, err);
+          console.error(`[RBAC增强] 补充用户 ${user.id} 的角色信息失败:`, err);
           user.displayRole = null;
         }
       })

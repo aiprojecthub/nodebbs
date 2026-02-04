@@ -45,7 +45,7 @@ export async function getSetting(key, defaultValue = null) {
 
     return value;
   } catch (error) {
-    console.error('Error fetching setting:', error);
+    console.error('[设置] 获取配置项失败:', error);
     return defaultValue;
   }
 }
@@ -83,7 +83,7 @@ export async function getAllSettings() {
 
     return formattedSettings;
   } catch (error) {
-    console.error('Error fetching all settings:', error);
+    console.error('[设置] 获取所有配置项失败:', error);
     return {};
   }
 }

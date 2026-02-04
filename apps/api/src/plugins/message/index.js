@@ -18,7 +18,7 @@ import {
 import { MessageError, MessageErrorCode } from './errors.js';
 
 async function messagePlugin(fastify, opts) {
-  fastify.log.info('正在初始化消息服务插件');
+  fastify.log.info('[消息] 正在初始化服务插件');
 
   // 初始化渠道实例
   const emailChannel = new EmailChannel(fastify);
@@ -102,7 +102,7 @@ async function messagePlugin(fastify, opts) {
   // 注册 fastify.message 装饰器
   fastify.decorate('message', messageService);
 
-  fastify.log.info('消息服务插件初始化完成');
+  fastify.log.info('[消息] 服务插件初始化完成');
 }
 
 export default fp(messagePlugin, {

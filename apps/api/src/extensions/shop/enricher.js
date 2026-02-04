@@ -38,7 +38,7 @@ export default function registerShopEnricher(fastify) {
 
       user.avatarFrame = foundAvatarFrame || null;
     } catch (err) {
-      console.error('Error enriching user avatar frame:', err);
+      console.error('[商城增强] 补充用户头像框数据失败:', err);
     }
   });
 
@@ -86,7 +86,7 @@ export default function registerShopEnricher(fastify) {
         }
       });
     } catch (err) {
-      console.error('Error batch enriching user avatar frames:', err);
+      console.error('[商城增强] 批量补充用户头像框数据失败:', err);
     }
   });
 }

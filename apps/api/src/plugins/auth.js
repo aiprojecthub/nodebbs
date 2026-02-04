@@ -157,7 +157,7 @@ async function authPlugin(fastify) {
     await fastify.cache.invalidate([`user:${userId}`, `user:full:${userId}`]);
     // 同时清除权限缓存
     await permissionService.clearUserPermissionCache(userId);
-    fastify.log.info(`已清除用户 ${userId} 的缓存`);
+    fastify.log.info(`[鉴权] 已清除用户 ${userId} 的缓存`);
   });
 
   /**

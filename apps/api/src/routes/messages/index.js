@@ -3,7 +3,7 @@ import { messages, users, blockedUsers, follows } from '../../db/schema.js';
 import { eq, sql, desc, and, or, like, count } from 'drizzle-orm';
 
 export default async function messageRoutes(fastify) {
-  // Get conversations list (grouped by user)
+  // 获取会话列表（按用户分组）
   fastify.get(
     '/conversations',
     {
@@ -26,7 +26,7 @@ export default async function messageRoutes(fastify) {
       const offset = (page - 1) * limit;
       const currentUserId = request.user.id;
 
-      // Step 1: Get all messages involving current user
+      // 第 1 步：获取包含当前用户的所有消息
       const allMessages = await db
         .select({
           id: messages.id,
@@ -51,7 +51,7 @@ export default async function messageRoutes(fastify) {
         )
         .orderBy(desc(messages.createdAt));
 
-      // Step 2: Group by conversation partner and get latest message
+      // 第 2 步：按会话对象分组并获取最新消息
       const conversationMap = new Map();
       for (const msg of allMessages) {
         const otherUserId =
@@ -65,7 +65,7 @@ export default async function messageRoutes(fastify) {
           });
         }
 
-        // Count unread messages from this user
+        // 统计来自该用户的未读消息数
         if (
           msg.senderId === otherUserId &&
           msg.recipientId === currentUserId &&
@@ -75,14 +75,14 @@ export default async function messageRoutes(fastify) {
         }
       }
 
-      // Step 3: Convert to array and apply pagination
+      // 第 3 步：转为数组并进行分页
       const allConversations = Array.from(conversationMap.values());
       const paginatedConversations = allConversations.slice(
         offset,
         offset + limit
       );
 
-      // Step 4: Get user details for paginated conversations
+      // 第 4 步：为分页后的会话获取用户信息
       const conversationsWithDetails = await Promise.all(
         paginatedConversations.map(async (conv) => {
           const [otherUser] = await db
@@ -110,7 +110,7 @@ export default async function messageRoutes(fastify) {
         })
       );
 
-      // Step 5: Get total unread count
+      // 第 5 步：获取未读总数
       const totalUnread = allMessages.filter(
         (msg) => msg.recipientId === currentUserId && !msg.isRead
       ).length;
@@ -125,7 +125,7 @@ export default async function messageRoutes(fastify) {
     }
   );
 
-  // Get user's messages (inbox and sent) - kept for backward compatibility
+  // 获取用户消息（收件箱与已发送）- 保留用于兼容旧接口
   fastify.get(
     '/',
     {
@@ -217,13 +217,13 @@ export default async function messageRoutes(fastify) {
         .limit(limit)
         .offset(offset);
 
-      // Get total count with same conditions
+      // 按相同条件获取总数
       const [{ count: total }] = await db
         .select({ count: count() })
         .from(messages)
         .where(and(...conditions));
 
-      // Get unread count (for inbox only)
+      // 获取未读数量（仅收件箱）
       let unreadCount = 0;
       if (box === 'inbox') {
         const [{ count: unread }] = await db
@@ -249,7 +249,7 @@ export default async function messageRoutes(fastify) {
     }
   );
 
-  // Get single message
+  // 获取单条消息
   fastify.get(
     '/:id',
     {
@@ -293,7 +293,7 @@ export default async function messageRoutes(fastify) {
         return reply.code(404).send({ error: '消息不存在' });
       }
 
-      // Check permissions
+      // 检查权限
       if (
         message.senderId !== request.user.id &&
         message.recipientId !== request.user.id
@@ -303,7 +303,7 @@ export default async function messageRoutes(fastify) {
           .send({ error: '你没有权限查看该消息' });
       }
 
-      // Mark as read if recipient is viewing
+      // 接收者查看时标记为已读
       if (message.recipientId === request.user.id && !message.isRead) {
         await db
           .update(messages)
@@ -317,7 +317,7 @@ export default async function messageRoutes(fastify) {
     }
   );
 
-  // Send message
+  // 发送消息
   fastify.post(
     '/',
     {
@@ -340,7 +340,7 @@ export default async function messageRoutes(fastify) {
     async (request, reply) => {
       const { recipientId, subject, content } = request.body;
 
-      // Check if recipient exists and get their settings
+      // 检查接收者是否存在并读取其设置
       const [recipient] = await db
         .select({
           id: users.id,
@@ -355,14 +355,14 @@ export default async function messageRoutes(fastify) {
         return reply.code(404).send({ error: '收件人不存在' });
       }
 
-      // Cannot send message to self
+      // 不能给自己发送消息
       if (recipientId === request.user.id) {
         return reply
           .code(400)
           .send({ error: '不能给自己发消息' });
       }
 
-      // Check recipient's message permission
+      // 检查接收者的消息权限
       const recipientPermission = recipient.messagePermission || 'everyone';
       
       if (recipientPermission === 'disabled') {
@@ -391,7 +391,7 @@ export default async function messageRoutes(fastify) {
         }
       }
 
-      // Check if current user has disabled messages
+      // 检查当前用户是否禁用私信
       const [currentUser] = await db
         .select({ messagePermission: users.messagePermission })
         .from(users)
@@ -407,7 +407,7 @@ export default async function messageRoutes(fastify) {
           });
       }
 
-      // Check if either user has blocked the other
+      // 检查双方是否存在拉黑关系
       const [blockRelation] = await db
         .select()
         .from(blockedUsers)
@@ -437,7 +437,7 @@ export default async function messageRoutes(fastify) {
         }
       }
 
-      // Create message
+      // 创建消息
       const [newMessage] = await db
         .insert(messages)
         .values({
@@ -448,7 +448,7 @@ export default async function messageRoutes(fastify) {
         })
         .returning();
 
-      // Create notification for recipient
+      // 为接收者创建通知
       await fastify.notification.send({
         userId: recipientId,
         type: 'message',
@@ -466,7 +466,7 @@ export default async function messageRoutes(fastify) {
     }
   );
 
-  // Delete message
+  // 删除消息
   fastify.delete(
     '/:id',
     {
@@ -497,7 +497,7 @@ export default async function messageRoutes(fastify) {
         return reply.code(404).send({ error: '消息不存在' });
       }
 
-      // Check permissions
+      // 检查权限
       if (
         message.senderId !== request.user.id &&
         message.recipientId !== request.user.id
@@ -507,7 +507,7 @@ export default async function messageRoutes(fastify) {
           .send({ error: '你没有权限删除该消息' });
       }
 
-      // Soft delete based on user role
+      // 根据用户角色执行软删除
       const updates = {};
       if (message.senderId === request.user.id) {
         updates.isDeletedBySender = true;
@@ -522,7 +522,7 @@ export default async function messageRoutes(fastify) {
     }
   );
 
-  // Delete all messages with a specific user (conversation)
+  // 删除与指定用户的全部消息（会话）
   fastify.delete(
     '/conversation/:userId',
     {
@@ -544,7 +544,7 @@ export default async function messageRoutes(fastify) {
       const { userId } = request.params;
       const currentUserId = request.user.id;
 
-      // Check if the other user exists
+      // 检查对方用户是否存在
       const [otherUser] = await db
         .select({ id: users.id })
         .from(users)
@@ -555,8 +555,8 @@ export default async function messageRoutes(fastify) {
         return reply.code(404).send({ error: '用户不存在' });
       }
 
-      // Soft delete all messages between current user and specified user
-      // For messages sent by current user
+      // 软删除当前用户与指定用户之间的所有消息
+      // 针对当前用户发送的消息
       await db
         .update(messages)
         .set({ isDeletedBySender: true })
@@ -567,7 +567,7 @@ export default async function messageRoutes(fastify) {
           )
         );
 
-      // For messages received by current user
+      // 针对当前用户接收的消息
       await db
         .update(messages)
         .set({ isDeletedByRecipient: true })
@@ -582,7 +582,7 @@ export default async function messageRoutes(fastify) {
     }
   );
 
-  // Mark message as read
+  // 标记消息为已读
   fastify.patch(
     '/:id/read',
     {
@@ -613,7 +613,7 @@ export default async function messageRoutes(fastify) {
         return reply.code(404).send({ error: '消息不存在' });
       }
 
-      // Only recipient can mark as read
+      // 仅接收者可标记为已读
       if (message.recipientId !== request.user.id) {
         return reply
           .code(403)
@@ -630,7 +630,7 @@ export default async function messageRoutes(fastify) {
     }
   );
 
-  // Get conversation with a specific user
+  // 获取与指定用户的会话
   fastify.get(
     '/conversation/:userId',
     {
@@ -660,7 +660,7 @@ export default async function messageRoutes(fastify) {
       const { page = 1, limit = 20 } = request.query;
       const offset = (page - 1) * limit;
 
-      // Check if the other user exists
+      // 检查对方用户是否存在
       const [otherUser] = await db
         .select({
           id: users.id,
@@ -676,7 +676,7 @@ export default async function messageRoutes(fastify) {
         return reply.code(404).send({ error: '用户不存在' });
       }
 
-      // Get all messages between current user and the specified user
+      // 获取当前用户与指定用户之间的所有消息
       const conversation = await db
         .select({
           id: messages.id,
@@ -711,7 +711,7 @@ export default async function messageRoutes(fastify) {
         .limit(limit)
         .offset(offset);
 
-      // Get total count
+      // 获取总数量
       const [{ count: total }] = await db
         .select({ count: count() })
         .from(messages)
@@ -730,7 +730,7 @@ export default async function messageRoutes(fastify) {
           )
         );
 
-      // Mark all unread messages from this user as read
+      // 将该用户的未读消息全部标记为已读
       await db
         .update(messages)
         .set({ isRead: true, readAt: new Date() })

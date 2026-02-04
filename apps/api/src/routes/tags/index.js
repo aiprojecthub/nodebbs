@@ -4,7 +4,7 @@ import { eq, sql, desc, like, count } from 'drizzle-orm';
 import slugify from 'slug';
 
 export default async function tagRoutes(fastify, options) {
-  // List all tags
+  // 获取所有标签
   fastify.get('/', {
     schema: {
       tags: ['tags'],
@@ -46,7 +46,7 @@ export default async function tagRoutes(fastify, options) {
     };
   });
 
-  // Get tag by slug
+  // 根据标识获取标签
   fastify.get('/:slug', {
     schema: {
       tags: ['tags'],
@@ -71,7 +71,7 @@ export default async function tagRoutes(fastify, options) {
     return tag;
   });
 
-  // Get topics for a tag
+  // 获取标签下的话题
   fastify.get('/:slug/topics', {
     schema: {
       tags: ['tags'],
@@ -119,7 +119,7 @@ export default async function tagRoutes(fastify, options) {
       .limit(limit)
       .offset(offset);
 
-    // Get total count
+    // 获取总数量
     const [{ count: total }] = await db
       .select({ count: count() })
       .from(topicTags)
@@ -133,7 +133,7 @@ export default async function tagRoutes(fastify, options) {
     };
   });
 
-  // Create tag (authenticated users)
+  // 创建标签（已登录用户）
   fastify.post('/', {
     preHandler: [fastify.authenticate],
     schema: {
@@ -155,12 +155,12 @@ export default async function tagRoutes(fastify, options) {
     const { name, description, color } = request.body;
     let { slug } = request.body;
 
-    // Generate slug if not provided
+    // 未提供标识时自动生成
     if (!slug) {
       slug = slugify(name);
     }
 
-    // Check if tag exists
+    // 检查标签是否已存在
     const [existing] = await db.select().from(tags).where(eq(tags.slug, slug)).limit(1);
 
     if (existing) {
@@ -177,7 +177,7 @@ export default async function tagRoutes(fastify, options) {
     return newTag;
   });
 
-  // Update tag (admin only)
+  // 更新标签（仅管理员）
   fastify.patch('/:id', {
     preHandler: [fastify.requireAdmin],
     schema: {
@@ -210,7 +210,7 @@ export default async function tagRoutes(fastify, options) {
       return reply.code(404).send({ error: '标签不存在' });
     }
 
-    // Check slug uniqueness if changed
+    // 若标识变更则检查唯一性
     if (request.body.slug && request.body.slug !== tag.slug) {
       const [existing] = await db.select().from(tags).where(eq(tags.slug, request.body.slug)).limit(1);
       if (existing) {
@@ -225,7 +225,7 @@ export default async function tagRoutes(fastify, options) {
     return updatedTag;
   });
 
-  // Delete tag (admin only)
+  // 删除标签（仅管理员）
   fastify.delete('/:id', {
     preHandler: [fastify.requireAdmin],
     schema: {
@@ -249,10 +249,10 @@ export default async function tagRoutes(fastify, options) {
       return reply.code(404).send({ error: '标签不存在' });
     }
 
-    // Delete all topic_tags associations first (cascade should handle this, but being explicit)
+    // 先删除所有 topic_tags 关联（级联可处理，这里显式执行）
     await db.delete(topicTags).where(eq(topicTags.tagId, id));
 
-    // Delete tag
+    // 删除标签
     await db.delete(tags).where(eq(tags.id, id));
 
     return { message: '标签删除成功' };

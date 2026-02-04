@@ -11,7 +11,7 @@ const pkg = JSON.parse(
 );
 
 export default async function rootRoutes(fastify, options) {
-  // Health check
+  // 健康检查
   fastify.get(
     '/',
     {
@@ -41,7 +41,7 @@ export default async function rootRoutes(fastify, options) {
     }
   );
 
-  // Forum statistics
+  // 论坛统计
   fastify.get(
     '/stats',
     {
@@ -62,25 +62,25 @@ export default async function rootRoutes(fastify, options) {
       },
     },
     async (request, reply) => {
-      // Get total topics count (excluding deleted)
+      // 获取话题总数（不含已删除）
       const [{ count: totalTopics }] = await db
         .select({ count: count() })
         .from(topics)
         .where(eq(topics.isDeleted, false));
 
-      // Get total posts count (excluding deleted)
+      // 获取帖子总数（不含已删除）
       const [{ count: totalPosts }] = await db
         .select({ count: count() })
         .from(posts)
         .where(and(eq(posts.isDeleted, false), ne(posts.postNumber, 1)));
 
-      // Get total users count (excluding deleted)
+      // 获取用户总数（不含已删除）
       const [{ count: totalUsers }] = await db
         .select({ count: count() })
         .from(users)
         .where(eq(users.isDeleted, false));
 
-      // Get online users from tracking plugin (if available)
+      // 从在线追踪插件获取在线用户数（如可用）
       const onlineStats = await fastify.getOnlineStats();
 
       return {

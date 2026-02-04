@@ -18,7 +18,7 @@ const __dirname = path.dirname(__filename);
 
 export default async function userRoutes(fastify, options) {
   const { permission } = fastify;
-  // Create user (admin only)
+  // 创建用户（仅管理员）
   fastify.post('/', {
     preHandler: [fastify.requireAdmin],
     schema: {
@@ -70,7 +70,7 @@ export default async function userRoutes(fastify, options) {
       return reply.code(400).send({ error: usernameValidation.error });
     }
 
-    // Check if user exists
+    // 检查用户是否存在
     const [existingEmail] = await db.select().from(users).where(eq(users.email, email)).limit(1);
     if (existingEmail) {
       return reply.code(400).send({ error: '邮箱已被注册' });
@@ -81,10 +81,10 @@ export default async function userRoutes(fastify, options) {
       return reply.code(400).send({ error: '用户名已被占用' });
     }
 
-    // Hash password
+    // 密码哈希处理
     const passwordHash = await fastify.hashPassword(password);
 
-    // Create user
+    // 创建用户
     const [newUser] = await db.insert(users).values({
       username: normalizedUsername,
       email,
@@ -97,13 +97,13 @@ export default async function userRoutes(fastify, options) {
     // 分配默认角色（用户-角色关联）
     await permission.assignDefaultRoleToUser(newUser.id, { assignedBy: request.user.id });
 
-    // Remove sensitive data
+    // 移除敏感数据
     delete newUser.passwordHash;
 
     return newUser;
   });
 
-  // Get users list (dashboard.users permission required)
+  // 获取用户列表（需要 dashboard.users 权限）
   fastify.get('/', {
     preHandler: [fastify.authenticate],
     schema: {
@@ -143,7 +143,7 @@ export default async function userRoutes(fastify, options) {
       lastSeenAt: users.lastSeenAt
     }).from(users);
 
-    // Apply filters
+    // 应用筛选条件
     const conditions = [];
     
     // 默认不显示已删除用户，除非明确请求
@@ -173,7 +173,7 @@ export default async function userRoutes(fastify, options) {
       .offset(offset);
 
 
-    // Get total count
+    // 获取总数量
     let countQuery = db.select({ count: count() }).from(users);
     if (conditions.length > 0) {
       countQuery = countQuery.where(and(...conditions));
@@ -280,7 +280,7 @@ export default async function userRoutes(fastify, options) {
     };
   });
 
-  // Get user profile by username
+  // 根据用户名获取用户资料
   fastify.get('/:username', {
     preHandler: [fastify.optionalAuth],
     schema: {
@@ -332,19 +332,7 @@ export default async function userRoutes(fastify, options) {
             },
             badges: {
               type: 'array',
-              // items: {
-              //   type: 'object',
-              //   properties: {
-              //     id: { type: 'number' },
-              //     badgeId: { type: 'number' },
-              //     name: { type: 'string' },
-              //     slug: { type: 'string' },
-              //     iconUrl: { type: 'string' },
-              //     description: { type: ['string', 'null'] },
-              //     isDisplayed: { type: 'boolean' },
-              //     earnedAt: { type: ['string', 'null'] }
-              //   }
-              // }
+              // 勋章条目结构与返回字段保持一致
             }
           }
         }
@@ -393,13 +381,13 @@ export default async function userRoutes(fastify, options) {
       user.avatar = null;
     }
 
-    // Get stats
+    // 获取统计信息
     const [{count: topicCount}] = await db.select({ count: count() }).from(topics).where(and(eq(topics.userId, user.id), ne(topics.isDeleted, true)));
     const [{count: postCount}] = await db.select({ count: count() }).from(posts).where(and(eq(posts.userId, user.id), ne(posts.postNumber, 1)));
     const [{count: followerCount}] = await db.select({ count: count() }).from(follows).where(eq(follows.followingId, user.id));
     const [{count: followingCount}] = await db.select({ count: count() }).from(follows).where(eq(follows.followerId, user.id));
 
-    // Check if current user is following
+    // 检查当前用户是否关注
     let isFollowing = false;
     if (request.user) {
       const [follow] = await db.select().from(follows).where(
@@ -420,13 +408,13 @@ export default async function userRoutes(fastify, options) {
       isFollowing,
     };
 
-    // Enrich user object (badges, frames, etc.)
+    // 补充用户对象信息（勋章、头像框等）
     await userEnricher.enrich(userView);
 
     return userView;
   });
 
-  // Update current user profile
+  // 更新当前用户资料
   fastify.patch('/me', {
     preHandler: [fastify.authenticate],
     schema: {
@@ -476,7 +464,7 @@ export default async function userRoutes(fastify, options) {
     return updatedUser;
   });
 
-  // Change password
+  // 修改密码
   fastify.post('/me/change-password', {
     preHandler: [fastify.authenticate],
     schema: {
@@ -514,7 +502,7 @@ export default async function userRoutes(fastify, options) {
     return { message: 'Password changed successfully' };
   });
 
-  // Change username
+  // 修改用户名
   fastify.post('/me/change-username', {
     preHandler: [fastify.authenticate],
     schema: {
@@ -657,7 +645,7 @@ export default async function userRoutes(fastify, options) {
     };
   });
 
-  // Change email - Unified endpoint for email change
+  // 修改邮箱 - 统一的邮箱修改入口
   fastify.post('/me/change-email', {
     preHandler: [fastify.authenticate],
     schema: {
@@ -802,7 +790,7 @@ export default async function userRoutes(fastify, options) {
     }
   });
 
-  // Follow user
+  // 关注用户
   fastify.post('/:username/follow', {
     preHandler: [fastify.authenticate],
     schema: {
@@ -838,7 +826,7 @@ export default async function userRoutes(fastify, options) {
       return reply.code(400).send({ error: '不能关注自己' });
     }
 
-    // Check if already following
+    // 检查是否已关注
     const [existing] = await db.select().from(follows).where(
       and(
         eq(follows.followerId, request.user.id),
@@ -858,7 +846,7 @@ export default async function userRoutes(fastify, options) {
     return { message: 'Successfully followed user' };
   });
 
-  // Unfollow user
+  // 取消关注用户
   fastify.delete('/:username/follow', {
     preHandler: [fastify.authenticate],
     schema: {
@@ -900,7 +888,7 @@ export default async function userRoutes(fastify, options) {
     return { message: 'Successfully unfollowed user' };
   });
 
-  // Get user's followers
+  // 获取用户的关注者
   fastify.get('/:username/followers', {
     schema: {
       tags: ['users'],
@@ -958,7 +946,7 @@ export default async function userRoutes(fastify, options) {
       delete follower.isBanned;
     });
 
-    // Get total count
+    // 获取总数量
     const [{ count: total }] = await db
       .select({ count: count() })
       .from(follows)
@@ -972,7 +960,7 @@ export default async function userRoutes(fastify, options) {
     };
   });
 
-  // Get user's following
+  // 获取用户关注列表
   fastify.get('/:username/following', {
     schema: {
       tags: ['users'],
@@ -1030,7 +1018,7 @@ export default async function userRoutes(fastify, options) {
       delete followedUser.isBanned;
     });
 
-    // Get total count
+    // 获取总数量
     const [{ count: total }] = await db
       .select({ count: count() })
       .from(follows)
@@ -1044,7 +1032,7 @@ export default async function userRoutes(fastify, options) {
     };
   });
 
-  // Get user's bookmarks
+  // 获取用户收藏
   fastify.get('/:username/bookmarks', {
     preHandler: [fastify.optionalAuth],
     schema: {
@@ -1139,7 +1127,7 @@ export default async function userRoutes(fastify, options) {
       .limit(limit)
       .offset(offset);
 
-    // 检查用户权限 (isAdmin 已在上文定义)
+    // 检查用户权限（isAdmin 已在上文定义）
     
     // 如果话题作者被封禁且访问者不是管理员/版主，隐藏头像
     bookmarkedTopics.forEach(topic => {
@@ -1149,7 +1137,7 @@ export default async function userRoutes(fastify, options) {
       delete topic.userIsBanned;
     });
 
-    // Get total count
+    // 获取总数量
     const [{ count: total }] = await db
       .select({ count: count() })
       .from(bookmarks)
@@ -1165,11 +1153,11 @@ export default async function userRoutes(fastify, options) {
   });
 
 
-  // Upload avatar - DEPRECATED: Use /api/upload?type=avatars and then PATCH /users/me
+  // 上传头像 - 已废弃：使用 /api/upload?type=avatars 后再 PATCH /users/me
   // 以前的逻辑已迁移到通用上传接口 + 用户资料更新接口
 
 
-  // Update user by admin
+  // 管理员更新用户
   fastify.patch('/:userId', {
     preHandler: [fastify.requireAdmin],
     schema: {
@@ -1211,13 +1199,13 @@ export default async function userRoutes(fastify, options) {
     const { userId } = request.params;
     const { username, email, name, role, isEmailVerified } = request.body;
 
-    // Check if user exists
+    // 检查用户是否存在
     const [targetUser] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
     if (!targetUser) {
       return reply.code(404).send({ error: '用户不存在' });
     }
 
-    // Prevent modifying the first admin (founder)
+    // 禁止修改第一个管理员（创始人）
     const [firstAdmin] = await db.select().from(users).where(eq(users.role, 'admin')).orderBy(users.id).limit(1);
     if (targetUser.id === firstAdmin.id) {
       return reply.code(403).send({ error: '不能修改创始人账号' });
@@ -1277,7 +1265,7 @@ export default async function userRoutes(fastify, options) {
     return updatedUser;
   });
 
-  // Delete user (admin only)
+  // 删除用户（仅管理员）
   fastify.delete('/:userId', {
     preHandler: [fastify.requireAdmin],
     schema: {
@@ -1310,27 +1298,27 @@ export default async function userRoutes(fastify, options) {
     const { userId } = request.params;
     const { permanent = false } = request.query;
 
-    // Check if user exists
+    // 检查用户是否存在
     const [targetUser] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
     if (!targetUser) {
       return reply.code(404).send({ error: '用户不存在' });
     }
 
-    // Prevent deleting the first admin (founder)
+    // 禁止删除第一个管理员（创始人）
     const [firstAdmin] = await db.select().from(users).where(eq(users.role, 'admin')).orderBy(users.id).limit(1);
     if (targetUser.id === firstAdmin.id) {
       return reply.code(403).send({ error: '不能删除创始人账号' });
     }
 
     if (permanent) {
-      // Hard delete - cascade will handle related records
+      // 硬删除 - 级联会处理关联记录
       // 手动解除一些没有设置 cascade 的关联
       await db.update(topics).set({ lastPostUserId: null }).where(eq(topics.lastPostUserId, userId));
 
       await db.delete(users).where(eq(users.id, userId));
       return { message: '用户已彻底删除' };
     } else {
-      // Soft delete
+      // 软删除
       await db.update(users).set({
         isDeleted: true,
         deletedAt: new Date(),
@@ -1340,7 +1328,7 @@ export default async function userRoutes(fastify, options) {
     }
   });
 
-  // Update user roles (admin only)
+  // 更新用户角色（仅管理员）
   fastify.put('/:userId/roles', {
     preHandler: [fastify.requireAdmin],
     schema: {
@@ -1390,19 +1378,19 @@ export default async function userRoutes(fastify, options) {
     const { userId } = request.params;
     const { roleIds } = request.body;
 
-    // Check if user exists
+    // 检查用户是否存在
     const [targetUser] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
     if (!targetUser) {
       return reply.code(404).send({ error: '用户不存在' });
     }
 
-    // Prevent modifying the first admin (founder)
+    // 禁止修改第一个管理员（创始人）
     const [firstAdmin] = await db.select().from(users).where(eq(users.role, 'admin')).orderBy(users.id).limit(1);
     if (targetUser.id === firstAdmin.id) {
       return reply.code(403).send({ error: '不能修改创始人的角色' });
     }
 
-    // Verify all roleIds exist
+    // 校验所有 roleId 是否存在
     if (roleIds.length > 0) {
       const existingRoles = await db.select({ id: roles.id }).from(roles).where(inArray(roles.id, roleIds));
       const existingRoleIds = new Set(existingRoles.map(r => r.id));
@@ -1412,10 +1400,10 @@ export default async function userRoutes(fastify, options) {
       }
     }
 
-    // Delete all existing roles for this user
+    // 删除该用户已有角色
     await db.delete(userRoles).where(eq(userRoles.userId, userId));
 
-    // Insert new roles
+    // 插入新的角色
     if (roleIds.length > 0) {
       const newUserRoles = roleIds.map(roleId => ({
         userId,
@@ -1426,7 +1414,7 @@ export default async function userRoutes(fastify, options) {
       await db.insert(userRoles).values(newUserRoles);
     }
 
-    // Get the updated roles
+    // 获取更新后的角色
     const updatedRoles = await db
       .select({
         id: roles.id,
@@ -1441,10 +1429,10 @@ export default async function userRoutes(fastify, options) {
       .where(eq(userRoles.userId, userId))
       .orderBy(roles.priority);
 
-    // Clear user cache
+    // 清除用户缓存
     await fastify.clearUserCache(userId);
 
-    // Also clear permission cache
+    // 同时清除权限缓存
     await permission.clearUserPermissionCache(userId);
 
     return {

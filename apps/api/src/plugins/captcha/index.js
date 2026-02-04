@@ -34,7 +34,7 @@ async function captchaPlugin(fastify, options) {
     };
   });
 
-  fastify.log.info('[CAPTCHA] 插件已加载');
+  fastify.log.info('[CAPTCHA] 服务已注册');
 }
 
 export default fp(captchaPlugin, {

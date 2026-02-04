@@ -14,11 +14,11 @@ export default async function badgeListeners(fastify) {
 
       const userId = payload.userId || payload.user?.id;
       if (userId) {
-        fastify.log.info(`[Badges] Checking conditions for user ${userId}`);
+        fastify.log.info(`[勋章] 正在检查用户 ${userId} 的解锁条件`);
         const newBadges = await checkBadgeConditions(userId);
         
         if (newBadges && newBadges.length > 0) {
-          fastify.log.info(`[Badges] User ${userId} unlocked ${newBadges.length} new badges`);
+          fastify.log.info(`[勋章] 用户 ${userId} 解锁了 ${newBadges.length} 枚新勋章`);
           
           // 为每个新徽章创建通知
           for (const badge of newBadges) {
@@ -37,7 +37,7 @@ export default async function badgeListeners(fastify) {
         }
       }
     } catch (err) {
-      fastify.log.error(`[Badges] Error checking conditions: ${err.message}`);
+      fastify.log.error(`[勋章] 检查勋章解锁条件时出错: ${err.message}`);
     }
   };
 

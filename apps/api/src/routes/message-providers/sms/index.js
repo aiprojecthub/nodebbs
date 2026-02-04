@@ -3,14 +3,14 @@ import { messageProviders } from '../../../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 
 /**
- * SMS 提供商配置路由
+ * 短信提供商配置路由
  * 路径: /api/message-providers/sms
  */
 export default async function smsProvidersRoutes(fastify, options) {
   const CHANNEL = 'sms';
 
   /**
-   * 获取 SMS 提供商配置
+   * 获取短信提供商配置
    */
   fastify.get(
     '/',
@@ -18,7 +18,7 @@ export default async function smsProvidersRoutes(fastify, options) {
       preHandler: [fastify.optionalAuth],
       schema: {
         tags: ['message-providers'],
-        description: '获取 SMS 提供商配置',
+        description: '获取短信提供商配置',
         response: {
           200: {
             type: 'object',
@@ -81,14 +81,14 @@ export default async function smsProvidersRoutes(fastify, options) {
 
         return { items };
       } catch (error) {
-        fastify.log.error(error);
-        return reply.code(500).send({ error: '获取 SMS 配置失败' });
+        fastify.log.error('[消息] 获取短信配置失败:', error);
+        return reply.code(500).send({ error: '获取短信配置失败' });
       }
     }
   );
 
   /**
-   * 更新 SMS 提供商配置（管理员）
+   * 更新短信提供商配置（管理员）
    */
   fastify.patch(
     '/:provider',
@@ -96,7 +96,7 @@ export default async function smsProvidersRoutes(fastify, options) {
       preHandler: [fastify.requireAdmin],
       schema: {
         tags: ['message-providers', 'admin'],
-        description: '更新 SMS 提供商配置（仅管理员）',
+        description: '更新短信提供商配置（仅管理员）',
         security: [{ bearerAuth: [] }],
         params: {
           type: 'object',
@@ -139,7 +139,7 @@ export default async function smsProvidersRoutes(fastify, options) {
           .limit(1);
 
         if (existing.length === 0) {
-          return reply.code(404).send({ error: 'SMS 提供商不存在' });
+          return reply.code(404).send({ error: '短信提供商不存在' });
         }
 
         if (updateData.isDefault === true) {
@@ -172,20 +172,20 @@ export default async function smsProvidersRoutes(fastify, options) {
             eq(messageProviders.provider, provider)
           ));
 
-        fastify.log.info(`SMS provider ${provider} configuration updated`);
+        fastify.log.info(`[消息] 短信提供商 ${provider} 配置已更新`);
 
         return {
-          message: 'SMS 配置已更新',
+          message: '短信配置已更新',
         };
       } catch (error) {
-        fastify.log.error(error);
-        return reply.code(500).send({ error: '更新 SMS 配置失败' });
+        fastify.log.error('[消息] 更新短信配置失败:', error);
+        return reply.code(500).send({ error: '更新短信配置失败' });
       }
     }
   );
 
   /**
-   * 测试 SMS 配置（管理员）
+   * 测试短信配置（管理员）
    */
   fastify.post(
     '/:provider/test',
@@ -193,7 +193,7 @@ export default async function smsProvidersRoutes(fastify, options) {
       preHandler: [fastify.requireAdmin],
       schema: {
         tags: ['message-providers', 'admin'],
-        description: '测试 SMS 提供商配置（仅管理员）',
+        description: '测试短信提供商配置（仅管理员）',
         security: [{ bearerAuth: [] }],
         params: {
           type: 'object',
@@ -233,7 +233,7 @@ export default async function smsProvidersRoutes(fastify, options) {
           .limit(1);
 
         if (results.length === 0) {
-          return reply.code(404).send({ error: 'SMS 提供商不存在' });
+          return reply.code(404).send({ error: '短信提供商不存在' });
         }
 
         const providerRecord = results[0];
@@ -242,11 +242,11 @@ export default async function smsProvidersRoutes(fastify, options) {
         // 验证配置
         if (provider === 'aliyun') {
           if (!config.accessKeyId || !config.accessKeySecret || !config.signName) {
-            return { success: false, message: '缺少阿里云 SMS 配置信息' };
+            return { success: false, message: '缺少阿里云短信配置信息' };
           }
         } else if (provider === 'tencent') {
           if (!config.secretId || !config.secretKey || !config.appId || !config.signName) {
-            return { success: false, message: '缺少腾讯云 SMS 配置信息' };
+            return { success: false, message: '缺少腾讯云短信配置信息' };
           }
         }
 
@@ -264,14 +264,14 @@ export default async function smsProvidersRoutes(fastify, options) {
           */
           return { 
             success: true, 
-            message: `SMS 配置验证通过，测试短信功能需要配置测试模板` 
+            message: '短信配置验证通过，测试短信功能需要配置测试模板' 
           };
         }
 
-        return { success: true, message: 'SMS 配置验证通过' };
+        return { success: true, message: '短信配置验证通过' };
       } catch (error) {
-        fastify.log.error(error);
-        return reply.code(500).send({ error: '测试 SMS 配置失败' });
+        fastify.log.error('[消息] 测试短信配置失败:', error);
+        return reply.code(500).send({ error: '测试短信配置失败' });
       }
     }
   );

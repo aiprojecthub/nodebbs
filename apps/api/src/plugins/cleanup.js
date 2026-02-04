@@ -17,28 +17,28 @@ export default fp(async function (fastify, opts) {
    */
   function registerCleanupTask(name, taskFn) {
     if (tasks.has(name)) {
-      fastify.log.warn(`Cleanup task ${name} already registered, overwriting.`);
+      fastify.log.warn(`[清理] 任务 ${name} 已注册，将覆盖原任务。`);
     }
     tasks.set(name, taskFn);
-    fastify.log.debug(`已注册清理任务: ${name}`);
+    fastify.log.debug(`[清理] 已注册任务: ${name}`);
   }
 
   /**
    * 执行所有清理任务
    */
   async function runAllTasks() {
-    fastify.log.info(`Starting cleanup tasks (${tasks.size} tasks)...`);
+    fastify.log.info(`[清理] 开始执行清理任务 (共 ${tasks.size} 个)...`);
     let totalCleaned = 0;
 
     for (const [name, taskFn] of tasks) {
       try {
         const count = await taskFn();
         if (count > 0) {
-          fastify.log.info(`Task [${name}] cleaned ${count} items.`);
+          fastify.log.info(`[清理] 任务 [${name}] 清理了 ${count} 条记录。`);
           totalCleaned += count;
         }
       } catch (err) {
-        fastify.log.error(`Error in cleanup task [${name}]:`, err);
+        fastify.log.error(`[清理] 任务 [${name}] 执行出错:`, err);
       }
     }
     
@@ -73,7 +73,7 @@ export default fp(async function (fastify, opts) {
     clearInterval(interval);
   });
 
-  fastify.log.info('清理插件已注册到任务调度器');
+  fastify.log.info('[清理] 插件已注册到任务调度器');
 }, {
   name: 'cleanup-plugin'
 });

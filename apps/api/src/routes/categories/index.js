@@ -63,7 +63,7 @@ export default async function categoryRoutes(fastify, options) {
     return { message: '排序更新成功', updated: updatedCount };
   });
 
-  // Get all categories
+  // 获取所有分类
   fastify.get('/', {
     preHandler: [fastify.optionalAuth],
     schema: {
@@ -205,7 +205,7 @@ export default async function categoryRoutes(fastify, options) {
     return categoriesWithStats;
   });
 
-  // Get single category
+  // 获取单个分类
   fastify.get('/:slug', {
     preHandler: [fastify.optionalAuth],
     schema: {
@@ -260,13 +260,13 @@ export default async function categoryRoutes(fastify, options) {
       return reply.code(404).send({ error: '分类不存在' });
     }
 
-    // Get topic count
+    // 获取话题数量
     const [{count: topicCount}] = await db
       .select({ count: count() })
       .from(topics)
       .where(eq(topics.categoryId, category.id));
 
-    // Get subcategories
+    // 获取子分类
     const subcategories = await db
       .select()
       .from(categories)
@@ -284,7 +284,7 @@ export default async function categoryRoutes(fastify, options) {
     };
   });
 
-  // Create category (admin only)
+  // 创建分类（仅管理员）
   fastify.post('/', {
     preHandler: [fastify.requireAdmin],
     schema: {
@@ -311,18 +311,18 @@ export default async function categoryRoutes(fastify, options) {
     const { name, description, color, icon, parentId, position, isPrivate, isFeatured } = request.body;
     let { slug } = request.body;
 
-    // Generate slug if not provided
+    // 未提供标识时自动生成
     if (!slug) {
       slug = slugify(name);
     }
 
-    // Check if slug exists
+    // 检查标识是否已存在
     const [existing] = await db.select().from(categories).where(eq(categories.slug, slug)).limit(1);
     if (existing) {
       return reply.code(400).send({ error: '该标识的分类已存在' });
     }
 
-    // Verify parent exists if provided
+    // 如提供父分类则校验其存在
     if (parentId) {
       const [parent] = await db.select().from(categories).where(eq(categories.id, parentId)).limit(1);
       if (!parent) {
@@ -345,7 +345,7 @@ export default async function categoryRoutes(fastify, options) {
     return newCategory;
   });
 
-  // Update category (admin only)
+  // 更新分类（仅管理员）
   fastify.patch('/:id', {
     preHandler: [fastify.requireAdmin],
     schema: {
@@ -383,7 +383,7 @@ export default async function categoryRoutes(fastify, options) {
       return reply.code(404).send({ error: '分类不存在' });
     }
 
-    // Check slug uniqueness if changed
+    // 若标识变更则检查唯一性
     if (request.body.slug && request.body.slug !== category.slug) {
       const [existing] = await db.select().from(categories).where(eq(categories.slug, request.body.slug)).limit(1);
       if (existing) {
@@ -398,7 +398,7 @@ export default async function categoryRoutes(fastify, options) {
     return updatedCategory;
   });
 
-  // Delete category (admin only)
+  // 删除分类（仅管理员）
   fastify.delete('/:id', {
     preHandler: [fastify.requireAdmin],
     schema: {
@@ -430,7 +430,7 @@ export default async function categoryRoutes(fastify, options) {
       return reply.code(404).send({ error: '分类不存在' });
     }
 
-    // Check if category has topics
+    // 检查分类下是否有话题
     const [topicCount] = await db.select({ count: count() }).from(topics).where(eq(topics.categoryId, id));
 
     if (topicCount.count > 0) {

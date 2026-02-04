@@ -14,7 +14,7 @@ export const pool = new Pool({
 
 // 处理连接池错误，防止后台连接断开导致进程崩溃
 pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
+  console.error('[数据库] 闲置连接发生异常错误:', err);
 });
 
 // 传入 schema 以启用查询构建器的智能提示和关系查询

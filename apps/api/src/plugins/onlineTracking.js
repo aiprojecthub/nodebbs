@@ -2,8 +2,8 @@ import fp from 'fastify-plugin';
 import crypto from 'crypto';
 
 /**
- * 在线用户追踪插件 (Refactored)
- * 强制使用 Redis (Sorted Set) 来高效追踪在线用户和游客
+ * 在线用户追踪插件（已重构）
+ * 强制使用 Redis（有序集合）来高效追踪在线用户和游客
  *
  * 配置选项:
  * - onlineThreshold: 在线判定阈值，单位毫秒 (默认: 15分钟)
@@ -14,7 +14,7 @@ import crypto from 'crypto';
 class OnlineTracker {
   constructor(redisClient, options = {}) {
     if (!redisClient) {
-      throw new Error('OnlineTracking plugin requires a Redis client instance.');
+      throw new Error('在线追踪插件需要已注册的 Redis 客户端实例。');
     }
 
     this.redis = redisClient;
@@ -49,7 +49,7 @@ class OnlineTracker {
     return crypto.createHash('md5').update(fingerprint).digest('hex').substring(0, 16);
   }
 
-  // 记录用户活动 (使用 ZSET: Score=Timestamp, Member=ID)
+  // 记录用户活动（使用 ZSET：分数=时间戳，成员=ID）
   async track(userId, guestId) {
     const now = Date.now();
     const pipeline = this.redis.pipeline();
@@ -65,9 +65,9 @@ class OnlineTracker {
       pipeline.zadd(this.guestsKey, now, guestId);
     }
 
-    // 设置过期时间，防止 ZSET 永久存在（虽然主要靠 cleanup，但加个兜底 TTL 也不错）
+    // 设置过期时间，防止 ZSET 永久存在（虽然主要靠清理，但加个兜底 TTL 也不错）
     // 这里其实不需要给 ZSET 本身设 TTL，因为里面一直在更新。
-    // 只需要定期 cleanup 移除旧成员即可。
+    // 只需要定期清理移除旧成员即可。
 
     await pipeline.exec();
   }
@@ -140,11 +140,11 @@ class OnlineTracker {
       this.cleanup()
         .then(cleaned => {
           if (cleaned > 0) {
-            logger.debug(`[OnlineTracking] Cleaned ${cleaned} expired users/guests`);
+            logger.debug(`[在线追踪] 已清理 ${cleaned} 个过期用户/游客`);
           }
         })
         .catch(error => {
-          logger.error('Error during online tracking cleanup:', error);
+          logger.error('[在线追踪] 清理过期数据时出错:', error);
         });
     }, this.cleanupInterval);
   }
@@ -162,7 +162,7 @@ export default fp(async function (fastify, opts) {
   // 1. 强制依赖 Redis
   // 即使 `dependencies` 声明了，这里最好也检查一下，或者直接取 fastify.redis
   if (!fastify.redis) {
-    throw new Error('fastify-redis plugin must be registered before online-tracking.');
+    throw new Error('online-tracking 依赖 Redis，请先注册 fastify-redis 插件。');
   }
 
   // 2. 初始化追踪器
@@ -178,7 +178,7 @@ export default fp(async function (fastify, opts) {
   // 4. 服务器关闭钩子
   fastify.addHook('onClose', async () => {
     tracker.stopCleanup();
-    fastify.log.info('在线追踪插件已关闭');
+    fastify.log.info('[在线追踪] 插件已关闭');
   });
 
   // 5. 核心逻辑: 记录请求
@@ -198,13 +198,13 @@ export default fp(async function (fastify, opts) {
       // 注意：如果 request.user 存在，我们传 null 给 guestId
       const guestId = userId ? null : tracker.generateGuestId(request);
 
-      // 异步执行 (onResponse 本身就是在响应发送后调用的，所以这里的异步其实是 "fire and forget")
+      // 异步执行（onResponse 在响应发送后调用，此处仅触发不阻塞）
       tracker.track(userId, guestId).catch(err => {
-        request.log.warn({ err }, 'Error tracking online user');
+        request.log.warn({ err }, '[在线追踪] 记录在线用户失败');
       });
 
     } catch (error) {
-      request.log.warn({ error }, 'Error in online tracking hook');
+      request.log.warn({ error }, '[在线追踪] 追踪钩子执行出错');
     }
   });
 
@@ -213,7 +213,7 @@ export default fp(async function (fastify, opts) {
     try {
       return await tracker.getStats();
     } catch (error) {
-      fastify.log.error('Error getting online stats:', error);
+      fastify.log.error('[在线追踪] 获取统计数据失败:', error);
       return { members: 0, guests: 0, total: 0 };
     }
   });
@@ -223,7 +223,7 @@ export default fp(async function (fastify, opts) {
     return await tracker.cleanup();
   });
 
-  fastify.log.info('在线追踪插件已注册 (Redis ZSET 模式)');
+  fastify.log.info('[在线追踪] 插件已注册（Redis ZSET 模式）');
 
 }, {
   name: 'online-tracking',

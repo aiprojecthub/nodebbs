@@ -48,7 +48,7 @@ export async function checkSpammer({ ip, email, username }, checkTypes = ['ip', 
       };
     }
 
-    // 调用 API（设置 5 秒超时）
+    // 调用接口（设置 5 秒超时）
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
@@ -63,15 +63,15 @@ export async function checkSpammer({ ip, email, username }, checkTypes = ['ip', 
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      throw new Error(`StopForumSpam API returned ${response.status}`);
+      throw new Error(`StopForumSpam 接口返回 ${response.status}`);
     }
 
     const data = await response.json();
-    console.log(data, 'stop forum spam >>>>>>>>>');
+    // console.log('[StopForumSpam] 接口结果:', data);
 
-    // 检查 API 是否成功
+    // 检查接口是否成功
     if (!data.success) {
-      throw new Error('StopForumSpam API returned success=false');
+      throw new Error('StopForumSpam 接口返回 success=false');
     }
 
     // 分析结果
@@ -135,8 +135,8 @@ export async function checkSpammer({ ip, email, username }, checkTypes = ['ip', 
 
     return results;
   } catch (error) {
-    // API 调用失败时，记录错误但不阻止注册
-    console.error('[StopForumSpam] API call failed:', error.message);
+    // 接口调用失败时，记录错误但不阻止注册
+    console.error('[StopForumSpam] 接口调用失败:', error.message);
 
     return {
       isSpammer: false,

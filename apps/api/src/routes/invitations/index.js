@@ -369,7 +369,7 @@ export default async function invitationsRoutes(fastify) {
           stats: stats || { total: 0, active: 0, used: 0, expired: 0 },
         };
       } catch (error) {
-        console.log('获取邀请配额时出错:', error);
+        console.error('[邀请] 获取配额出错:', error);
         return reply.code(500).send({ error: error.message || '获取邀请配额失败' });
       }
     }

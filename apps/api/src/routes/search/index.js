@@ -4,7 +4,7 @@ import { eq, sql, desc, and, or, like, ilike, not, inArray, count } from 'drizzl
 import { isDev } from '../../config/env.js';
 
 export default async function searchRoutes(fastify, options) {
-  // Global search
+  // 全局搜索
   fastify.get('/', {
     preHandler: [fastify.optionalAuth],
     schema: {
@@ -77,7 +77,7 @@ export default async function searchRoutes(fastify, options) {
         }
       };
 
-    // Search topics
+    // 搜索话题
     if (type === 'all' || type === 'topics') {
       try {
         // 构建查询条件
@@ -138,7 +138,7 @@ export default async function searchRoutes(fastify, options) {
       }
     }
 
-    // Search posts (排除话题内容，即 postNumber = 1 的帖子)
+    // 搜索帖子（排除话题内容，即 postNumber = 1 的帖子）
     if (type === 'all' || type === 'posts') {
       try {
         // 构建查询条件
@@ -193,7 +193,7 @@ export default async function searchRoutes(fastify, options) {
       }
     }
 
-    // Search users
+    // 搜索用户
     if (type === 'all' || type === 'users') {
       // 构建查询条件
       const usersConditions = [

@@ -23,7 +23,7 @@ export default function registerBadgeEnricher(fastify) {
       // 只展示用户设置为显示的勋章
       user.badges = badges.filter(b => b.isDisplayed !== false);
     } catch (err) {
-      console.error(`[BadgeEnricher] Failed to enrich user ${user.id}:`, err);
+      console.error(`[勋章增强] 补充用户 ${user.id} 的勋章数据失败:`, err);
       user.badges = [];
     }
   };
@@ -58,7 +58,7 @@ export default function registerBadgeEnricher(fastify) {
         }
       });
     } catch (err) {
-      console.error('[BadgeEnricher] Failed to enrich users:', err);
+      console.error('[勋章增强] 批量补充用户勋章数据失败:', err);
       // 降级处理：设置为空数组
       users.forEach((user) => {
         if (!user.badges) user.badges = [];

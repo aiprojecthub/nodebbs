@@ -728,7 +728,7 @@ export default async function postRoutes(fastify, options) {
         }
         // 其他积分系统错误（如未启用），记录日志但允许发帖（或者也可以选择拦截）
         // 这里选择允许发帖，避免积分系统故障影响核心功能，除非是余额不足这种明确的业务限制
-        console.error('[Reply Cost] Deduction failed:', err);
+        console.error('[奖励] 回复积分扣除失败:', err);
       }
     }
     // ===============================================

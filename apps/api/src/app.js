@@ -58,6 +58,6 @@ app.listen(
       app.log.error(err);
       process.exit(1);
     }
-    app.log.info(`服务启动成功，访问地址: ${address}`);
+    app.log.info(`[系统] 服务启动成功，地址: ${address}`);
   }
 );

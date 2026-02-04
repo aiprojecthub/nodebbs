@@ -160,7 +160,7 @@ export async function checkIn(fastify, userId) {
     };
 
   } catch (error) {
-    console.error('CheckIn Grant Failed after Streak Update:', error);
+    console.error('[奖励] 签到奖励发放失败 (连签更新后):', error);
     const currencyName = await fastify.ledger.getCurrencyName(DEFAULT_CURRENCY_CODE).catch(() => DEFAULT_CURRENCY_CODE);
     throw new Error(`签到成功但发放${currencyName}失败，请联系管理员`);
   } finally {
@@ -237,7 +237,7 @@ export async function getPostRewards(postId, options = {}) {
       total: stats?.totalCount || 0,
     };
   } catch (error) {
-    console.error('[打赏列表] 查询失败:', error);
+    console.error('[打赏] 列表查询失败:', error);
     throw error;
   }
 }
@@ -272,7 +272,7 @@ export async function getCreditRanking(options = {}) {
 
     return ranking;
   } catch (error) {
-    console.error('[积分排行] 查询失败:', error);
+    console.error('[奖励] 积分排行查询失败:', error);
     throw error;
   }
 }
