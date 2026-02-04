@@ -1,4 +1,4 @@
-import { checkIn } from '../services/rewardService.js';
+import { checkIn, getUserCheckInStatus } from '../services/rewardService.js';
 
 export default async function checkInRoutes(fastify, options) {
   // 每日签到
@@ -53,7 +53,6 @@ export default async function checkInRoutes(fastify, options) {
       }
     }
   }, async (request, reply) => {
-      const { getUserCheckInStatus } = await import('../services/rewardService.js');
       const data = await getUserCheckInStatus(fastify, request.user.id);
       
       let isCheckedIn = false;

@@ -2,6 +2,7 @@
  * SMTP 邮件提供商
  * 使用 nodemailer 发送邮件
  */
+import nodemailer from 'nodemailer';
 
 /**
  * 通过 SMTP 发送邮件
@@ -14,9 +15,6 @@
  * @returns {Promise<{success: boolean, messageId: string}>}
  */
 export async function sendViaSMTP(providerConfig, { to, subject, html, text }) {
-  // 动态导入 nodemailer
-  const { default: nodemailer } = await import('nodemailer');
-
   const { smtpHost, smtpPort, smtpSecure, smtpUser, smtpPassword, fromEmail, fromName } = providerConfig;
 
   const transporter = nodemailer.createTransport({

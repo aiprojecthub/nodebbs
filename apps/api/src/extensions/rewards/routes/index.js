@@ -4,6 +4,7 @@ import {
   getCreditRanking,
 } from '../services/rewardService.js';
 import { DEFAULT_CURRENCY_CODE } from '../../ledger/constants.js';
+import { postRewards } from '../schema.js';
 import db from '../../../db/index.js';
 import { posts, users } from '../../../db/schema.js';
 import { eq, sql, inArray, and, count, sum } from 'drizzle-orm';
@@ -99,7 +100,6 @@ export default async function rewardsRoutes(fastify, options) {
       });
 
       // 记录打赏 (Feature Logic)
-      const { postRewards } = await import('../schema.js');
       await db.insert(postRewards).values({
         postId,
         fromUserId: request.user.id,
@@ -182,8 +182,6 @@ export default async function rewardsRoutes(fastify, options) {
   }, async (request, reply) => {
       const { postIds } = request.body;
       if (!postIds || postIds.length === 0) return {};
-      
-      const { postRewards } = await import('../schema.js');
       
       const stats = await db
         .select({

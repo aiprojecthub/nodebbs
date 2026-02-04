@@ -1,5 +1,5 @@
 import db from '../../db/index.js';
-import { messages, users, blockedUsers } from '../../db/schema.js';
+import { messages, users, blockedUsers, follows } from '../../db/schema.js';
 import { eq, sql, desc, and, or, like, count } from 'drizzle-orm';
 
 export default async function messageRoutes(fastify) {
@@ -371,9 +371,8 @@ export default async function messageRoutes(fastify) {
           .send({ error: '该用户已禁用站内信功能' });
       }
       
-      // If recipient only allows followers, check if current user is following them
+      // 如果对方只接收关注者的站内信，检查当前用户是否关注他们
       if (recipientPermission === 'followers') {
-        const { follows } = await import('../../db/schema.js');
         const [followRelation] = await db
           .select()
           .from(follows)

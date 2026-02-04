@@ -1,4 +1,13 @@
-import { getBadges, getUserBadges } from '../services/badgeService.js';
+import {
+  getBadges,
+  getUserBadges,
+  createBadge,
+  updateBadge,
+  deleteBadge,
+  grantBadge,
+  revokeUserBadge,
+  updateUserBadgeDisplay,
+} from '../services/badgeService.js';
 import db from '../../../db/index.js';
 import { users, badges } from '../../../db/schema.js';
 import { eq } from 'drizzle-orm';
@@ -91,7 +100,6 @@ export default async function badgeRoutes(fastify, options) {
       }
     }
   }, async (request, reply) => {
-    const { createBadge } = await import('../services/badgeService.js');
     const badge = await createBadge(request.body);
     return badge;
   });
@@ -126,7 +134,6 @@ export default async function badgeRoutes(fastify, options) {
       }
     }
   }, async (request, reply) => {
-    const { updateBadge } = await import('../services/badgeService.js');
     const { id } = request.params;
     const badge = await updateBadge(id, request.body);
     return badge;
@@ -160,7 +167,6 @@ export default async function badgeRoutes(fastify, options) {
       return reply.code(403).send({ error: '只有创始人（第一个管理员）可以删除勋章' });
     }
 
-    const { deleteBadge } = await import('../services/badgeService.js');
     const { id } = request.params;
     await deleteBadge(id);
     return { success: true };
@@ -186,7 +192,6 @@ export default async function badgeRoutes(fastify, options) {
       }
     }
   }, async (request, reply) => {
-    const { grantBadge } = await import('../services/badgeService.js');
     const { userId, badgeId, reason } = request.body;
     
     // 检查用户是否存在（可选，数据库约束也会处理，但提前检查更友好）
@@ -247,7 +252,6 @@ export default async function badgeRoutes(fastify, options) {
       }
     }
   }, async (request, reply) => {
-    const { revokeUserBadge } = await import('../services/badgeService.js');
     const { userId, badgeId } = request.body;
     
     const success = await revokeUserBadge(userId, badgeId);
@@ -282,7 +286,6 @@ export default async function badgeRoutes(fastify, options) {
       }
     }
   }, async (request, reply) => {
-    const { updateUserBadgeDisplay } = await import('../services/badgeService.js');
     const { userBadgeId } = request.params;
     const userId = request.user.id;
     

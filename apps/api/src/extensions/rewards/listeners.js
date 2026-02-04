@@ -2,6 +2,7 @@
 import db from '../../db/index.js';
 import { eq, and } from 'drizzle-orm';
 import { DEFAULT_CURRENCY_CODE } from '../ledger/constants.js';
+import { sysTransactions } from '../ledger/schema.js';
 
 /**
  * Register reward system event listeners
@@ -96,7 +97,6 @@ export async function registerRewardListeners(fastify) {
 
       // 检查是否已经奖励过 (防止重复点赞/取消点赞刷分)
       // 使用 Ledger sysTransactions 进行检查
-      const { sysTransactions } = await import('../ledger/schema.js');
       
       const [existingTx] = await db
         .select()
