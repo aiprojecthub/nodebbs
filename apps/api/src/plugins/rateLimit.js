@@ -15,17 +15,19 @@ async function rateLimitPlugin(fastify, opts) {
   // 注册 @fastify/rate-limit 插件
   await fastify.register(rateLimit, {
     global: true,
-    max: async (request, key) => {
-      // 检查是否启用限速
-      // 注意：这里使用 fastify.settings.get
+    allowList: async (request) => {
       const enabled = await fastify.settings.get('rate_limit_enabled', true);
       if (!enabled) {
-        return 999999; // 禁用时返回极大值
+        return true;
       }
 
+      if (!request.user?.id || !fastify.permission?.hasRole) return false;
+      return await fastify.permission.hasRole(request.user.id, 'admin');
+    },
+    max: async (request, key) => {
       // 获取基础限制
       const maxRequests = await fastify.settings.get('rate_limit_max_requests', 100);
-      
+
       // 如果是已登录用户，应用倍数
       if (request.user?.id) {
         const multiplier = await fastify.settings.get('rate_limit_auth_multiplier', 2);
