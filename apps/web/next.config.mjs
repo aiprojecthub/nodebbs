@@ -15,6 +15,11 @@ const nextConfig = {
   // 启用 standalone 输出模式，用于 Docker 部署
   output: 'standalone',
   // 代理逻辑已迁移至 src/proxy.js，以支持 Docker 运行时环境变量动态注入
+
+  // 增加中间件请求体大小限制，支持大文件上传
+  experimental: {
+    proxyClientMaxBodySize: '100mb',
+  }
 };
 
 export default nextConfig;
