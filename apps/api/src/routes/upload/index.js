@@ -45,12 +45,11 @@ export default async function uploadRoutes(fastify) {
   }, async (request, reply) => {
     const category = request.query.category || 'assets';
 
-    // 1. 验证权限并获取条件限制（包含频率限制、账号时长、上传目录类型等检查）
+    // 1. 验证权限并获取条件限制（包含频率限制、账号时长等检查）
     // 注意：此调用会触发 Rate Limit 计数增加
     let conditions = {};
     try {
-      // 权限系统内部使用 uploadType 作为上下文参数名
-      const result = await fastify.permission.check(request, 'upload.create', { uploadType: category });
+      const result = await fastify.permission.check(request, `upload.${category}`);
       conditions = result.conditions || {};
     } catch (err) {
       return reply.code(403).send({ error: err.message });

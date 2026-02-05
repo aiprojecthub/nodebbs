@@ -33,6 +33,11 @@ export const MODULE_SPECIAL_ACTIONS = {
   topic: [
     { value: 'close', label: '关闭' },
   ],
+  upload: [
+    { value: 'avatars', label: '头像' },
+    { value: 'topics', label: '话题图片' },
+    { value: 'assets', label: '通用资源' },
+  ],
   system: [
     { value: 'stats', label: '统计' },
   ],
@@ -141,21 +146,6 @@ export const CONDITION_TYPES = {
       value: ext,
       label: ext.toUpperCase(),
     })),
-  },
-  uploadTypes: {
-    label: '允许的上传场景',
-    type: 'array',
-    component: 'multiSelect',
-    description: '允许上传到哪些场景（头像、话题等），不设置则无上传权限（管理员除外）',
-    options: [
-      { value: 'avatars', label: '头像' },
-      { value: 'topics', label: '话题' },
-      // { value: 'badges', label: '徽章' },
-      // { value: 'items', label: '道具' },
-      // { value: 'frames', label: '头像框' },
-      // { value: 'emojis', label: '表情' },
-      { value: 'assets', label: '通用' },
-    ],
   },
 };
 
@@ -277,12 +267,28 @@ export const SYSTEM_PERMISSIONS = [
 
   // ========== 上传权限 ==========
   {
-    slug: 'upload.create',
-    name: '上传文件',
+    slug: 'upload.avatars',
+    name: '上传头像',
     module: 'upload',
-    action: 'create',
+    action: 'avatars',
     isSystem: true,
-    conditions: ['uploadTypes', 'maxFileSize', 'allowedFileTypes', 'rateLimit', 'accountAge'],
+    conditions: ['maxFileSize', 'allowedFileTypes', 'rateLimit', 'accountAge'],
+  },
+  {
+    slug: 'upload.topics',
+    name: '上传话题图片',
+    module: 'upload',
+    action: 'topics',
+    isSystem: true,
+    conditions: ['maxFileSize', 'allowedFileTypes', 'rateLimit', 'accountAge'],
+  },
+  {
+    slug: 'upload.assets',
+    name: '上传通用资源',
+    module: 'upload',
+    action: 'assets',
+    isSystem: true,
+    conditions: ['maxFileSize', 'allowedFileTypes', 'rateLimit', 'accountAge'],
   },
 
   // ========== 邀请权限 ==========
@@ -496,7 +502,7 @@ export const ROLE_PERMISSION_MAP = {
     // 系统统计
     'system.stats',
     // 上传
-    'upload.create',
+    'upload.avatars',
     // 邀请
     // 'invitation.create',
   ],
@@ -515,8 +521,7 @@ export const ROLE_PERMISSION_MAP = {
  */
 export const ROLE_PERMISSION_CONDITIONS = {
   user: {
-    'upload.create': {
-      uploadTypes: ['avatars'],
+    'upload.avatars': {
       maxFileSize: 5120, // 5MB (单位：KB)
       allowedFileTypes: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
     },

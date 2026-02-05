@@ -7,15 +7,15 @@ import { uploadApi } from '@/lib/api';
  * 图片上传逻辑 Hook
  * 封装权限检查、API调用、事件拦截
  */
-export function useImageUpload({ 
-  onUpload, 
-  uploadType = 'topics', 
+export function useImageUpload({
+  onUpload,
+  uploadType = 'topics',
   insertBlock,
   onChange,
-  textareaRef 
+  textareaRef
 }) {
-  const { getPermissionConditions, hasPermission, isAdmin } = usePermission();
-  
+  const { hasPermission, isAdmin } = usePermission();
+
   // 替换操作队列，确保并发上传时替换操作按顺序执行，避免状态覆盖
   const replaceQueue = useRef(Promise.resolve());
 
@@ -35,31 +35,11 @@ export function useImageUpload({
       return defaultUploadHandler;
     }
 
-    // 检查基础权限
-    if (!hasPermission('upload.create')) return undefined;
+    // 检查对应上传场景的权限
+    if (!hasPermission(`upload.${uploadType}`)) return undefined;
 
-    // 检查条件限制
-    const conditions = getPermissionConditions('upload.create');
-    
-    const allowedTypes = conditions?.uploadTypes;
-
-    // 1. 无 uploadTypes 配置 -> 默认拒绝 (跟后端逻辑保持一致)
-    if (!allowedTypes) {
-      return undefined;
-    }
-
-    // 2. 通配符 -> 允许全部
-    if (allowedTypes.includes('*')) {
-      return defaultUploadHandler;
-    }
-
-    // 3. 具体类型匹配
-    if (allowedTypes.includes(uploadType)) {
-      return defaultUploadHandler;
-    }
-
-    return undefined;
-  }, [onUpload, isAdmin, hasPermission, getPermissionConditions, uploadType]);
+    return defaultUploadHandler;
+  }, [onUpload, isAdmin, hasPermission, uploadType]);
 
   // 辅助函数：安全替换文本
   const safeReplace = useCallback((target, replacement) => {

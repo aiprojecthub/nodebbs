@@ -35,7 +35,7 @@ import { usePermission } from '@/hooks/usePermission';
  */
 export function ProfileTab() {
   const { settings } = useSettings();
-  const { hasPermission, getPermissionConditions, isAdmin } = usePermission();
+  const { hasPermission, isAdmin } = usePermission();
 
   // 使用独立 Hooks
   const {
@@ -54,16 +54,8 @@ export function ProfileTab() {
   // 检查是否有头像上传权限
   const canUploadAvatar = useMemo(() => {
     if (isAdmin) return true;
-    if (!hasPermission('upload.create')) return false;
-
-    const conditions = getPermissionConditions('upload.create');
-    // 如果没有条件限制或没有指定 uploadTypes 限制，视作未授权（安全默认值）
-    // 即：必须显式在 conditions 中允许 avatars 才能上传
-    if (!conditions || !conditions.uploadTypes) return false;
-
-    // 检查 uploadTypes 是否包含 'avatars'
-    return conditions.uploadTypes.includes('avatars');
-  }, [isAdmin, hasPermission, getPermissionConditions]);
+    return hasPermission('upload.avatars');
+  }, [isAdmin, hasPermission]);
 
   if (!user) return null;
 

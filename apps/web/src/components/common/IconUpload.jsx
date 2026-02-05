@@ -34,7 +34,7 @@ export function IconUpload({
   const inputRef = useRef(null);
 
   // 动态获取上传配额
-  const uploadConditions = useMemo(() => getPermissionConditions('upload.create'), [getPermissionConditions]);
+  const uploadConditions = useMemo(() => getPermissionConditions(`upload.${category}`), [getPermissionConditions, category]);
   
   // 核心逻辑：管理员拥有全局最高上限 (100MB)，普通用户根据 RBAC 条件决定 (默认 5MB)
   const maxFileSizeKB = useMemo(() => {

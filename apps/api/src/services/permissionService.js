@@ -22,7 +22,6 @@ const PERMISSION_CACHE_TTL = 300; // 5 分钟
 const ADMIN_DEFAULT_CONDITIONS = {
   maxFileSize: MAX_UPLOAD_SIZE_ADMIN_KB,
   allowedFileTypes: ['*'],
-  uploadTypes: ['*'],
 };
 
 /**
@@ -94,16 +93,7 @@ function mergePermissionConditions(cond1, cond2) {
           merged.allowedFileTypes = val1 || val2;
         }
         break;
-        
-      case 'uploadTypes':
-        // uploadTypes: 取并集（更多类型 = 更宽松）
-        if (Array.isArray(val1) && Array.isArray(val2)) {
-          merged.uploadTypes = [...new Set([...val1, ...val2])];
-        } else {
-          merged.uploadTypes = val1 || val2;
-        }
-        break;
-        
+
       case 'timeRange':
         // timeRange: 取并集（更长时间段 = 更宽松）
         // 简化处理：如果有任一角色无时间限制，则无限制
@@ -428,21 +418,6 @@ class PermissionService {
             reason: `不支持的文件类型，允许：${allowedTypes.join(', ')}`,
           };
         }
-      }
-    }
-
-    // uploadTypes: ["avatars", "topics"] 表示允许的上传目录类型
-    // ['*'] 表示无限制（管理员），未设置则无任何上传权限
-    if (context.uploadType !== undefined) {
-      // ['*'] 表示无限制，跳过检查
-      if (conditions.uploadTypes?.includes('*')) {
-        // 管理员无限制，不做检查
-      } else if (!conditions.uploadTypes || !conditions.uploadTypes.includes(context.uploadType)) {
-        return {
-          granted: false,
-          code: 'UPLOAD_TYPE_NOT_ALLOWED',
-          reason: '你没有上传该类型文件的权限',
-        };
       }
     }
 
@@ -940,7 +915,6 @@ class PermissionService {
    * @param {Date|string} [context.userCreatedAt] - 用户注册时间（自动注入）
    * @param {number} [context.fileSize] - 文件大小（字节）
    * @param {string} [context.fileType] - 文件类型/扩展名
-   * @param {string} [context.uploadType] - 上传目录类型
    * @param {Object} options - 配置选项
    * @param {boolean} options.any - 满足任一权限即可
    * @returns {Promise<{granted: true, conditions?: Object}>} 成功时返回检查结果
