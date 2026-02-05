@@ -287,6 +287,21 @@ export default async function topicRoutes(fastify, options) {
         conditions.push(inArray(topics.categoryId, allowedCategoryIds));
       }
 
+      // 处理标签过滤：先获取 tagRecord，后面构建 query 时使用
+      let tagRecord = null;
+      if (tag) {
+        [tagRecord] = await db
+          .select({ id: tags.id })
+          .from(tags)
+          .where(eq(tags.slug, tag))
+          .limit(1);
+
+        if (!tagRecord) {
+          // 标签不存在，返回空结果
+          return { items: [], page, limit, total: 0 };
+        }
+      }
+
       let query = db
         .select({
           id: topics.id,
@@ -313,28 +328,16 @@ export default async function topicRoutes(fastify, options) {
         })
         .from(topics)
         .innerJoin(categories, eq(topics.categoryId, categories.id))
-        .innerJoin(users, eq(topics.userId, users.id))
-        .where(and(...conditions));
+        .innerJoin(users, eq(topics.userId, users.id));
 
-      // 优化标签查询逻辑：使用 innerJoin 直接关联查询，避免取出所有 topicId
-      if (tag) {
-        // 先获取标签ID
-        const [tagRecord] = await db
-          .select({ id: tags.id })
-          .from(tags)
-          .where(eq(tags.slug, tag))
-          .limit(1);
-
-        if (tagRecord) {
-          // 关联 topicTags 表进行过滤
-          query = query
-            .innerJoin(topicTags, eq(topics.id, topicTags.topicId))
-            .where(eq(topicTags.tagId, tagRecord.id));
-        } else {
-           // 标签不存在，返回空结果
-           return { items: [], page, limit, total: 0 };
-        }
+      // 如果有标签过滤，添加 join 和条件
+      if (tagRecord) {
+        query = query.innerJoin(topicTags, eq(topics.id, topicTags.topicId));
+        conditions.push(eq(topicTags.tagId, tagRecord.id));
       }
+
+      // 统一应用所有条件
+      query = query.where(and(...conditions));
 
       // 应用排序
       if (sort === 'latest') {
@@ -416,28 +419,18 @@ export default async function topicRoutes(fastify, options) {
       }
 
       // 获取总数，使用相同的过滤条件
-      // 重要：必须使用与主查询完全相同的条件，包括 join 和所有过滤器
-      // 直接复用 conditions，因为它已经包含了所有必要的过滤条件
+      // 复用 conditions（已包含 tag 条件）和相同的 join 结构
       let countQuery = db
         .select({ count: count() })
         .from(topics)
         .innerJoin(categories, eq(topics.categoryId, categories.id))
-        .innerJoin(users, eq(topics.userId, users.id))
-        .where(and(...conditions));
+        .innerJoin(users, eq(topics.userId, users.id));
 
-      if (tag) {
-        const [tagRecord] = await db
-          .select({ id: tags.id })
-          .from(tags)
-          .where(eq(tags.slug, tag))
-          .limit(1);
-          
-        if (tagRecord) {
-           countQuery = countQuery
-             .innerJoin(topicTags, eq(topics.id, topicTags.topicId))
-             .where(eq(topicTags.tagId, tagRecord.id));
-        }
+      if (tagRecord) {
+        countQuery = countQuery.innerJoin(topicTags, eq(topics.id, topicTags.topicId));
       }
+
+      countQuery = countQuery.where(and(...conditions));
 
       const [{ count: total }] = await countQuery;
 
