@@ -3,14 +3,13 @@
  * RBAC 权限检查服务
  */
 
-import { eq, and, inArray, isNull, gt, or } from 'drizzle-orm';
+import { eq, and, isNull, gt, or } from 'drizzle-orm';
 import db from '../db/index.js';
 import {
   roles,
   permissions,
   rolePermissions,
   userRoles,
-  users,
   categories,
 } from '../db/schema.js';
 import { MAX_UPLOAD_SIZE_ADMIN_KB, DEFAULT_ALLOWED_EXTENSIONS } from '../constants/upload.js';
@@ -197,66 +196,46 @@ class PermissionService {
   }
 
   /**
-   * 获取用户的所有权限
-   * @param {number|null} userId - 用户 ID，null 表示未登录用户（使用 guest 角色）
-   * @returns {Promise<Array>} 权限列表（包含条件）
+   * 获取 guest 角色信息（内存缓存，guest 为系统角色不会变动）
+   * @private
+   * @returns {Promise<{id: number, slug: string}|null>}
    */
-  async getUserPermissions(userId) {
-    // 对于未登录用户（null/undefined/空值），使用专门的 guest 缓存 key
-    const isGuest = !userId;
-    const cacheKey = isGuest ? 'user:guest:permissions' : `user:${userId}:permissions`;
+  async _getGuestRole() {
+    if (this._guestRole !== undefined) return this._guestRole;
+
+    const [role] = await db
+      .select({ id: roles.id, slug: roles.slug })
+      .from(roles)
+      .where(eq(roles.slug, 'guest'))
+      .limit(1);
+
+    this._guestRole = role || null;
+    return this._guestRole;
+  }
+
+  /**
+   * 获取单个角色的权限（按角色缓存）
+   * @param {number} roleId - 角色 ID（用于 DB 查询）
+   * @param {string} roleSlug - 角色标识（用作缓存 key）
+   * @returns {Promise<Array>} 权限列表（conditions 已解析）
+   */
+  async _getRolePermissionsCached(roleId, roleSlug) {
+    const cacheKey = `role:${roleSlug}:permissions`;
 
     if (this.fastify?.cache) {
       return await this.fastify.cache.remember(cacheKey, PERMISSION_CACHE_TTL, async () => {
-        return this._fetchUserPermissions(userId);
+        return this._fetchSingleRolePermissions(roleId);
       });
     }
 
-    return this._fetchUserPermissions(userId);
+    return this._fetchSingleRolePermissions(roleId);
   }
 
-  async _fetchUserPermissions(userId) {
-    let roleIds;
-
-    if (!userId) {
-      // 未登录用户使用 guest 角色
-      const guestRole = await db
-        .select({ id: roles.id })
-        .from(roles)
-        .where(eq(roles.slug, 'guest'))
-        .limit(1);
-
-      if (!guestRole.length) {
-        this.fastify?.log?.warn('[RBAC] Guest 角色不存在，未登录用户无任何权限');
-        return [];
-      }
-
-      roleIds = [guestRole[0].id];
-    } else {
-      const userRolesList = await this.getUserRoles(userId);
-      if (!userRolesList.length) {
-        // 已登录用户无角色时，兜底使用 guest 角色的权限
-        // 避免已登录用户权限反而不如未登录访客
-        this.fastify?.log?.warn(`[RBAC] 用户 ${userId} 无任何角色，将使用 guest 角色权限兜底`);
-        const guestRole = await db
-          .select({ id: roles.id })
-          .from(roles)
-          .where(eq(roles.slug, 'guest'))
-          .limit(1);
-
-        if (!guestRole.length) {
-          return [];
-        }
-        roleIds = [guestRole[0].id];
-      } else {
-        roleIds = userRolesList.map(r => r.id);
-      }
-    }
-
-    if (!roleIds.length) {
-      return [];
-    }
-
+  /**
+   * 从 DB 获取单个角色的权限
+   * @private
+   */
+  async _fetchSingleRolePermissions(roleId) {
     const results = await db
       .select({
         id: permissions.id,
@@ -265,34 +244,69 @@ class PermissionService {
         module: permissions.module,
         action: permissions.action,
         conditions: rolePermissions.conditions,
-        roleId: rolePermissions.roleId,
       })
       .from(rolePermissions)
       .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-      .where(inArray(rolePermissions.roleId, roleIds));
+      .where(eq(rolePermissions.roleId, roleId));
 
-    // 去重并合并条件（使用智能合并策略）
+    return results.map(perm => ({
+      ...perm,
+      conditions: perm.conditions ? JSON.parse(perm.conditions) : null,
+    }));
+  }
+
+  /**
+   * 获取用户的所有权限
+   * 按角色维度缓存权限，运行时合并多角色权限
+   * @param {number|null} userId - 用户 ID，null 表示未登录用户（使用 guest 角色）
+   * @returns {Promise<Array>} 权限列表（包含条件）
+   */
+  async getUserPermissions(userId) {
+    // 确定用户的角色列表
+    let userRolesList;
+
+    if (!userId) {
+      // 未登录用户使用 guest 角色
+      const guestRole = await this._getGuestRole();
+      if (!guestRole) {
+        this.fastify?.log?.warn('[RBAC] Guest 角色不存在，未登录用户无任何权限');
+        return [];
+      }
+      userRolesList = [guestRole];
+    } else {
+      userRolesList = await this.getUserRoles(userId);
+      if (!userRolesList.length) {
+        // 已登录用户无角色时，兜底使用 guest 角色权限
+        this.fastify?.log?.warn(`[RBAC] 用户 ${userId} 无任何角色，将使用 guest 角色权限兜底`);
+        const guestRole = await this._getGuestRole();
+        if (!guestRole) return [];
+        userRolesList = [guestRole];
+      }
+    }
+
+    // 获取各角色的权限（按角色缓存）
+    const allRolePerms = await Promise.all(
+      userRolesList.map(r => this._getRolePermissionsCached(r.id, r.slug))
+    );
+
+    // 单角色快速路径，无需合并
+    if (allRolePerms.length === 1) {
+      return allRolePerms[0];
+    }
+
+    // 多角色：合并权限（跨角色去重 + 条件取宽松）
     const permMap = new Map();
-    for (const perm of results) {
-      const existing = permMap.get(perm.slug);
-      const currentConditions = perm.conditions ? JSON.parse(perm.conditions) : null;
-
-      if (!existing) {
-        permMap.set(perm.slug, {
-          ...perm,
-          conditions: currentConditions,
-        });
-      } else {
-        // 智能合并条件：取更宽松的条件
-        const mergedConditions = mergePermissionConditions(
-          existing.conditions,
-          currentConditions
-        );
-        
-        permMap.set(perm.slug, {
-          ...perm,
-          conditions: mergedConditions,
-        });
+    for (const rolePerms of allRolePerms) {
+      for (const perm of rolePerms) {
+        const existing = permMap.get(perm.slug);
+        if (!existing) {
+          permMap.set(perm.slug, { ...perm });
+        } else {
+          permMap.set(perm.slug, {
+            ...perm,
+            conditions: mergePermissionConditions(existing.conditions, perm.conditions),
+          });
+        }
       }
     }
 
@@ -614,12 +628,9 @@ class PermissionService {
    */
   async clearUserPermissionCache(userId) {
     if (this.fastify?.cache) {
-      // 同时清除用户信息缓存和权限缓存，确保一致性
       await this.fastify.cache.invalidate([
         `user:${userId}`,
-        `user:full:${userId}`,
         `user:${userId}:roles`,
-        `user:${userId}:permissions`,
       ]);
     }
   }
@@ -824,42 +835,26 @@ class PermissionService {
     }
 
     // 清除所有拥有该角色的用户的权限缓存
-    await this.clearRoleUsersPermissionCache(roleId);
+    await this.clearRolePermissionCache(roleId);
   }
 
   /**
-   * 清除拥有指定角色的所有用户的权限缓存
+   * 清除指定角色的权限缓存
    * @param {number} roleId - 角色 ID
    */
-  async clearRoleUsersPermissionCache(roleId) {
+  async clearRolePermissionCache(roleId) {
     if (!this.fastify?.cache) return;
 
-    // 检查是否是 guest 角色，如果是则清除 guest 权限缓存
     const [role] = await db
       .select({ slug: roles.slug })
       .from(roles)
       .where(eq(roles.id, roleId))
       .limit(1);
 
-    if (role?.slug === 'guest') {
-      await this.fastify.cache.invalidate(['user:guest:permissions']);
-      this.fastify.log?.info('[RBAC] 已清除 guest 角色权限缓存');
-    }
+    if (!role) return;
 
-    // 查询所有拥有该角色的用户
-    const usersWithRole = await db
-      .select({ userId: userRoles.userId })
-      .from(userRoles)
-      .where(eq(userRoles.roleId, roleId));
-
-    // 清除每个用户的权限缓存
-    for (const { userId } of usersWithRole) {
-      await this.clearUserPermissionCache(userId);
-    }
-
-    if (usersWithRole.length > 0 && this.fastify?.log) {
-      this.fastify.log.info(`[RBAC] 已清除 ${usersWithRole.length} 个用户的权限缓存（角色ID: ${roleId}）`);
-    }
+    await this.fastify.cache.invalidate([`role:${role.slug}:permissions`]);
+    this.fastify.log?.info(`[RBAC] 已清除角色 ${role.slug} 的权限缓存`);
   }
 
   /**

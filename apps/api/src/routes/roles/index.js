@@ -280,7 +280,7 @@ export default async function rolesRoutes(fastify, options) {
       }
 
       // 删除前先清除拥有该角色的用户的权限缓存
-      await permission.clearRoleUsersPermissionCache(id);
+      await permission.clearRolePermissionCache(id);
 
       // 删除关联的邀请规则
       await db.delete(invitationRules).where(eq(invitationRules.role, role.slug));

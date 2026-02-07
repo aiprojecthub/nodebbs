@@ -2,7 +2,6 @@ import { userEnricher } from '../../services/userEnricher.js';
 import db from '../../db/index.js';
 import { users, accounts } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
-import env from '../../config/env.js';
 
 export default async function userRoute(fastify, options) {
   // 获取当前登录用户
@@ -117,38 +116,35 @@ export default async function userRoute(fastify, options) {
     },
     async (request, reply) => {
       const userId = request.user.id;
-      const cacheKey = `user:full:${userId}`;
 
-      const USER_CACHE_TTL = env.cache.userTtl;
-      return await fastify.cache.remember(cacheKey, USER_CACHE_TTL, async () => {
-        // 直接利用 request.user (由 auth 插件中的 authenticate preHandler 提供)
-        // authenticate 已经通过 permission.enrichUser 注入了完整的 RBAC 数据
-        const user = { ...request.user };
+      // 直接利用 request.user (由 auth 插件中的 authenticate preHandler 提供)
+      // authenticate 已经通过 permission.enrichUser 注入了完整的 RBAC 数据
+      // 不做复合缓存，各数据源已有独立缓存（user:${id}, user:${id}:roles, role:*:permissions）
+      const user = { ...request.user };
 
-        // 并行获取 OAuth 账号和密码状态（这些不属于 RBAC 增强范畴，仅在此接口需要）
-        const [userAccounts, pwdResult] = await Promise.all([
-          db.select().from(accounts).where(eq(accounts.userId, user.id)),
-          db.select({ passwordHash: users.passwordHash }).from(users).where(eq(users.id, userId)).limit(1),
-        ]);
+      // 并行获取 OAuth 账号和密码状态（这些不属于 RBAC 增强范畴，仅在此接口需要）
+      const [userAccounts, pwdResult] = await Promise.all([
+        db.select().from(accounts).where(eq(accounts.userId, user.id)),
+        db.select({ passwordHash: users.passwordHash }).from(users).where(eq(users.id, userId)).limit(1),
+      ]);
 
-        // 丰富用户信息（徽章、头像框等）
-        await userEnricher.enrich(user);
+      // 丰富用户信息（徽章、头像框等）
+      await userEnricher.enrich(user);
 
-        const oauthProviders = userAccounts.map(acc => acc.provider);
-        const userHasPassword = !!(pwdResult[0]?.passwordHash);
+      const oauthProviders = userAccounts.map(acc => acc.provider);
+      const userHasPassword = !!(pwdResult[0]?.passwordHash);
 
-        return {
-          ...user,
-          hasPassword: userHasPassword,
-          oauthProviders,
-          // userRoles, permissions, displayRole 已经在 user 对象中（由 auth 插件注入）
-          // 保持 API 返回的权限结构兼容性
-          permissions: user.permissions.map(p => ({
-            slug: p.slug,
-            conditions: p.conditions || null,
-          })),
-        };
-      });
+      return {
+        ...user,
+        hasPassword: userHasPassword,
+        oauthProviders,
+        // userRoles, permissions, displayRole 已经在 user 对象中（由 auth 插件注入）
+        // 保持 API 返回的权限结构兼容性
+        permissions: user.permissions.map(p => ({
+          slug: p.slug,
+          conditions: p.conditions || null,
+        })),
+      };
     }
   );
 
