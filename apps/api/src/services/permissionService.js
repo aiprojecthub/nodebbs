@@ -701,6 +701,9 @@ class PermissionService {
       assignedBy,
     }).onConflictDoNothing();
 
+    // 清除缓存，确保后续查询能获取到最新角色数据
+    await this.clearUserPermissionCache(userId);
+
     return targetRole;
   }
 
