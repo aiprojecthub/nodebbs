@@ -53,6 +53,11 @@ export default function EmojiGroupsPage() {
       return;
     }
 
+    if (!formData.slug.trim()) {
+      toast.error('请输入分组标识（Slug）');
+      return;
+    }
+
     setSubmitting(true);
     try {
       if (dialogMode === 'create') {
@@ -201,7 +206,7 @@ export default function EmojiGroupsPage() {
           </div>
           <div className='space-y-2'>
             <Label htmlFor='slug'>
-              Slug{dialogMode === 'create' ? '（可选）' : ''}
+              Slug *
             </Label>
             <Input
               id='slug'
@@ -209,8 +214,15 @@ export default function EmojiGroupsPage() {
               onChange={(e) =>
                 setFormData({ ...formData, slug: e.target.value })
               }
-              placeholder='唯一标识（如：default）'
+              placeholder='唯一标识（如：nb）'
+              maxLength={10}
+              required
             />
+            {dialogMode === 'edit' && formData.slug !== selectedGroup?.slug && (
+              <p className='text-sm text-destructive'>
+                修改 Slug 可能导致已发布内容中引用该分组的表情失效
+              </p>
+            )}
           </div>
 
           <div className='space-y-2'>

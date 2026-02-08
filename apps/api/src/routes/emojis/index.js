@@ -1,6 +1,5 @@
 import { emojiGroups, emojis } from '../../db/schema.js';
 import { eq, desc, asc, and, inArray } from 'drizzle-orm';
-import slugify from 'slug';
 
 export default async function emojiRoutes(fastify, options) {
   // ============ 公开 API ============
@@ -114,10 +113,10 @@ export default async function emojiRoutes(fastify, options) {
       security: [{ bearerAuth: [] }],
       body: {
         type: 'object',
-        required: ['name'],
+        required: ['name', 'slug'],
         properties: {
           name: { type: 'string', maxLength: 50 },
-          slug: { type: 'string', maxLength: 50 },
+          slug: { type: 'string', minLength: 1, maxLength: 10 },
           order: { type: 'integer' },
           isActive: { type: 'boolean' },
           size: { type: 'integer', nullable: true }
@@ -125,12 +124,7 @@ export default async function emojiRoutes(fastify, options) {
       }
     }
   }, async (request, reply) => {
-    const { name, order, isActive } = request.body;
-    let { slug } = request.body;
-
-    if (!slug) {
-      slug = slugify(name);
-    }
+    const { name, slug, order, isActive } = request.body;
 
     // 检查 slug 唯一性
     const [existing] = await fastify.db.select().from(emojiGroups).where(eq(emojiGroups.slug, slug)).limit(1);
