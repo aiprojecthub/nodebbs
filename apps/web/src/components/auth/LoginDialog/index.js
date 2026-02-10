@@ -262,10 +262,10 @@ export default function LoginDialog({ open, onOpenChange }) {
       title={isForgotPassword ? '找回密码' : isLogin ? '登录' : '注册'}
       description={
         isForgotPassword
-          ? '输入您的邮箱地址，我们将发送密码重置验证码'
+          ? '通过邮箱验证码重置密码'
           : isLogin
-          ? '登录到您的账户以继续'
-          : '创建新账户以加入社区'
+          ? '欢迎回来'
+          : '加入社区，开始讨论'
       }
       maxWidth="sm:max-w-[450px]"
       footer={null}

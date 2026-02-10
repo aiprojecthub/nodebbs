@@ -34,18 +34,7 @@ export function LoginForm({
         </div>
 
         <div className="grid gap-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password">密码 *</Label>
-            <Button
-              type="button"
-              variant="link"
-              className="p-0 h-auto text-xs font-normal"
-              onClick={onForgotPassword}
-              disabled={isLoading}
-            >
-              忘记密码？
-            </Button>
-          </div>
+          <Label htmlFor="password">密码 *</Label>
           <Input
             id="password"
             name="password"
@@ -56,6 +45,18 @@ export function LoginForm({
             disabled={isLoading}
             required
           />
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="link"
+              className="p-0 h-auto text-xs font-normal"
+              onClick={onForgotPassword}
+              disabled={isLoading}
+              tabIndex={-1}
+            >
+              忘记密码？
+            </Button>
+          </div>
         </div>
 
         {/* 人机验证 */}

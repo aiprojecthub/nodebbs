@@ -60,11 +60,11 @@ export function ModeSwitcher({
         onClick={() => onModeChange(isLogin ? 'register' : 'login')}
         disabled={isLoading}
       >
-        {isLogin ? '还没有账户？点击注册' : '已有账户？点击登录'}
+        {isLogin ? '还没有账户？立即注册' : '已有账户？立即登录'}
       </Button>
       {!isLogin && registrationMode === 'invitation' && (
         <p className="text-muted-foreground text-xs">
-          当前为邀请码注册模式，需要邀请码才能注册
+          需要邀请码才能注册
         </p>
       )}
     </div>

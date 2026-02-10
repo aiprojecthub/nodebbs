@@ -36,12 +36,12 @@ export function RegisterForm({
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="name">姓名</Label>
+          <Label htmlFor="name">昵称</Label>
           <Input
             id="name"
             name="name"
             type="text"
-            placeholder="请输入您的姓名（可选）"
+            placeholder="显示在个人主页的名称"
             value={formData.name}
             onChange={onChange}
             disabled={isLoading}
