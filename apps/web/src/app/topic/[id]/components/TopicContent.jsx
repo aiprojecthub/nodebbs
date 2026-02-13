@@ -125,7 +125,7 @@ export default function TopicContent() {
       <div className='px-3 pt-4 sm:px-0 sm:pt-0 mb-6'>
         <div className='flex items-start'>
           <div className='flex-1 min-w-0'>
-            <h1 className='text-3xl font-bold mb-3 leading-tight text-foreground break-all'>
+            <h1 className='text-2xl sm:text-3xl font-semibold mb-3 leading-tight text-foreground break-all'>
               {topic.isPinned && (
                 <Pin className='inline-block h-5 w-5 text-chart-5 -mt-1' />
               )}

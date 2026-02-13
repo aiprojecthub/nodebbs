@@ -94,7 +94,7 @@ export function TopicItem({ topic }) {
             <Link
               href={`/topic/${topic.id}`}
               className={`
-                text-base sm:text-lg font-semibold align-middle break-all
+                text-base sm:text-lg font-medium align-middle break-all
                 before:absolute before:inset-0 before:z-0
                 ${isPinned
                   ? 'text-foreground group-hover:text-primary'
