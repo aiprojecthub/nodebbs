@@ -755,37 +755,42 @@ export default async function topicRoutes(fastify, options) {
 
       // 处理标签
       if (tagNames && tagNames.length > 0) {
-        for (const tagName of tagNames) {
-          const tagSlug = slugify(tagName);
+        const canUseTags = await fastify.permission.can(request, 'tag.read');
+        if (canUseTags) {
+          const canCreateTags = await fastify.permission.can(request, 'tag.create');
+          for (const tagName of tagNames) {
+            const tagSlug = slugify(tagName);
 
-          // 获取或创建标签
-          let [tag] = await db
-            .select()
-            .from(tags)
-            .where(eq(tags.slug, tagSlug))
-            .limit(1);
+            // 获取或创建标签
+            let [tag] = await db
+              .select()
+              .from(tags)
+              .where(eq(tags.slug, tagSlug))
+              .limit(1);
 
-          if (!tag) {
-            [tag] = await db
-              .insert(tags)
-              .values({
-                name: tagName,
-                slug: tagSlug,
-                topicCount: 1,
-              })
-              .returning();
-          } else {
-            await db
-              .update(tags)
-              .set({ topicCount: sql`${tags.topicCount} + 1` })
-              .where(eq(tags.id, tag.id));
+            if (!tag) {
+              if (!canCreateTags) continue; // 无创建权限，跳过不存在的标签
+              [tag] = await db
+                .insert(tags)
+                .values({
+                  name: tagName,
+                  slug: tagSlug,
+                  topicCount: 1,
+                })
+                .returning();
+            } else {
+              await db
+                .update(tags)
+                .set({ topicCount: sql`${tags.topicCount} + 1` })
+                .where(eq(tags.id, tag.id));
+            }
+
+            // 关联标签与话题
+            await db.insert(topicTags).values({
+              topicId: newTopic.id,
+              tagId: tag.id,
+            });
           }
-
-          // 关联标签与话题
-          await db.insert(topicTags).values({
-            topicId: newTopic.id,
-            tagId: tag.id,
-          });
         }
       }
 
@@ -975,60 +980,65 @@ export default async function topicRoutes(fastify, options) {
 
       // 如果提供了标签，更新标签
       if (tagNames !== undefined) {
-        // 获取当前标签
-        const currentTags = await db
-          .select({ tagId: topicTags.tagId })
-          .from(topicTags)
-          .where(eq(topicTags.topicId, id));
+        const canUseTags = await fastify.permission.can(request, 'tag.read');
+        if (canUseTags) {
+          // 获取当前标签
+          const currentTags = await db
+            .select({ tagId: topicTags.tagId })
+            .from(topicTags)
+            .where(eq(topicTags.topicId, id));
 
-        const currentTagIds = currentTags.map((t) => t.tagId);
+          const currentTagIds = currentTags.map((t) => t.tagId);
 
-        // 移除所有当前标签关联
-        if (currentTagIds.length > 0) {
-          await db.delete(topicTags).where(eq(topicTags.topicId, id));
+          // 移除所有当前标签关联
+          if (currentTagIds.length > 0) {
+            await db.delete(topicTags).where(eq(topicTags.topicId, id));
 
-          // 减少被移除标签的话题计数
-          for (const tagId of currentTagIds) {
-            await db
-              .update(tags)
-              .set({ topicCount: sql`${tags.topicCount} - 1` })
-              .where(eq(tags.id, tagId));
-          }
-        }
-
-        // 添加新标签
-        if (tagNames.length > 0) {
-          for (const tagName of tagNames) {
-            const tagSlug = slugify(tagName);
-
-            // 获取或创建标签
-            let [tag] = await db
-              .select()
-              .from(tags)
-              .where(eq(tags.slug, tagSlug))
-              .limit(1);
-
-            if (!tag) {
-              [tag] = await db
-                .insert(tags)
-                .values({
-                  name: tagName,
-                  slug: tagSlug,
-                  topicCount: 1,
-                })
-                .returning();
-            } else {
+            // 减少被移除标签的话题计数
+            for (const tagId of currentTagIds) {
               await db
                 .update(tags)
-                .set({ topicCount: sql`${tags.topicCount} + 1` })
-                .where(eq(tags.id, tag.id));
+                .set({ topicCount: sql`${tags.topicCount} - 1` })
+                .where(eq(tags.id, tagId));
             }
+          }
 
-            // 关联标签与话题
-            await db.insert(topicTags).values({
-              topicId: id,
-              tagId: tag.id,
-            });
+          // 添加新标签
+          if (tagNames.length > 0) {
+            const canCreateTags = await fastify.permission.can(request, 'tag.create');
+            for (const tagName of tagNames) {
+              const tagSlug = slugify(tagName);
+
+              // 获取或创建标签
+              let [tag] = await db
+                .select()
+                .from(tags)
+                .where(eq(tags.slug, tagSlug))
+                .limit(1);
+
+              if (!tag) {
+                if (!canCreateTags) continue; // 无创建权限，跳过不存在的标签
+                [tag] = await db
+                  .insert(tags)
+                  .values({
+                    name: tagName,
+                    slug: tagSlug,
+                    topicCount: 1,
+                  })
+                  .returning();
+              } else {
+                await db
+                  .update(tags)
+                  .set({ topicCount: sql`${tags.topicCount} + 1` })
+                  .where(eq(tags.id, tag.id));
+              }
+
+              // 关联标签与话题
+              await db.insert(topicTags).values({
+                topicId: id,
+                tagId: tag.id,
+              });
+            }
           }
         }
       }

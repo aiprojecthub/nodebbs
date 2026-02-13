@@ -152,6 +152,9 @@ export default async function tagRoutes(fastify, options) {
       }
     }
   }, async (request, reply) => {
+    // 检查标签创建权限
+    await fastify.permission.check(request, 'tag.create');
+
     const { name, description, color } = request.body;
     let { slug } = request.body;
 

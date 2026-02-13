@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 /**
  * 话题表单 Hook
  * 管理表单状态、验证和标签操作
- * 
+ *
  * @param {Object} options - 配置选项
  * @param {Object} options.initialData - 初始数据（编辑模式）
  * @param {Function} options.onSubmit - 提交回调
@@ -18,9 +18,6 @@ export function useTopicForm({ initialData = {}, onSubmit }) {
     categoryId: initialData.categoryId || '',
     tags: initialData.tags || [],
   });
-
-  // ===== 标签输入状态 =====
-  const [tagInput, setTagInput] = useState('');
 
   // ===== 错误状态 =====
   const [errors, setErrors] = useState({});
@@ -81,49 +78,16 @@ export function useTopicForm({ initialData = {}, onSubmit }) {
     }
   }, [errors]);
 
-  // ===== 标签操作 =====
-  const addTag = useCallback(() => {
-    const trimmedTag = tagInput.trim();
-    if (trimmedTag && !formData.tags.includes(trimmedTag) && formData.tags.length < 5) {
-      setFormData(prev => ({
-        ...prev,
-        tags: [...prev.tags, trimmedTag],
-      }));
-      setTagInput('');
-    }
-  }, [tagInput, formData.tags]);
-
-  const removeTag = useCallback((tagToRemove) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove),
-    }));
-  }, []);
-
-  const handleTagInputKeyDown = useCallback((e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addTag();
-    }
-  }, [addTag]);
-
   // ===== 派生状态 =====
   /** 表单是否有效（可提交） */
   const isFormValid = useMemo(() => {
     return formData.title.trim() && formData.content.trim() && formData.categoryId;
   }, [formData.title, formData.content, formData.categoryId]);
 
-  /** 是否可以添加更多标签 */
-  const canAddMoreTags = formData.tags.length < 5;
-
   return {
     // ===== 表单数据 =====
     /** 表单数据对象 */
     formData,
-    /** 标签输入框的值 */
-    tagInput,
-    /** 设置标签输入框的值 */
-    setTagInput,
     /** 表单验证错误 */
     errors,
 
@@ -133,18 +97,8 @@ export function useTopicForm({ initialData = {}, onSubmit }) {
     /** 更新单个字段 */
     updateField,
 
-    // ===== 标签操作 =====
-    /** 添加标签 */
-    addTag,
-    /** 移除标签 */
-    removeTag,
-    /** 标签输入框键盘事件处理 */
-    handleTagInputKeyDown,
-
     // ===== 派生状态 =====
     /** 表单是否有效 */
     isFormValid,
-    /** 是否可以添加更多标签 */
-    canAddMoreTags,
   };
 }

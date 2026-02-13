@@ -13,6 +13,7 @@ import { EXT_MIME_MAP } from '../constants/upload.js';
 export const MODULE_OPTIONS = [
   { value: 'topic', label: '话题' },
   { value: 'post', label: '回复' },
+  { value: 'tag', label: '标签' },
   { value: 'user', label: '用户' },
   { value: 'upload', label: '上传' },
   { value: 'invitation', label: '邀请' },
@@ -293,6 +294,24 @@ export const SYSTEM_PERMISSIONS = [
   //   conditions: ['maxFileSize', 'allowedFileTypes', 'rateLimit', 'accountAge'],
   // },
 
+  // ========== 标签权限 ==========
+  {
+    slug: 'tag.read',
+    name: '使用标签',
+    module: 'tag',
+    action: 'read',
+    isSystem: true,
+    conditions: [],
+  },
+  {
+    slug: 'tag.create',
+    name: '创建标签',
+    module: 'tag',
+    action: 'create',
+    isSystem: true,
+    conditions: ['rateLimit', 'accountAge'],
+  },
+
   // ========== 邀请权限 ==========
   {
     slug: 'invitation.create',
@@ -513,6 +532,8 @@ export const ROLE_PERMISSION_MAP = {
     'system.stats',
     // 上传
     'upload.avatars',
+    // 标签
+    'tag.read', 'tag.create',
     // 邀请
     // 'invitation.create',
   ],

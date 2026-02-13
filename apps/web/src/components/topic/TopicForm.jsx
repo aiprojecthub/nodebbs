@@ -1,12 +1,13 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import MarkdownEditor from '../common/MarkdownEditor';
 import CategorySelector from '@/components/topic/CategorySelector';
-import { X, AlertCircle, Loader2, Tag as TagIcon } from 'lucide-react';
+import TagSelect from '@/components/topic/TagSelect';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { useTopicForm } from '@/hooks/topic/useTopicForm';
+import { usePermission } from '@/hooks/usePermission';
 
 /**
  * 话题表单组件 - 用于创建和编辑话题
@@ -24,17 +25,16 @@ export default function TopicForm({
   // 使用 Hook 管理表单逻辑
   const {
     formData,
-    tagInput,
-    setTagInput,
     errors,
     handleSubmit,
     updateField,
-    addTag,
-    removeTag,
-    handleTagInputKeyDown,
     isFormValid,
-    canAddMoreTags,
   } = useTopicForm({ initialData, onSubmit });
+
+  // 权限检查
+  const { hasPermission } = usePermission();
+  const canUseTags = hasPermission('tag.read');
+  const canCreateTag = hasPermission('tag.create');
 
   return (
     <form onSubmit={handleSubmit}>
@@ -118,6 +118,7 @@ export default function TopicForm({
             </div>
 
             {/* 标签 */}
+            {canUseTags && (
             <div className='border border-border rounded-lg bg-card'>
               <div className='px-3 py-2 border-b border-border'>
                 <div className='flex items-center justify-between'>
@@ -128,47 +129,20 @@ export default function TopicForm({
                 </div>
               </div>
               <div className='p-3'>
-                {formData.tags.length > 0 && (
-                  <div className='flex flex-wrap gap-2 mb-3'>
-                    {formData.tags.map((tag) => (
-                      <Badge
-                        key={tag}
-                        variant='secondary'
-                        className='flex items-center gap-1 px-2 py-1'
-                      >
-                        <span>{tag}</span>
-                        <button
-                          type='button'
-                          onClick={() => removeTag(tag)}
-                          className='hover:text-destructive transition-colors'
-                        >
-                          <X className='h-3 w-3' />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-
-                <div className='space-y-2'>
-                  <div className="relative">
-                    <TagIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id='tag-input'
-                      type='text'
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      onKeyDown={handleTagInputKeyDown}
-                      disabled={!canAddMoreTags}
-                      placeholder='输入标签后按回车...'
-                      className='text-sm pl-9'
-                    />
-                  </div>
-                  <p className='text-xs text-muted-foreground'>
-                    添加有意义的标签，方便他人检索（限5个）
-                  </p>
-                </div>
+                <TagSelect
+                  value={formData.tags}
+                  onChange={(tags) => updateField('tags', tags)}
+                  maxTags={5}
+                  canCreateTag={canCreateTag}
+                />
+                <p className='text-xs text-muted-foreground mt-2'>
+                  {canCreateTag
+                    ? '搜索已有标签或创建新标签（限5个）'
+                    : '搜索并选择已有标签（限5个）'}
+                </p>
               </div>
             </div>
+            )}
 
             {/* 提交按钮区域 */}
             <div className='border border-border rounded-lg bg-card p-3'>
