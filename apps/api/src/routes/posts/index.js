@@ -357,46 +357,46 @@ export default async function postRoutes(fastify, options) {
 
     // 获取所有相关用户（作者和被回复用户）的头像框
     const usersToEnrichMap = new Map();
-    
+
     // 添加用户到充实列表的辅助函数
     const addUserToEnrich = (userId) => {
-        if (!userId) return;
-        if (!usersToEnrichMap.has(userId)) {
-            usersToEnrichMap.set(userId, { id: userId });
-        }
+      if (!userId) return;
+      if (!usersToEnrichMap.has(userId)) {
+        usersToEnrichMap.set(userId, { id: userId });
+      }
     };
 
     postsList.forEach(p => {
-        addUserToEnrich(p.userId);
-        if (p.replyToPost) {
-            addUserToEnrich(p.replyToPost.userId);
-        }
+      addUserToEnrich(p.userId);
+      if (p.replyToPost) {
+        addUserToEnrich(p.replyToPost.userId);
+      }
     });
 
     const usersToEnrich = Array.from(usersToEnrichMap.values());
 
     if (usersToEnrich.length > 0) {
-        await userEnricher.enrichMany(usersToEnrich, { request });
+      await userEnricher.enrichMany(usersToEnrich, { request });
 
-        // 映射回帖子
-        const enrichedUserMap = new Map(usersToEnrich.map(u => [u.id, u]));
+      // 映射回帖子
+      const enrichedUserMap = new Map(usersToEnrich.map(u => [u.id, u]));
 
-        postsList.forEach(post => {
-            // 作者
-            const author = enrichedUserMap.get(post.userId);
-            if (author) {
-                post.userAvatarFrame = author.avatarFrame;
-                post.userDisplayRole = author.displayRole || null;
-            }
+      postsList.forEach(post => {
+        // 作者
+        const author = enrichedUserMap.get(post.userId);
+        if (author) {
+          post.userAvatarFrame = author.avatarFrame;
+          post.userDisplayRole = author.displayRole || null;
+        }
 
-            // 被回复用户
-            if (post.replyToPost) {
-                const replyUser = enrichedUserMap.get(post.replyToPost.userId);
-                if (replyUser) {
-                    post.replyToPost.userAvatarFrame = replyUser.avatarFrame;
-                }
-            }
-        });
+        // 被回复用户
+        if (post.replyToPost) {
+          const replyUser = enrichedUserMap.get(post.replyToPost.userId);
+          if (replyUser) {
+            post.replyToPost.userAvatarFrame = replyUser.avatarFrame;
+          }
+        }
+      });
     }
     // 使用相同条件构建计数查询
     const [{ count: total }] = await db
@@ -1134,6 +1134,13 @@ export default async function postRoutes(fastify, options) {
       return reply.code(404).send({ error: '帖子不存在' });
     }
 
+    // 检查分类权限
+    const [topic] = await db.select({ categoryId: topics.categoryId })
+      .from(topics).where(eq(topics.id, post.topicId)).limit(1);
+    if (!await fastify.permission.can(request, 'topic.read', { categoryId: topic?.categoryId })) {
+      return reply.code(404).send({ error: '帖子不存在' });
+    }
+
     // 检查是否已点赞
     const [existing] = await db
       .select()
@@ -1202,6 +1209,18 @@ export default async function postRoutes(fastify, options) {
   }, async (request, reply) => {
     const { id } = request.params;
 
+    const [post] = await db.select().from(posts).where(eq(posts.id, id)).limit(1);
+    if (!post || post.isDeleted) {
+      return reply.code(404).send({ error: '帖子不存在' });
+    }
+
+    // 检查分类权限
+    const [topic] = await db.select({ categoryId: topics.categoryId })
+      .from(topics).where(eq(topics.id, post.topicId)).limit(1);
+    if (!await fastify.permission.can(request, 'topic.read', { categoryId: topic?.categoryId })) {
+      return reply.code(404).send({ error: '帖子不存在' });
+    }
+
     // 删除点赞
     const deleted = await db
       .delete(likes)
@@ -1209,7 +1228,7 @@ export default async function postRoutes(fastify, options) {
       .returning();
 
     if (deleted.length > 0) {
-      // Update post like count
+      // 更新帖子点赞数
       await db.update(posts).set({
         likeCount: sql`${posts.likeCount} - 1`
       }).where(eq(posts.id, id));
@@ -1218,15 +1237,3 @@ export default async function postRoutes(fastify, options) {
     return { message: 'Like removed successfully' };
   });
 }
-
-
-
-
-
-
-
-
-
-
-
-
