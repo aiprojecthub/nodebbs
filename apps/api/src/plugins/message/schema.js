@@ -12,25 +12,7 @@ import {
   index,
   unique,
 } from 'drizzle-orm/pg-core';
-
-// 定义通用字段（避免循环依赖，不从 db/schema.js 导入）
-const $id = integer('id').primaryKey().generatedAlwaysAsIdentity();
-
-const $createdAt = timestamp('created_at', {
-  withTimezone: true,
-}).defaultNow();
-
-const $updatedAt = timestamp('updated_at', {
-  withTimezone: true,
-})
-  .defaultNow()
-  .$onUpdate(() => new Date());
-
-const $defaults = {
-  id: $id,
-  createdAt: $createdAt,
-  updatedAt: $updatedAt,
-};
+import { $defaults } from '../../db/columns.js';
 
 // ============ Message Providers (消息提供商) ============
 export const messageProviders = pgTable(

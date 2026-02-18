@@ -1,5 +1,4 @@
 import {
-  integer,
   pgTable,
   varchar,
   text,
@@ -7,31 +6,10 @@ import {
   boolean,
   index,
   unique,
+  integer,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-
-// ============ 通用字段 ============
-const $id = integer('id').primaryKey().generatedAlwaysAsIdentity();
-
-export const $createdAt = timestamp('created_at', {
-  withTimezone: true,
-}).defaultNow();
-
-export const $updatedAt = timestamp('updated_at', {
-  withTimezone: true,
-})
-  .defaultNow()
-  .$onUpdate(() => new Date());
-
-export const $ts = {
-  createdAt: $createdAt,
-  updatedAt: $updatedAt,
-};
-
-export const $defaults = {
-  id: $id,
-  ...$ts,
-};
+import { $createdAt, $defaults } from './columns.js';
 
 // ============ Users (用户) ============
 export const users = pgTable(

@@ -10,29 +10,7 @@ import {
 import { relations } from 'drizzle-orm';
 import { users, topics, posts } from '../../db/schema.js';
 import { DEFAULT_CURRENCY_CODE } from '../ledger/constants.js';
-
-// ============ Common Fields (Duplicated to avoid circular dep) ============
-const $id = integer('id').primaryKey().generatedAlwaysAsIdentity();
-
-const $createdAt = timestamp('created_at', {
-  withTimezone: true,
-}).defaultNow();
-
-const $updatedAt = timestamp('updated_at', {
-  withTimezone: true,
-})
-  .defaultNow()
-  .$onUpdate(() => new Date());
-
-const $ts = {
-  createdAt: $createdAt,
-  updatedAt: $updatedAt,
-};
-
-const $defaults = {
-  id: $id,
-  ...$ts,
-};
+import { $defaults } from '../../db/columns.js';
 
 // ============ Rewards System Tables ============
 

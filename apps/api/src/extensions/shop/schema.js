@@ -10,29 +10,7 @@ import {
 import { relations } from 'drizzle-orm';
 import { users } from '../../db/schema.js';
 import { DEFAULT_CURRENCY_CODE } from '../ledger/constants.js';
-
-// ============ 公共字段 (重复定义以避免循环依赖) ============
-const $id = integer('id').primaryKey().generatedAlwaysAsIdentity();
-
-const $createdAt = timestamp('created_at', {
-  withTimezone: true,
-}).defaultNow();
-
-const $updatedAt = timestamp('updated_at', {
-  withTimezone: true,
-})
-  .defaultNow()
-  .$onUpdate(() => new Date());
-
-const $ts = {
-  createdAt: $createdAt,
-  updatedAt: $updatedAt,
-};
-
-const $defaults = {
-  id: $id,
-  ...$ts,
-};
+import { $defaults } from '../../db/columns.js';
 
 // 商城商品表
 export const shopItems = pgTable(

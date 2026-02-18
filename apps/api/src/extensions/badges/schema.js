@@ -9,29 +9,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { users } from '../../db/schema.js';
-
-// ============ Common Fields (Duplicated to avoid circular dep) ============
-const $id = integer('id').primaryKey().generatedAlwaysAsIdentity();
-
-const $createdAt = timestamp('created_at', {
-  withTimezone: true,
-}).defaultNow();
-
-const $updatedAt = timestamp('updated_at', {
-  withTimezone: true,
-})
-  .defaultNow()
-  .$onUpdate(() => new Date());
-
-const $ts = {
-  createdAt: $createdAt,
-  updatedAt: $updatedAt,
-};
-
-const $defaults = {
-  id: $id,
-  ...$ts,
-};
+import { $defaults } from '../../db/columns.js';
 
 // 勋章定义表
 export const badges = pgTable(

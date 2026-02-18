@@ -10,29 +10,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { users } from './schema.js';
-
-// ============ Common Fields (Duplicated to avoid circular dep) ============
-const $id = integer('id').primaryKey().generatedAlwaysAsIdentity();
-
-const $createdAt = timestamp('created_at', {
-  withTimezone: true,
-}).defaultNow();
-
-const $updatedAt = timestamp('updated_at', {
-  withTimezone: true,
-})
-  .defaultNow()
-  .$onUpdate(() => new Date());
-
-const $ts = {
-  createdAt: $createdAt,
-  updatedAt: $updatedAt,
-};
-
-const $defaults = {
-  id: $id,
-  ...$ts,
-};
+import { $createdAt, $updatedAt, $defaults } from './columns.js';
 
 // ============ Roles (角色) ============
 export const roles = pgTable(
