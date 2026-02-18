@@ -212,40 +212,7 @@ export function UserManagementSettings({ settings, handleBooleanChange, handleNu
           </div>
         )}
 
-        {/* 邮箱修改验证码有效期 */}
-        {settings.email_change_verification_expires_minutes && (
-          <div className='border border-border rounded-lg bg-card'>
-            <div className='px-4 py-4'>
-              <div className='space-y-3'>
-                <div className='space-y-1'>
-                  <Label htmlFor='email_change_verification_expires_minutes' className='text-sm font-semibold'>
-                    验证码有效期（分钟）
-                  </Label>
-                  <p className='text-sm text-muted-foreground'>
-                    {settings.email_change_verification_expires_minutes.description}
-                  </p>
-                </div>
-                <Input
-                  key={`verification-${settings.email_change_verification_expires_minutes.value}`}
-                  id='email_change_verification_expires_minutes'
-                  type='number'
-                  min='5'
-                  max='60'
-                  className='w-32'
-                  defaultValue={settings.email_change_verification_expires_minutes.value}
-                  onBlur={(e) =>
-                    handleBlur(
-                      'email_change_verification_expires_minutes',
-                      e,
-                      settings.email_change_verification_expires_minutes.value
-                    )
-                  }
-                  disabled={saving}
-                />
-              </div>
-            </div>
-          </div>
-        )}
+
       </div>
     </div>
   );

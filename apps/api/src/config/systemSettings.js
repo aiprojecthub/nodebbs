@@ -193,14 +193,7 @@ export const SETTING_KEYS = {
     category: 'user_settings',
     accessLevel: ACCESS_LEVEL.PUBLIC,
   },
-  EMAIL_CHANGE_VERIFICATION_EXPIRES_MINUTES: {
-    key: 'email_change_verification_expires_minutes',
-    defaultValue: '15',
-    valueType: 'number',
-    description: '邮箱修改验证码有效期（分钟）',
-    category: 'user_settings',
-    accessLevel: ACCESS_LEVEL.PUBLIC,
-  },
+
 
   // ============ StopForumSpam 垃圾注册拦截 ============
   SPAM_PROTECTION_ENABLED: {
