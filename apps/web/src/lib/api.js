@@ -1049,61 +1049,9 @@ export { shopApi } from '../extensions/shop/api';
 export { ledgerApi } from '../extensions/ledger/api';
 
 // ============ 表情包管理 API =============
-export const emojiApi = {
-  // 获取所有表情（分组）
-  async getAll() {
-    return apiClient.get('/emojis');
-  },
+export { emojiApi } from '../extensions/emojis/api';
 
-  // 管理员 API
-  admin: {
-    // 获取所有分组
-    async getGroups() {
-      return apiClient.get('/emojis/admin/groups');
-    },
 
-    // 获取单个分组详情（包含表情列表）
-    async getGroup(id) {
-      return apiClient.get(`/emojis/admin/groups/${id}`);
-    },
-
-    // 创建分组
-    async createGroup(data) {
-      return apiClient.post('/emojis/admin/groups', data);
-    },
-
-    // 更新分组
-    async updateGroup(id, data) {
-      return apiClient.patch(`/emojis/admin/groups/${id}`, data);
-    },
-
-    // 批量排序分组
-    async batchReorderGroups(items) {
-      return apiClient.patch('/emojis/admin/groups/batch-reorder', { items });
-    },
-
-    // 删除分组
-    async deleteGroup(id) {
-      return apiClient.delete(`/emojis/admin/groups/${id}`);
-    },
-
-    // Create emoji (metadata)
-    async createEmoji(data) {
-      // data: { groupId, code, url }
-      return apiClient.post('/emojis/admin/emojis', data);
-    },
-    
-    // 删除表情
-    async deleteEmoji(id) {
-      return apiClient.delete(`/emojis/admin/emojis/${id}`);
-    },
-
-    // 批量排序
-    async batchReorder(items) {
-      return apiClient.patch('/emojis/admin/emojis/batch-reorder', { items });
-    }
-  }
-};
 
 // ============= 广告系统 API =============
 export { adsApi } from '../extensions/ads/api';

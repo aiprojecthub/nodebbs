@@ -1,4 +1,4 @@
-import { emojiGroups, emojis } from '../../db/schema.js';
+import { emojiGroups, emojis } from '../schema.js';
 import { eq, desc, asc, and, inArray } from 'drizzle-orm';
 
 export default async function emojiRoutes(fastify, options) {
@@ -380,4 +380,3 @@ export default async function emojiRoutes(fastify, options) {
     return { message: '排序更新成功', updated: items.length };
   });
 }
-
