@@ -181,7 +181,6 @@ export async function buyItem(userId, itemId) {
         .set({
           balance: newBalance,
           totalSpent: newTotalSpent,
-          updatedAt: new Date(),
         })
         .where(eq(sysAccounts.id, account.id));
 
@@ -245,7 +244,6 @@ export async function buyItem(userId, itemId) {
           .update(shopItems)
           .set({
             stock: item.stock - 1,
-            updatedAt: new Date(),
           })
           .where(eq(shopItems.id, itemId));
       }
@@ -533,10 +531,7 @@ export async function updateShopItem(id, data) {
 
   const [item] = await db
     .update(shopItems)
-    .set({
-      ...updateData,
-      updatedAt: new Date(),
-    })
+    .set({ ...updateData })
     .where(eq(shopItems.id, id))
     .returning();
   return item;
@@ -653,7 +648,6 @@ export async function giftItem(senderId, receiverId, itemId, message) {
         .set({
           balance: newBalance,
           totalSpent: newTotalSpent,
-          updatedAt: new Date(),
         })
         .where(eq(sysAccounts.id, senderAccount.id));
 
@@ -717,7 +711,7 @@ export async function giftItem(senderId, receiverId, itemId, message) {
       if (item.stock !== null) {
         await tx
           .update(shopItems)
-          .set({ stock: item.stock - 1, updatedAt: new Date() })
+          .set({ stock: item.stock - 1 })
           .where(eq(shopItems.id, itemId));
       }
 

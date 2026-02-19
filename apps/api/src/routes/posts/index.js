@@ -937,7 +937,6 @@ export default async function postRoutes(fastify, options) {
       rawContent: content,
       editedAt: new Date(),
       editCount: sql`${posts.editCount} + 1`,
-      updatedAt: new Date(),
     };
 
     // 审核状态变更跟踪
@@ -1073,7 +1072,6 @@ export default async function postRoutes(fastify, options) {
       // 删除对此帖子的回复（将 replyToPostId 设置为 null）
       await db.update(posts).set({
         replyToPostId: null,
-        updatedAt: new Date()
       }).where(eq(posts.replyToPostId, id));
 
       // 然后删除帖子
@@ -1095,7 +1093,6 @@ export default async function postRoutes(fastify, options) {
         isDeleted: true,
         deletedAt: new Date(),
         deletedBy: request.user.id,
-        updatedAt: new Date()
       }).where(eq(posts.id, id));
 
       // 更新话题帖子计数（仅当尚未删除时）

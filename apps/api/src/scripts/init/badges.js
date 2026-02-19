@@ -213,10 +213,7 @@ export class BadgesSeeder extends BaseSeeder {
             // 重置模式：更新现有勋章
             await db
               .update(badges)
-              .set({
-                ...badge,
-                updatedAt: new Date(),
-              })
+              .set({ ...badge })
               .where(eq(badges.slug, badge.slug));
             updatedCount++;
             this.logger.success(`重置: ${badge.name} (${badge.slug})`);

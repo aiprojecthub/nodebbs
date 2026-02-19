@@ -174,7 +174,7 @@ export default async function emojiRoutes(fastify, options) {
     await fastify.db.transaction(async (tx) => {
       await Promise.all(items.map(item =>
         tx.update(emojiGroups)
-          .set({ order: item.order, updatedAt: new Date() })
+          .set({ order: item.order })
           .where(eq(emojiGroups.id, item.id))
       ));
       updatedCount = items.length;
@@ -229,7 +229,6 @@ export default async function emojiRoutes(fastify, options) {
     if (order !== undefined) updates.order = order;
     if (isActive !== undefined) updates.isActive = isActive;
     if (size !== undefined) updates.size = size;
-    updates.updatedAt = new Date();
 
     const [updated] = await fastify.db.update(emojiGroups)
       .set(updates)
@@ -371,7 +370,6 @@ export default async function emojiRoutes(fastify, options) {
           .set({
             groupId: item.groupId,
             order: item.order,
-            updatedAt: new Date()
           })
           .where(eq(emojis.id, item.id))
       ));

@@ -167,10 +167,7 @@ export async function createBadge(data) {
 export async function updateBadge(id, data) {
   const [badge] = await db
     .update(badges)
-    .set({
-      ...data,
-      updatedAt: new Date(),
-    })
+    .set({ ...data })
     .where(eq(badges.id, id))
     .returning();
   return badge;
@@ -311,7 +308,7 @@ export async function deleteBadge(id) {
   if (itemsToDisable.length > 0) {
     await db
       .update(shopItems)
-      .set({ isActive: false, updatedAt: new Date() })
+      .set({ isActive: false })
       .where(sql`${shopItems.id} IN ${itemsToDisable}`);
   }
 
@@ -399,8 +396,6 @@ export async function updateUserBadgeDisplay(userBadgeId, userId, data) {
   if (Object.keys(updateData).length === 0) {
     return null;
   }
-  
-  updateData.updatedAt = new Date();
   
   const [result] = await db
     .update(userBadges)

@@ -51,7 +51,7 @@ export default async function categoryRoutes(fastify, options) {
     for (const item of items) {
       const [updated] = await db
         .update(categories)
-        .set({ position: item.position, updatedAt: new Date() })
+        .set({ position: item.position })
         .where(eq(categories.id, item.id))
         .returning();
       
@@ -391,7 +391,7 @@ export default async function categoryRoutes(fastify, options) {
       }
     }
 
-    const updates = { ...request.body, updatedAt: new Date() };
+    const updates = { ...request.body };
 
     const [updatedCategory] = await db.update(categories).set(updates).where(eq(categories.id, id)).returning();
 

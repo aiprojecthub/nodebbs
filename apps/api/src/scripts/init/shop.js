@@ -174,10 +174,7 @@ export class ShopSeeder extends BaseSeeder {
             // 重置模式：更新商品信息
             await db
               .update(shopItems)
-              .set({
-                ...item,
-                updatedAt: new Date(),
-              })
+              .set({ ...item })
               .where(eq(shopItems.id, existing.id));
             updatedCount++;
             this.logger.success(`重置: ${item.name}`);

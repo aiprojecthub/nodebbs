@@ -152,7 +152,7 @@ export default async function smsProvidersRoutes(fastify, options) {
             ));
         }
 
-        const setData = { updatedAt: new Date() };
+        const setData = {};
 
         if (updateData.isEnabled !== undefined) setData.isEnabled = updateData.isEnabled;
         if (updateData.isDefault !== undefined) setData.isDefault = updateData.isDefault;

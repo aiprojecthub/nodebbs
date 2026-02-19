@@ -449,7 +449,6 @@ export default async function userRoutes(fastify, options) {
     if (request.body.avatar !== undefined) updates.avatar = request.body.avatar;
     if (request.body.messagePermission !== undefined) updates.messagePermission = request.body.messagePermission;
     if (request.body.contentVisibility !== undefined) updates.contentVisibility = request.body.contentVisibility;
-    updates.updatedAt = new Date();
 
     const [updatedUser] = await db.update(users).set(updates).where(eq(users.id, request.user.id)).returning();
 
@@ -494,7 +493,7 @@ export default async function userRoutes(fastify, options) {
     }
 
     const passwordHash = await fastify.hashPassword(newPassword);
-    await db.update(users).set({ passwordHash, updatedAt: new Date() }).where(eq(users.id, user.id));
+    await db.update(users).set({ passwordHash }).where(eq(users.id, user.id));
 
     return { message: 'Password changed successfully' };
   });
@@ -745,7 +744,6 @@ export default async function userRoutes(fastify, options) {
       await db.update(users).set({
         email: newEmailLower,
         isEmailVerified: true,
-        updatedAt: new Date()
       }).where(eq(users.id, userId));
 
       // 删除已使用的验证码
@@ -1316,7 +1314,6 @@ export default async function userRoutes(fastify, options) {
       await db.update(users).set({
         isDeleted: true,
         deletedAt: new Date(),
-        updatedAt: new Date()
       }).where(eq(users.id, userId));
       return { message: '用户已删除' };
     }

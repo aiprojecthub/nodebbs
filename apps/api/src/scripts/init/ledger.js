@@ -77,10 +77,7 @@ export class LedgerSeeder extends BaseSeeder {
           if (reset) {
             await db
               .update(sysCurrencies)
-              .set({
-                ...currency,
-                updatedAt: new Date(),
-              })
+              .set({ ...currency })
               .where(eq(sysCurrencies.code, currency.code));
             updatedCount++;
             this.logger.success(`重置: ${currency.name} (${currency.code})`);

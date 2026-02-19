@@ -51,8 +51,7 @@ function normalizeNotification(options) {
     topicId,
     postId,
     metadata: metadata ? JSON.stringify(metadata) : null,
-    isRead: false,
-    createdAt: new Date()
+    isRead: false
   };
 }
 

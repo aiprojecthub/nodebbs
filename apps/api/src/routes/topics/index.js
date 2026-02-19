@@ -893,7 +893,7 @@ export default async function topicRoutes(fastify, options) {
 
       // 准备话题更新（排除内容和标签，它们需要特殊处理）
       const { content, tags: tagNames, ...topicUpdates } = request.body;
-      const updates = { ...topicUpdates, updatedAt: new Date() };
+      const updates = { ...topicUpdates };
 
       // 如果标题变更，更新 slug
       if (request.body.title) {
@@ -945,7 +945,6 @@ export default async function topicRoutes(fastify, options) {
             rawContent: content,
             editedAt: new Date(),
             editCount: sql`${posts.editCount} + 1`,
-            updatedAt: new Date(),
           };
 
           // 如果话题状态被重置，第一条回复也需要重置
@@ -1156,7 +1155,7 @@ export default async function topicRoutes(fastify, options) {
         // 逻辑删除
         await db
           .update(topics)
-          .set({ isDeleted: true, updatedAt: new Date() })
+          .set({ isDeleted: true })
           .where(eq(topics.id, id));
 
         return { message: '话题删除成功' };

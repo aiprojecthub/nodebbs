@@ -126,10 +126,7 @@ export class AdsSeeder extends BaseSeeder {
             // 重置模式：更新广告位信息
             await db
               .update(adSlots)
-              .set({
-                ...slot,
-                updatedAt: new Date(),
-              })
+              .set({ ...slot })
               .where(eq(adSlots.id, existing.id));
             updatedCount++;
             this.logger.success(`重置: ${slot.name}`);

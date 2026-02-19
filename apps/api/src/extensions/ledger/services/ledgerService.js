@@ -85,7 +85,6 @@ export class LedgerService {
         .set({
           balance: newBalance,
           totalEarned: newTotalEarned,
-          updatedAt: new Date()
         })
         .where(eq(sysAccounts.id, account.id));
 
@@ -137,7 +136,6 @@ export class LedgerService {
         .set({
           balance: newBalance,
           totalSpent: newTotalSpent,
-          updatedAt: new Date()
         })
         .where(eq(sysAccounts.id, account.id));
 
@@ -190,7 +188,6 @@ export class LedgerService {
         .set({
           balance: fromNewBalance,
           totalSpent: Number(fromAccount.totalSpent) + amount,
-          updatedAt: new Date()
         })
         .where(eq(sysAccounts.id, fromAccount.id));
 
@@ -200,7 +197,6 @@ export class LedgerService {
         .set({
           balance: toNewBalance,
           totalEarned: Number(toAccount.totalEarned) + amount,
-          updatedAt: new Date()
         })
         .where(eq(sysAccounts.id, toAccount.id));
 

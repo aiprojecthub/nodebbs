@@ -370,7 +370,6 @@ export default async function moderationRoutes(fastify, options) {
         bannedUntil,
         bannedReason: reason || null,
         bannedBy: request.user.id,
-        updatedAt: new Date(),
       })
       .where(eq(users.id, id))
       .returning();
@@ -434,7 +433,6 @@ export default async function moderationRoutes(fastify, options) {
         bannedUntil: null,
         bannedReason: null,
         bannedBy: null,
-        updatedAt: new Date(),
       })
       .where(eq(users.id, id))
       .returning();
@@ -572,7 +570,7 @@ export default async function moderationRoutes(fastify, options) {
 
     const [updated] = await db
       .update(users)
-      .set({ role, updatedAt: new Date() })
+      .set({ role })
       .where(eq(users.id, id))
       .returning();
 
@@ -925,7 +923,7 @@ export default async function moderationRoutes(fastify, options) {
 
       const [updated] = await db
         .update(posts)
-        .set({ approvalStatus: 'approved', updatedAt: new Date() })
+        .set({ approvalStatus: 'approved' })
         .where(eq(posts.id, id))
         .returning();
 
@@ -1015,7 +1013,7 @@ export default async function moderationRoutes(fastify, options) {
 
       const [updated] = await db
         .update(posts)
-        .set({ approvalStatus: 'rejected', updatedAt: new Date() })
+        .set({ approvalStatus: 'rejected' })
         .where(eq(posts.id, id))
         .returning();
 

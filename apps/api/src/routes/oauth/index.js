@@ -177,10 +177,7 @@ export default async function oauthRoutes(fastify, options) {
 
         const updated = await db
           .update(oauthProviders)
-          .set({
-            ...updateData,
-            updatedAt: new Date(),
-          })
+          .set({ ...updateData })
           .where(eq(oauthProviders.provider, provider))
           .returning();
 

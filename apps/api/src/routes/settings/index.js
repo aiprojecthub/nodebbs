@@ -257,7 +257,6 @@ export default async function settingsRoutes(fastify) {
           .update(systemSettings)
           .set({
             value: stringValue,
-            updatedAt: new Date(),
             updatedBy: request.user.id,
           })
           .where(eq(systemSettings.key, key))

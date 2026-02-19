@@ -49,7 +49,7 @@ export async function handleOAuthLogin(
     // 如果 OAuth 提供商确认邮箱已验证，且当前用户未验证，则同步更新状态
     if (profile.isEmailVerified && !user.isEmailVerified && user.email === profile.email) {
       const [updatedUser] = await db.update(users)
-        .set({ isEmailVerified: true, updatedAt: new Date() })
+        .set({ isEmailVerified: true })
         .where(eq(users.id, user.id))
         .returning();
       user = updatedUser;
@@ -69,7 +69,7 @@ export async function handleOAuthLogin(
         // 如果 OAuth 提供商确认邮箱已验证，且当前用户未验证，则更新状态
         if (profile.isEmailVerified && !user.isEmailVerified) {
           const [updatedUser] = await db.update(users)
-            .set({ isEmailVerified: true, updatedAt: new Date() })
+            .set({ isEmailVerified: true })
             .where(eq(users.id, user.id))
             .returning();
           user = updatedUser;
@@ -217,7 +217,6 @@ export async function linkOAuthAccount(userId, provider, oauthData) {
         tokenType,
         scope,
         idToken,
-        updatedAt: new Date(),
       })
       .where(eq(accounts.id, existingAccount.id))
       .returning();
