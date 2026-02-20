@@ -245,6 +245,26 @@ async function authPlugin(fastify) {
   });
 
   /**
+   * 细粒度权限校验：验证 JWT + 检查封禁 + 检查特定权限
+   */
+  fastify.decorate('requirePermission', function(permissionSlugs, options = {}) {
+    return async function(request, reply) {
+      const { checkBan = true, any = false } = options;
+      const user = await resolveUser(request, reply, { checkBan });
+      if (!user) return;
+
+      try {
+        await fastify.permission.check(request, permissionSlugs, {}, { any });
+      } catch (err) {
+        if (err.statusCode === 403 || err.code === 'NO_PERMISSION') {
+          return reply.code(403).send({ error: '禁止访问', message: err.message, code: err.code });
+        }
+        throw err;
+      }
+    };
+  });
+
+  /**
    * 可选认证：不要求登录，但如已登录则注入用户信息
    * 用于公开页面需要根据登录状态显示不同内容的场景
    */

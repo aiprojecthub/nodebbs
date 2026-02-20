@@ -381,7 +381,7 @@ export default async function invitationsRoutes(fastify) {
   fastify.get(
     '/all',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.invitations')],
       schema: {
         tags: ['invitations', 'admin'],
         description: '获取所有邀请码列表（管理员）',
@@ -504,7 +504,7 @@ export default async function invitationsRoutes(fastify) {
   fastify.post(
     '/generate-admin',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.invitations')],
       schema: {
         tags: ['invitations', 'admin'],
         description: '手动生成邀请码（管理员）',
@@ -554,7 +554,7 @@ export default async function invitationsRoutes(fastify) {
   fastify.patch(
     '/:id/disable',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.invitations')],
       schema: {
         tags: ['invitations', 'admin'],
         description: '禁用邀请码（管理员）',
@@ -590,7 +590,7 @@ export default async function invitationsRoutes(fastify) {
   fastify.patch(
     '/:id/enable',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.invitations')],
       schema: {
         tags: ['invitations', 'admin'],
         description: '恢复已禁用的邀请码（管理员）',
@@ -637,7 +637,7 @@ export default async function invitationsRoutes(fastify) {
   fastify.get(
     '/stats',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.invitations')],
       schema: {
         tags: ['invitations', 'admin'],
         description: '获取邀请统计数据（管理员）',
@@ -683,7 +683,7 @@ export default async function invitationsRoutes(fastify) {
   fastify.get(
     '/rules',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.invitations')],
       schema: {
         tags: ['invitations', 'admin'],
         description: '获取所有邀请规则（管理员）',
@@ -797,7 +797,7 @@ export default async function invitationsRoutes(fastify) {
   fastify.get(
     '/rules/:role',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.invitations')],
       schema: {
         tags: ['invitations', 'admin'],
         description: '获取指定角色的邀请规则（管理员）',
@@ -837,7 +837,7 @@ export default async function invitationsRoutes(fastify) {
   fastify.put(
     '/rules/:role',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.invitations')],
       schema: {
         tags: ['invitations', 'admin'],
         description: '创建或更新邀请规则（管理员）',
@@ -914,7 +914,7 @@ export default async function invitationsRoutes(fastify) {
   fastify.delete(
     '/rules/:role',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.invitations')],
       schema: {
         tags: ['invitations', 'admin'],
         description: '删除邀请规则（管理员）',

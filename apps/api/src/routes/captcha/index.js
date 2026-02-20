@@ -59,7 +59,7 @@ export default async function captchaRoutes(fastify, options) {
   fastify.get(
     '/providers',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.settings')],
       schema: {
         tags: ['captcha', 'admin'],
         description: '获取所有 CAPTCHA 提供商配置（仅管理员）',
@@ -101,7 +101,7 @@ export default async function captchaRoutes(fastify, options) {
   fastify.put(
     '/providers/:provider',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.settings')],
       schema: {
         tags: ['captcha', 'admin'],
         description: '更新 CAPTCHA 提供商配置（仅管理员）',

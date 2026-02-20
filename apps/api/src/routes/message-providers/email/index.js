@@ -95,7 +95,7 @@ export default async function emailProvidersRoutes(fastify, options) {
   fastify.patch(
     '/:provider',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.settings')],
       schema: {
         tags: ['message-providers', 'admin'],
         description: '更新邮件提供商配置（仅管理员）',
@@ -192,7 +192,7 @@ export default async function emailProvidersRoutes(fastify, options) {
   fastify.post(
     '/:provider/test',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.settings')],
       schema: {
         tags: ['message-providers', 'admin'],
         description: '测试邮件提供商配置（仅管理员）',

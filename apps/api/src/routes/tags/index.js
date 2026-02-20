@@ -182,7 +182,7 @@ export default async function tagRoutes(fastify, options) {
 
   // 更新标签（仅管理员）
   fastify.patch('/:id', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.tags')],
     schema: {
       tags: ['tags', 'admin'],
       description: '更新标签（仅管理员）',
@@ -230,7 +230,7 @@ export default async function tagRoutes(fastify, options) {
 
   // 删除标签（仅管理员）
   fastify.delete('/:id', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.tags')],
     schema: {
       tags: ['tags', 'admin'],
       description: '删除标签（仅管理员）',

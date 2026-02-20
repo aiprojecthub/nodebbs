@@ -65,7 +65,7 @@ export default async function emojiRoutes(fastify, options) {
 
   // 获取所有分组（包含未启用的）
   fastify.get('/admin/groups', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.emojis')],
     schema: {
       tags: ['emojis', 'admin'],
       description: '获取所有表情包分组（仅管理员）',
@@ -78,7 +78,7 @@ export default async function emojiRoutes(fastify, options) {
 
   // 获取单个分组详情（包含表情列表）
   fastify.get('/admin/groups/:id', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.emojis')],
     schema: {
       tags: ['emojis', 'admin'],
       description: '获取单个分组详情（含表情列表，仅管理员）',
@@ -106,7 +106,7 @@ export default async function emojiRoutes(fastify, options) {
 
   // 创建分组
   fastify.post('/admin/groups', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.emojis')],
     schema: {
       tags: ['emojis', 'admin'],
       description: '创建表情包分组',
@@ -145,7 +145,7 @@ export default async function emojiRoutes(fastify, options) {
 
   // 批量排序分组
   fastify.patch('/admin/groups/batch-reorder', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.emojis')],
     schema: {
       tags: ['emojis', 'admin'],
       description: '批量排序分组',
@@ -185,7 +185,7 @@ export default async function emojiRoutes(fastify, options) {
 
   // 更新分组
   fastify.patch('/admin/groups/:id', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.emojis')],
     schema: {
       tags: ['emojis', 'admin'],
       description: '更新表情包分组',
@@ -240,7 +240,7 @@ export default async function emojiRoutes(fastify, options) {
 
   // 删除分组
   fastify.delete('/admin/groups/:id', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.emojis')],
     schema: {
       tags: ['emojis', 'admin'],
       description: '删除表情包分组',
@@ -268,7 +268,7 @@ export default async function emojiRoutes(fastify, options) {
 
   // 创建表情（通过 URL）
   fastify.post('/admin/emojis', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.emojis')],
     schema: {
       tags: ['emojis', 'admin'],
       description: '添加表情（通过 URL）',
@@ -315,7 +315,7 @@ export default async function emojiRoutes(fastify, options) {
 
   // 删除表情
   fastify.delete('/admin/emojis/:id', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.emojis')],
     schema: {
       tags: ['emojis', 'admin'],
       description: '删除表情',
@@ -337,7 +337,7 @@ export default async function emojiRoutes(fastify, options) {
 
   // 批量排序表情
   fastify.patch('/admin/emojis/batch-reorder', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.emojis')],
     schema: {
       tags: ['emojis', 'admin'],
       description: '批量排序/移动表情',

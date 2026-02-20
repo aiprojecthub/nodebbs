@@ -5,7 +5,7 @@ import { sql, eq, and, ne, count } from 'drizzle-orm';
 export default async function dashboardRoutes(fastify, options) {
   // 获取统计数据（仅管理员可访问）
   fastify.get('/stats', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.access')],
     schema: {
       tags: ['dashboard', 'admin'],
       description: '获取管理后台统计数据（仅管理员）',

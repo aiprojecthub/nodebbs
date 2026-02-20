@@ -149,7 +149,7 @@ export default async function adsRoutes(fastify, options) {
 
   // 获取广告位列表
   fastify.get('/slots', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.ads')],
     schema: {
       tags: ['ads', 'admin'],
       description: '获取广告位列表（仅管理员）',
@@ -176,7 +176,7 @@ export default async function adsRoutes(fastify, options) {
 
   // 获取单个广告位
   fastify.get('/slots/:id', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.ads')],
     schema: {
       tags: ['ads', 'admin'],
       description: '获取单个广告位（仅管理员）',
@@ -206,7 +206,7 @@ export default async function adsRoutes(fastify, options) {
 
   // 创建广告位 (Admin Only)
   fastify.post('/slots', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.ads')],
     schema: {
       tags: ['ads', 'admin'],
       description: '创建广告位（仅管理员）',
@@ -243,7 +243,7 @@ export default async function adsRoutes(fastify, options) {
 
   // 更新广告位 (Admin Only)
   fastify.patch('/slots/:id', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.ads')],
     schema: {
       tags: ['ads', 'admin'],
       description: '更新广告位（仅管理员）',
@@ -293,7 +293,7 @@ export default async function adsRoutes(fastify, options) {
 
   // 删除广告位 (Admin Only)
   fastify.delete('/slots/:id', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.ads')],
     schema: {
       tags: ['ads', 'admin'],
       description: '删除广告位（仅管理员）',
@@ -321,7 +321,7 @@ export default async function adsRoutes(fastify, options) {
 
   // 获取广告列表
   fastify.get('/', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.ads')],
     schema: {
       tags: ['ads', 'admin'],
       description: '获取广告列表（仅管理员）',
@@ -362,7 +362,7 @@ export default async function adsRoutes(fastify, options) {
 
   // 获取单个广告
   fastify.get('/:id', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.ads')],
     schema: {
       tags: ['ads', 'admin'],
       description: '获取单个广告（仅管理员）',
@@ -392,7 +392,7 @@ export default async function adsRoutes(fastify, options) {
 
   // 创建广告 (Admin Only)
   fastify.post('/', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.ads')],
     schema: {
       tags: ['ads', 'admin'],
       description: '创建广告（仅管理员）',
@@ -433,7 +433,7 @@ export default async function adsRoutes(fastify, options) {
 
   // 更新广告 (Admin Only)
   fastify.patch('/:id', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.ads')],
     schema: {
       tags: ['ads', 'admin'],
       description: '更新广告（仅管理员）',
@@ -487,7 +487,7 @@ export default async function adsRoutes(fastify, options) {
 
   // 删除广告 (Admin Only)
   fastify.delete('/:id', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.ads')],
     schema: {
       tags: ['ads', 'admin'],
       description: '删除广告（仅管理员）',

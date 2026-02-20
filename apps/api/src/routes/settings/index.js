@@ -176,7 +176,7 @@ export default async function settingsRoutes(fastify) {
   fastify.patch(
     '/:key',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.settings')],
       schema: {
         tags: ['settings'],
         description: '更新系统配置（仅管理员）',

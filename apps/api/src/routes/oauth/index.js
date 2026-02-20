@@ -117,7 +117,7 @@ export default async function oauthRoutes(fastify, options) {
   fastify.patch(
     '/providers/:provider',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.settings')],
       schema: {
         tags: ['oauth'],
         description: '更新 OAuth 提供商配置',
@@ -200,7 +200,7 @@ export default async function oauthRoutes(fastify, options) {
   fastify.post(
     '/providers/:provider/test',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.settings')],
       schema: {
         tags: ['oauth'],
         description: '测试 OAuth 提供商配置',

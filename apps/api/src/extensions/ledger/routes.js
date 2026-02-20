@@ -10,7 +10,7 @@ export default async function ledgerRoutes(fastify, options) {
   
   // 1. 获取统计数据 (仪表盘) - 仅限管理员
   fastify.get('/stats', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.extensions')],
     schema: {
       tags: ['ledger', 'admin'],
       description: '获取账本统计数据（仅管理员）',
@@ -265,7 +265,7 @@ export default async function ledgerRoutes(fastify, options) {
 
   // 创建/更新货币 (Admin Only: POST /currencies)
   fastify.post('/currencies', {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.extensions')],
       schema: {
           tags: ['ledger', 'admin'],
           description: '创建或更新货币配置（仅管理员）'
@@ -294,7 +294,7 @@ export default async function ledgerRoutes(fastify, options) {
 
   // 管理员操作：发放/扣除货币 (保留 /admin 前缀 - 纯管理操作)
   fastify.post('/admin/operation', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.extensions')],
     schema: {
         tags: ['ledger', 'admin'],
         description: '发放或扣除用户货币（仅管理员）',

@@ -11,7 +11,7 @@ export default async function userRoutes(fastify, options) {
   const { permission } = fastify;
   // 创建用户（仅管理员）
   fastify.post('/', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.users')],
     schema: {
       tags: ['users'],
       description: '创建用户（仅管理员）',
@@ -1151,7 +1151,7 @@ export default async function userRoutes(fastify, options) {
 
   // 管理员更新用户
   fastify.patch('/:userId', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.users')],
     schema: {
       tags: ['users'],
       description: '更新用户信息（仅管理员）',
@@ -1259,7 +1259,7 @@ export default async function userRoutes(fastify, options) {
 
   // 删除用户（仅管理员）
   fastify.delete('/:userId', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.users')],
     schema: {
       tags: ['users'],
       description: '删除用户（仅管理员）',
@@ -1321,7 +1321,7 @@ export default async function userRoutes(fastify, options) {
 
   // 更新用户角色（仅管理员）
   fastify.put('/:userId/roles', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.roles')],
     schema: {
       tags: ['users'],
       description: '更新用户角色（仅管理员）',

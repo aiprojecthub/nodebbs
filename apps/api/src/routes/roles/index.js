@@ -46,7 +46,7 @@ export default async function rolesRoutes(fastify, options) {
   fastify.get(
     '/',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.roles')],
       schema: {
         tags: ['roles'],
         description: '获取所有角色列表',
@@ -120,7 +120,7 @@ export default async function rolesRoutes(fastify, options) {
   fastify.post(
     '/',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.roles')],
       schema: {
         tags: ['roles'],
         description: '创建新角色',
@@ -172,7 +172,7 @@ export default async function rolesRoutes(fastify, options) {
   fastify.get(
     '/:id',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.roles')],
       schema: {
         tags: ['roles'],
         description: '获取角色详情',
@@ -203,7 +203,7 @@ export default async function rolesRoutes(fastify, options) {
   fastify.patch(
     '/:id',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.roles')],
       schema: {
         tags: ['roles'],
         description: '更新角色',
@@ -258,7 +258,7 @@ export default async function rolesRoutes(fastify, options) {
   fastify.delete(
     '/:id',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.roles')],
       schema: {
         tags: ['roles'],
         description: '删除角色',
@@ -300,7 +300,7 @@ export default async function rolesRoutes(fastify, options) {
   fastify.get(
     '/:id/permissions',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.roles')],
       schema: {
         tags: ['roles'],
         description: '获取角色的权限列表',
@@ -323,7 +323,7 @@ export default async function rolesRoutes(fastify, options) {
   fastify.put(
     '/:id/permissions',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.roles')],
       schema: {
         tags: ['roles'],
         description: '设置角色的权限',
@@ -367,7 +367,7 @@ export default async function rolesRoutes(fastify, options) {
   fastify.get(
     '/users/:userId/roles',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.roles')],
       schema: {
         tags: ['roles'],
         description: '获取用户的角色列表',
@@ -390,7 +390,7 @@ export default async function rolesRoutes(fastify, options) {
   fastify.post(
     '/users/:userId/roles',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.roles')],
       schema: {
         tags: ['roles'],
         description: '为用户分配角色',
@@ -450,7 +450,7 @@ export default async function rolesRoutes(fastify, options) {
   fastify.delete(
     '/users/:userId/roles/:roleId',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.roles')],
       schema: {
         tags: ['roles'],
         description: '移除用户的角色',
@@ -489,7 +489,7 @@ export default async function rolesRoutes(fastify, options) {
   fastify.get(
     '/permissions',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.roles')],
       schema: {
         tags: ['roles'],
         description: '获取所有权限列表',
@@ -515,7 +515,7 @@ export default async function rolesRoutes(fastify, options) {
   fastify.post(
     '/permissions',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.roles')],
       schema: {
         tags: ['roles'],
         description: '创建新权限',
@@ -568,7 +568,7 @@ export default async function rolesRoutes(fastify, options) {
   fastify.patch(
     '/permissions/:id',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.roles')],
       schema: {
         tags: ['roles'],
         description: '更新权限',
@@ -622,7 +622,7 @@ export default async function rolesRoutes(fastify, options) {
   fastify.delete(
     '/permissions/:id',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.roles')],
       schema: {
         tags: ['roles'],
         description: '删除权限',

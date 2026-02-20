@@ -78,7 +78,7 @@ export default async function badgeRoutes(fastify, options) {
 
   // 创建勋章 (Admin Only: POST /badges)
   fastify.post('/', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.extensions')],
     schema: {
       tags: ['badges', 'admin'],
       description: '创建新勋章（仅管理员）',
@@ -106,7 +106,7 @@ export default async function badgeRoutes(fastify, options) {
 
   // 更新勋章 (Admin Only: PATCH /badges/:id)
   fastify.patch('/:id', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.extensions')],
     schema: {
       tags: ['badges', 'admin'],
       description: '更新勋章（仅管理员）',
@@ -141,7 +141,7 @@ export default async function badgeRoutes(fastify, options) {
 
   // 删除勋章 (Admin Only: DELETE /badges/:id)
   fastify.delete('/:id', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.extensions')],
     schema: {
       tags: ['badges', 'admin'],
       description: '删除勋章（仅创始人）',
@@ -176,7 +176,7 @@ export default async function badgeRoutes(fastify, options) {
 
   // 管理员：授予徽章给用户
   fastify.post('/admin/grant', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.extensions')],
     schema: {
       tags: ['badges', 'admin'],
       description: '手动授予用户徽章（仅管理员）',
@@ -237,7 +237,7 @@ export default async function badgeRoutes(fastify, options) {
 
   // 管理员：撤销用户徽章
   fastify.post('/admin/revoke', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.extensions')],
     schema: {
       tags: ['badges', 'admin'],
       description: '手动撤销用户徽章（仅管理员）',

@@ -223,7 +223,7 @@ export default async function rewardsRoutes(fastify, options) {
   // ============ 管理员接口 ============
   
   fastify.post('/admin/grant', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.extensions')],
     schema: { 
       tags: ['rewards', 'admin'], 
       description: '发放奖励（仅管理员）',
@@ -245,7 +245,7 @@ export default async function rewardsRoutes(fastify, options) {
   });
   
    fastify.post('/admin/deduct', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.extensions')],
     schema: { 
       tags: ['rewards', 'admin'], 
       description: '扣除奖励（仅管理员）',

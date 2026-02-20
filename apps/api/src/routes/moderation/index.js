@@ -105,7 +105,7 @@ export default async function moderationRoutes(fastify, options) {
 
   // 获取举报列表（管理员/版主）
   fastify.get('/reports', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.moderation')],
     schema: {
       tags: ['moderation'],
       description: '获取举报列表（管理员/版主）',
@@ -233,7 +233,7 @@ export default async function moderationRoutes(fastify, options) {
 
   // 处理举报（管理员/版主）
   fastify.patch('/reports/:id/resolve', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.moderation')],
     schema: {
       tags: ['moderation'],
       description: '处理举报（管理员/版主）',
@@ -455,7 +455,7 @@ export default async function moderationRoutes(fastify, options) {
 
   // Get user status (管理员/版主)
   fastify.get('/users/:id/status', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.moderation')],
     schema: {
       tags: ['moderation'],
       description: '获取用户状态（管理员/版主）',
@@ -520,7 +520,7 @@ export default async function moderationRoutes(fastify, options) {
 
   // Change user role (admin only)
   fastify.patch('/users/:id/role', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.moderation')],
     schema: {
       tags: ['moderation'],
       description: '修改用户角色（仅管理员）',
@@ -586,7 +586,7 @@ export default async function moderationRoutes(fastify, options) {
 
   // 获取待审核统计数据（管理员/版主）
   fastify.get('/stat', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.moderation')],
     schema: {
       tags: ['moderation'],
       description: '获取待审核统计数据（管理员/版主）',
@@ -617,7 +617,7 @@ export default async function moderationRoutes(fastify, options) {
 
   // 获取待审核内容列表（管理员/版主）
   fastify.get('/pending', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.moderation')],
     schema: {
       tags: ['moderation'],
       description: '获取待审核内容列表（管理员/版主）',
@@ -853,7 +853,7 @@ export default async function moderationRoutes(fastify, options) {
 
   // 批准内容（管理员/版主）
   fastify.post('/approve/:type/:id', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.moderation')],
     schema: {
       tags: ['moderation'],
       description: '批准内容（管理员/版主）',
@@ -948,7 +948,7 @@ export default async function moderationRoutes(fastify, options) {
 
   // 拒绝内容（管理员/版主）
   fastify.post('/reject/:type/:id', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.moderation')],
     schema: {
       tags: ['moderation'],
       description: '拒绝内容（管理员/版主）',
@@ -1035,7 +1035,7 @@ export default async function moderationRoutes(fastify, options) {
 
   // 获取审核日志列表（管理员/版主）
   fastify.get('/logs', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.moderation')],
     schema: {
       tags: ['moderation'],
       description: '获取审核日志列表（管理员/版主）',
@@ -1200,7 +1200,7 @@ export default async function moderationRoutes(fastify, options) {
 
   // 根据目标ID获取审核日志（查看特定内容的审核历史）
   fastify.get('/logs/:targetType/:targetId', {
-    preHandler: [fastify.requireAdmin],
+    preHandler: [fastify.requirePermission('dashboard.moderation')],
     schema: {
       tags: ['moderation'],
       description: '获取特定内容的审核日志（管理员/版主）',

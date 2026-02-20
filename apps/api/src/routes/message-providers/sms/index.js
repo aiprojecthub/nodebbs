@@ -93,7 +93,7 @@ export default async function smsProvidersRoutes(fastify, options) {
   fastify.patch(
     '/:provider',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.settings')],
       schema: {
         tags: ['message-providers', 'admin'],
         description: '更新短信提供商配置（仅管理员）',
@@ -190,7 +190,7 @@ export default async function smsProvidersRoutes(fastify, options) {
   fastify.post(
     '/:provider/test',
     {
-      preHandler: [fastify.requireAdmin],
+      preHandler: [fastify.requirePermission('dashboard.settings')],
       schema: {
         tags: ['message-providers', 'admin'],
         description: '测试短信提供商配置（仅管理员）',
