@@ -81,7 +81,7 @@ export default function SendMessageButton({ recipientId, recipientName, recipien
       setContent('');
     } catch (err) {
       console.error('发送消息失败:', err);
-      toast.error('发送失败：' + err.message);
+      toast.error(err.message || '发送失败');
     } finally {
       setSending(false);
     }

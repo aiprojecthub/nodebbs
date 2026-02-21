@@ -36,7 +36,7 @@ export default function EmojiGroupsPage() {
       setGroups(data);
     } catch (err) {
       console.error('获取分组失败:', err);
-      toast.error('获取分组失败');
+      toast.error(err.message || '获取分组失败');
     } finally {
       setLoading(false);
     }
@@ -76,9 +76,7 @@ export default function EmojiGroupsPage() {
         `${dialogMode === 'create' ? '创建' : '更新'}分组失败:`,
         err
       );
-      toast.error(
-        `${dialogMode === 'create' ? '创建' : '更新'}失败：` + (err.message || '未知错误')
-      );
+      toast.error(err.message || '操作失败');
     } finally {
       setSubmitting(false);
     }
@@ -101,7 +99,7 @@ export default function EmojiGroupsPage() {
       setGroups(prev => prev.filter(g => g.id !== group.id));
     } catch (err) {
       console.error('删除分组失败:', err);
-      toast.error('删除失败：' + err.message);
+      toast.error(err.message || '删除失败');
     }
   };
 
@@ -117,7 +115,7 @@ export default function EmojiGroupsPage() {
       toast.success('排序已保存');
     } catch (err) {
       console.error('排序保存失败:', err);
-      toast.error('排序保存失败');
+      toast.error(err.message || '排序保存失败');
       fetchGroups();
     } finally {
       setReordering(false);

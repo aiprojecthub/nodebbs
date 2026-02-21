@@ -1135,7 +1135,7 @@ export default async function topicRoutes(fastify, options) {
         });
       }
 
-      // 永久删除需要 allowPermanent 条件
+      // 彻底删除需要 allowPermanent 条件
       if (permanent) {
         const slug = hasDashboardAccess ? 'dashboard.topics' : 'topic.delete';
         const { conditions } = await fastify.permission.check(request, slug, {
@@ -1144,12 +1144,12 @@ export default async function topicRoutes(fastify, options) {
         if (!conditions?.allowPermanent) {
           return reply
             .code(403)
-            .send({ error: '没有永久删除的权限' });
+            .send({ error: '没有彻底删除的权限' });
         }
       }
 
       if (permanent) {
-        // 彻底删除 - 从数据库中永久删除
+        // 彻底删除 - 从数据库中移除
         
         // 1. 获取关联的标签并减少话题计数
         const currentTags = await db
@@ -1175,7 +1175,7 @@ export default async function topicRoutes(fastify, options) {
         // 然后删除话题
         await db.delete(topics).where(eq(topics.id, id));
 
-        return { message: '话题已永久删除' };
+        return { message: '话题已彻底删除' };
       } else {
         // 逻辑删除
         await db

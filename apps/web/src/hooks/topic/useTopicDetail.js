@@ -139,13 +139,13 @@ export function useTopicDetail({
         isClosed: !previousState,
       });
 
-      toast.success(!previousState ? '主题已关闭' : '主题已重新开启');
+      toast.success(!previousState ? '话题已关闭' : '话题已重新开启');
       router.refresh();
     } catch (err) {
       // 回滚
       updateTopic({ isClosed: previousState });
       console.error('操作失败:', err);
-      toast.error('操作失败：' + err.message);
+      toast.error(err.message || '操作失败');
     } finally {
       setLoading('toggleStatus', false);
     }
@@ -175,7 +175,7 @@ export function useTopicDetail({
       // 回滚
       updateTopic({ isPinned: previousState });
       console.error('置顶操作失败:', err);
-      toast.error('操作失败：' + err.message);
+      toast.error(err.message || '操作失败');
     } finally {
       setLoading('togglePin', false);
     }
@@ -196,7 +196,7 @@ export function useTopicDetail({
       router.push('/');
     } catch (err) {
       console.error('删除话题失败:', err);
-      toast.error('删除失败：' + err.message);
+      toast.error(err.message || '删除失败');
     } finally {
       setLoading('delete', false);
     }
@@ -252,8 +252,8 @@ export function useTopicDetail({
           return;
         }
         scrollToPost(postId);
-      } catch (error) {
-        console.error('Failed to navigate to post:', error);
+      } catch (err) {
+        console.error('Failed to navigate to post:', err);
       }
     };
 

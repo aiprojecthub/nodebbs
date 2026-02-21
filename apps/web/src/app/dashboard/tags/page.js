@@ -94,7 +94,7 @@ export default function TagsManagement() {
       resetForm();
     } catch (err) {
       console.error(`${isEdit ? '更新' : '创建'}标签失败:`, err);
-      toast.error(`${isEdit ? '更新' : '创建'}失败：` + err.message);
+      toast.error(err.message || '操作失败');
     } finally {
       setSubmitting(false);
     }
@@ -129,7 +129,7 @@ export default function TagsManagement() {
       setSelectedTag(null);
     } catch (err) {
       console.error('删除标签失败:', err);
-      toast.error('删除失败：' + err.message);
+      toast.error(err.message || '删除失败');
     } finally {
       setSubmitting(false);
     }

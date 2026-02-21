@@ -118,7 +118,7 @@ export default function CategoriesManagement() {
       fetchCategories();
     } catch (err) {
       console.error('删除分类失败:', err);
-      toast.error('删除失败：' + err.message);
+      toast.error(err.message || '删除失败');
     } finally {
       setSubmitting(false);
     }
@@ -236,7 +236,7 @@ export default function CategoriesManagement() {
       fetchCategories(); // 刷新列表
     } catch (err) {
       console.error('更新排序失败:', err);
-      toast.error('排序保存失败：' + err.message);
+      toast.error(err.message || '排序保存失败');
     } finally {
       setReordering(false);
     }

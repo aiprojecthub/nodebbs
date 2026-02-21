@@ -1074,19 +1074,19 @@ export default async function postRoutes(fastify, options) {
       return reply.code(400).send({ error: '无法删除第一条帖子，请删除话题' });
     }
 
-    // 永久删除需要 allowPermanent 条件
+    // 彻底删除需要 allowPermanent 条件
     if (permanent) {
       const slug = hasDashboardAccess ? 'dashboard.posts' : 'post.delete';
       const { conditions } = await fastify.permission.check(request, slug, {
         categoryId: topic?.categoryId,
       });
       if (!conditions?.allowPermanent) {
-        return reply.code(403).send({ error: '没有永久删除的权限' });
+        return reply.code(403).send({ error: '没有彻底删除的权限' });
       }
     }
 
     if (permanent) {
-      // 彻底删除 - 从数据库中永久移除
+      // 彻底删除 - 从数据库中移除
       // 首先删除相关数据
       await db.delete(likes).where(eq(likes.postId, id));
 
@@ -1107,7 +1107,7 @@ export default async function postRoutes(fastify, options) {
         }).where(eq(topics.id, post.topicId));
       }
 
-      return { message: '回复已永久删除' };
+      return { message: '回复已彻底删除' };
     } else {
       // 逻辑删除
       await db.update(posts).set({

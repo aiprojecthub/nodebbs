@@ -113,7 +113,7 @@ export default function FilesManagement() {
       setTotal(prev => prev - 1);
     } catch (err) {
       console.error('删除失败:', err);
-      toast.error('删除失败：' + err.message);
+      toast.error(err.message || '删除失败');
     } finally {
       setSubmitting(false);
     }

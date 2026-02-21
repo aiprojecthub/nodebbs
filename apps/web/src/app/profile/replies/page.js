@@ -135,7 +135,7 @@ export default function RepliesPage() {
     } catch (err) {
       console.error('获取回复列表失败:', err);
       setError(err.message);
-      toast.error('获取回复列表失败：' + err.message);
+      toast.error(err.message || '获取回复列表失败');
     } finally {
       setLoading(false);
     }

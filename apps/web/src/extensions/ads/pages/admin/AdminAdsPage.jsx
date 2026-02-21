@@ -86,7 +86,7 @@ export default function AdminAdsPage() {
       setSlots(data);
     } catch (err) {
       console.error('获取广告位失败:', err);
-      toast.error('获取广告位失败');
+      toast.error(err.message || '获取广告位失败');
     } finally {
       setSlotsLoading(false);
     }
@@ -101,7 +101,7 @@ export default function AdminAdsPage() {
       setAdsTotal(data.total);
     } catch (err) {
       console.error('获取广告失败:', err);
-      toast.error('获取广告失败');
+      toast.error(err.message || '获取广告失败');
     } finally {
       setAdsLoading(false);
     }
@@ -176,7 +176,7 @@ export default function AdminAdsPage() {
       fetchSlots();
     } catch (err) {
       console.error(`${slotDialogMode === 'create' ? '创建' : '更新'}广告位失败:`, err);
-      toast.error(`${slotDialogMode === 'create' ? '创建' : '更新'}失败：` + err.message);
+      toast.error(err.message || '操作失败');
     } finally {
       setSlotSubmitting(false);
     }
@@ -198,7 +198,7 @@ export default function AdminAdsPage() {
       fetchSlots();
     } catch (err) {
       console.error('删除广告位失败:', err);
-      toast.error('删除失败：' + err.message);
+      toast.error(err.message || '删除失败');
     }
   };
 
@@ -220,7 +220,7 @@ export default function AdminAdsPage() {
       ));
     } catch (err) {
       console.error('更新广告位状态失败:', err);
-      toast.error('更新状态失败：' + err.message);
+      toast.error(err.message || '更新状态失败');
       // Revert on failure
       setSlots(prev => prev.map(item => 
         item.id === slot.id ? { ...item, isActive: !newStatus, _updating: false } : item
@@ -298,7 +298,7 @@ export default function AdminAdsPage() {
       fetchAds();
     } catch (err) {
       console.error(`${adDialogMode === 'create' ? '创建' : '更新'}广告失败:`, err);
-      toast.error(`${adDialogMode === 'create' ? '创建' : '更新'}失败：` + err.message);
+      toast.error(err.message || '操作失败');
     } finally {
       setAdSubmitting(false);
     }
@@ -320,7 +320,7 @@ export default function AdminAdsPage() {
       fetchAds();
     } catch (err) {
       console.error('删除广告失败:', err);
-      toast.error('删除失败：' + err.message);
+      toast.error(err.message || '删除失败');
     }
   };
 
@@ -342,7 +342,7 @@ export default function AdminAdsPage() {
       ));
     } catch (err) {
       console.error('更新广告状态失败:', err);
-      toast.error('更新状态失败：' + err.message);
+      toast.error(err.message || '更新状态失败');
       // Revert on failure
       setAds(prev => prev.map(item => 
         item.id === ad.id ? { ...item, isActive: !newStatus, _updating: false } : item

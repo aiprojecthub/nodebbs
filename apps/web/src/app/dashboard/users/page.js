@@ -138,7 +138,7 @@ export default function UsersManagement() {
       ));
     } catch (err) {
       console.error('解封失败:', err);
-      toast.error('解封失败：' + err.message);
+      toast.error(err.message || '解封失败');
     } finally {
       setSubmitting(false);
     }
@@ -182,7 +182,7 @@ export default function UsersManagement() {
       }
     } catch (err) {
       console.error('删除失败:', err);
-      toast.error('删除失败：' + err.message);
+      toast.error(err.message || '删除失败');
     } finally {
       setSubmitting(false);
     }

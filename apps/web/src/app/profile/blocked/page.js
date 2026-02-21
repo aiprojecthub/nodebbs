@@ -42,7 +42,7 @@ export default function BlockedUsersPage() {
     } catch (err) {
       console.error('获取拉黑列表失败:', err);
       setError(err.message);
-      toast.error('获取拉黑列表失败：' + err.message);
+      toast.error(err.message || '获取拉黑列表失败');
     } finally {
       setLoading(false);
     }
@@ -58,7 +58,7 @@ export default function BlockedUsersPage() {
       setTotal((prev) => prev - 1);
     } catch (err) {
       console.error('取消拉黑失败:', err);
-      toast.error('取消拉黑失败：' + err.message);
+      toast.error(err.message || '取消拉黑失败');
     } finally {
       setUnblockingUserId(null);
     }

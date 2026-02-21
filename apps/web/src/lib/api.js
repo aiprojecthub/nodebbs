@@ -39,9 +39,9 @@ class ApiClient {
       }
 
       return data;
-    } catch (error) {
-      console.error('API Error:', error);
-      throw error;
+    } catch (err) {
+      console.error('API Error:', err);
+      throw err;
     }
   }
 
@@ -366,37 +366,37 @@ export const categoryApi = {
   },
 };
 
-// ============= 主题 API =============
+// ============= 话题 API =============
 export const topicApi = {
-  // 获取主题列表
+  // 获取话题列表
   async getList(params = {}) {
     // params: { page, limit, categoryId, userId, tag, sort }
     return apiClient.get('/topics', params);
   },
 
-  // 获取主题详情
+  // 获取话题详情
   async getById(id) {
     return apiClient.get(`/topics/${id}`);
   },
 
-  // 创建主题
+  // 创建话题
   async create(data) {
     // data: { title, categoryId, content, tags }
     return apiClient.post('/topics', data);
   },
 
-  // 更新主题
+  // 更新话题
   async update(id, data) {
     return apiClient.patch(`/topics/${id}`, data);
   },
 
-  // 删除主题
+  // 删除话题
   async delete(id, permanent = false) {
     const query = permanent ? '?permanent=true' : '';
     return apiClient.delete(`/topics/${id}${query}`);
   },
 
-  // 收藏主题
+  // 收藏话题
   async bookmark(id) {
     return apiClient.post(`/topics/${id}/bookmark`);
   },
@@ -419,7 +419,7 @@ export const topicApi = {
 
 // ============= 帖子 API =============
 export const postApi = {
-  // 获取主题的所有帖子
+  // 获取话题的所有帖子
   async getByTopic(topicId, page = 1, limit = 20) {
     return apiClient.get('/posts', { topicId, page, limit });
   },
@@ -484,7 +484,7 @@ export const tagApi = {
     return apiClient.get(`/tags/${slug}`);
   },
 
-  // 获取标签下的主题
+  // 获取标签下的话题
   async getTopics(slug, page = 1, limit = 20) {
     return apiClient.get(`/tags/${slug}/topics`, { page, limit });
   },

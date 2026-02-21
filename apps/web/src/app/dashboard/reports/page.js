@@ -69,7 +69,7 @@ export default function ReportsManagement() {
       setTotal(data.total || 0);
     } catch (err) {
       console.error('获取举报列表失败:', err);
-      toast.error('获取举报列表失败：' + err.message);
+      toast.error(err.message || '获取举报列表失败');
     } finally {
       setLoading(false);
     }

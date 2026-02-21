@@ -83,14 +83,14 @@ export function useReplyForm({
       setReplyContent('');
     } catch (err) {
       console.error('发布回复失败:', err);
-      toast.error('发布回复失败：' + err.message);
+      toast.error(err.message || '发布回复失败');
     } finally {
       setSubmitting(false);
     }
   };
 
   /**
-   * 切换主题开启/关闭状态
+   * 切换话题开启/关闭状态
    * 直接调用 Context 中的共享方法
    */
   const handleToggleTopicStatus = async () => {

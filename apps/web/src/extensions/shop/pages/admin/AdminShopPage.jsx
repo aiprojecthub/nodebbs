@@ -56,7 +56,7 @@ export default function AdminShopPage() {
       refetch();
     } catch (err) {
       console.error(`${dialogMode === 'create' ? '创建' : '更新'}商品失败:`, err);
-      toast.error(`${dialogMode === 'create' ? '创建' : '更新'}失败：` + err.message);
+      toast.error(err.message || '操作失败');
     } finally {
       setSubmitting(false);
     }
@@ -86,7 +86,7 @@ export default function AdminShopPage() {
       refetch();
     } catch (err) {
       console.error('删除商品失败:', err);
-      toast.error('删除失败：' + err.message);
+      toast.error(err.message || '删除失败');
     }
   };
 

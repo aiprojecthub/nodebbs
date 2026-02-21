@@ -60,7 +60,7 @@ export function usePrivacySettings() {
       refreshUser();
     } catch (err) {
       console.error('更新隐私设置失败:', err);
-      toast.error('更新失败：' + err.message);
+      toast.error(err.message || '更新失败');
       setLoading(false);
     }
   }, [formData, refreshUser]);

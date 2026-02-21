@@ -55,7 +55,7 @@ export default function BlockUserButton({ userId, username }) {
       setShowBlockDialog(false);
     } catch (err) {
       console.error('拉黑失败:', err);
-      toast.error('拉黑失败：' + err.message);
+      toast.error(err.message || '拉黑失败');
     } finally {
       setLoading(false);
     }
@@ -71,7 +71,7 @@ export default function BlockUserButton({ userId, username }) {
       setShowUnblockDialog(false);
     } catch (err) {
       console.error('取消拉黑失败:', err);
-      toast.error('取消拉黑失败：' + err.message);
+      toast.error(err.message || '取消拉黑失败');
     } finally {
       setLoading(false);
     }

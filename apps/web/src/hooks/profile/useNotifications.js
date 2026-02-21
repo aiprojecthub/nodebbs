@@ -46,7 +46,7 @@ export function useNotifications() {
     } catch (err) {
       console.error('获取通知失败:', err);
       setError(err.message);
-      toast.error('获取通知失败：' + err.message);
+      toast.error(err.message || '获取通知失败');
     } finally {
       setLoading(false);
     }
@@ -71,7 +71,7 @@ export function useNotifications() {
       toast.success('已标记为已读');
     } catch (err) {
       console.error('标记已读失败:', err);
-      toast.error('操作失败：' + err.message);
+      toast.error(err.message || '操作失败');
     } finally {
       setActionLoading(null);
     }
@@ -86,7 +86,7 @@ export function useNotifications() {
       await fetchNotifications();
     } catch (err) {
       console.error('批量标记已读失败:', err);
-      toast.error('操作失败：' + err.message);
+      toast.error(err.message || '操作失败');
     } finally {
       setActionLoading(null);
     }
@@ -102,7 +102,7 @@ export function useNotifications() {
       toast.success('通知已删除');
     } catch (err) {
       console.error('删除通知失败:', err);
-      toast.error('删除失败：' + err.message);
+      toast.error(err.message || '删除失败');
     } finally {
       setActionLoading(null);
     }
@@ -117,7 +117,7 @@ export function useNotifications() {
       await fetchNotifications();
     } catch (err) {
       console.error('批量删除失败:', err);
-      toast.error('操作失败：' + err.message);
+      toast.error(err.message || '操作失败');
     } finally {
       setActionLoading(null);
     }

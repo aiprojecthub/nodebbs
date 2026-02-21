@@ -89,7 +89,7 @@ export function UserFormDialog({
       onOpenChange(false);
     } catch (err) {
       console.error(`${isCreate ? '创建' : '更新'}用户失败:`, err);
-      toast.error(`${isCreate ? '创建' : '更新'}用户失败：` + err.message);
+      toast.error(err.message || '操作失败');
     } finally {
       setSubmitting(false);
     }

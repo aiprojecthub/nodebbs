@@ -69,7 +69,7 @@ export function usePasswordChange() {
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err) {
       console.error('修改密码失败:', err);
-      toast.error('修改密码失败：' + err.message);
+      toast.error(err.message || '修改密码失败');
     } finally {
       setChangingPassword(false);
     }

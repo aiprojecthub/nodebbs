@@ -28,12 +28,12 @@ export default function CreateTopicContent() {
         );
         router.push('/profile/topics');
       } else {
-        toast.success(response.message || '主题发布成功！');
+        toast.success(response.message || '话题发布成功！');
         router.push(`/topic/${response.topic?.id}`);
       }
     } catch (err) {
-      console.error('发布主题失败:', err);
-      toast.error('发布主题失败：' + err.message);
+      console.error('发布话题失败:', err);
+      toast.error(err.message || '发布话题失败');
     } finally {
       setSubmitting(false);
     }

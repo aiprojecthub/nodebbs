@@ -84,7 +84,7 @@ export default function MessageDetailPage() {
     } catch (err) {
       console.error('获取会话失败:', err);
       setError(err.message);
-      toast.error('获取会话失败：' + err.message);
+      toast.error(err.message || '获取会话失败');
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -158,7 +158,7 @@ export default function MessageDetailPage() {
       }, 100);
     } catch (err) {
       console.error('发送消息失败:', err);
-      toast.error('发送失败：' + err.message);
+      toast.error(err.message || '发送失败');
     } finally {
       setReplying(false);
     }
@@ -180,7 +180,7 @@ export default function MessageDetailPage() {
       setTotal((prev) => prev - 1);
     } catch (err) {
       console.error('删除消息失败:', err);
-      toast.error('删除失败：' + err.message);
+      toast.error(err.message || '删除失败');
     } finally {
       setDeleting(false);
     }

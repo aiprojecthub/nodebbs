@@ -149,7 +149,7 @@ export function PermissionsTab() {
       fetchData();
     } catch (err) {
       console.error('保存权限失败:', err);
-      toast.error('保存失败：' + err.message);
+      toast.error(err.message || '保存失败');
     } finally {
       setSubmitting(false);
     }
@@ -176,7 +176,7 @@ export function PermissionsTab() {
       fetchData();
     } catch (err) {
       console.error('删除权限失败:', err);
-      toast.error('删除失败：' + err.message);
+      toast.error(err.message || '删除失败');
     }
   };
 

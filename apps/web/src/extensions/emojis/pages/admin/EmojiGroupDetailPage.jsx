@@ -30,7 +30,7 @@ export default function EmojiDetailPage() {
         toast.error('分组不存在');
         router.push('/dashboard/emojis');
       } else {
-        toast.error('获取数据失败');
+        toast.error(err.message || '获取数据失败');
       }
     } finally {
       setLoading(false);
@@ -60,7 +60,7 @@ export default function EmojiDetailPage() {
         emojis: prev.emojis.filter(e => e.id !== emoji.id)
       }));
     } catch (err) {
-      toast.error('删除失败');
+      toast.error(err.message || '删除失败');
     }
   };
 
@@ -79,7 +79,7 @@ export default function EmojiDetailPage() {
       await emojiApi.admin.batchReorder(items);
       toast.success('排序已保存');
     } catch (err) {
-      toast.error('排序保存失败');
+      toast.error(err.message || '排序保存失败');
       fetchGroupData();
     } finally {
       setReordering(false);

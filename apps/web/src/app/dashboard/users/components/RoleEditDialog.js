@@ -45,7 +45,7 @@ export function RoleEditDialog({
       onOpenChange(false);
     } catch (err) {
       console.error('修改角色失败:', err);
-      toast.error('修改角色失败：' + err.message);
+      toast.error(err.message || '修改角色失败');
     } finally {
       setSubmitting(false);
     }

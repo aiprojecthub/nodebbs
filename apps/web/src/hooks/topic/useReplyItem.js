@@ -231,7 +231,7 @@ export function useReplyItem({
       setReplyingToPostId(null);
     } catch (err) {
       console.error('发布回复失败:', err);
-      toast.error('发布回复失败：' + err.message);
+      toast.error(err.message || '发布回复失败');
     } finally {
       setSubmitting(false);
     }

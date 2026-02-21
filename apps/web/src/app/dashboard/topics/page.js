@@ -84,9 +84,9 @@ export default function AdminTopicsPage() {
       const data = await topicApi.getList(params);
       setTopics(data.items || []);
       setTotal(data.total || 0);
-    } catch (error) {
-      console.error('获取话题列表失败:', error);
-      toast.error('获取话题列表失败');
+    } catch (err) {
+      console.error('获取话题列表失败:', err);
+      toast.error(err.message || '获取话题列表失败');
     } finally {
       setLoading(false);
     }
@@ -111,8 +111,8 @@ export default function AdminTopicsPage() {
 
         return updatedTopics;
       });
-    } catch (error) {
-      toast.error(error.message || '操作失败');
+    } catch (err) {
+      toast.error(err.message || '操作失败');
     }
   };
 
@@ -135,8 +135,8 @@ export default function AdminTopicsPage() {
 
         return updatedTopics;
       });
-    } catch (error) {
-      toast.error('操作失败');
+    } catch (err) {
+      toast.error(err.message || '操作失败');
     }
   };
 
@@ -178,9 +178,9 @@ export default function AdminTopicsPage() {
 
         return updatedTopics;
       });
-    } catch (error) {
-      console.error('删除失败:', error);
-      toast.error('删除失败');
+    } catch (err) {
+      console.error('删除失败:', err);
+      toast.error(err.message || '删除失败');
     }
   };
 

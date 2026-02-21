@@ -32,7 +32,7 @@ export function BanUserDialog({ open, onOpenChange, user, onBanned }) {
       onOpenChange(false);
     } catch (err) {
       console.error('封禁失败:', err);
-      toast.error('封禁失败：' + err.message);
+      toast.error(err.message || '封禁失败');
     } finally {
       setSubmitting(false);
     }

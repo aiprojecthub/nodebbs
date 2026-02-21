@@ -35,7 +35,7 @@ function ConditionField({ label, description, hasValue, onClear, children, inlin
     <div className="py-3 border-b last:border-b-0">
       {inline ? (
         // 行内布局（用于 switch）
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <div className="space-y-0.5">
             <Label className="text-sm font-medium">{label}</Label>
             {description && <p className="text-xs text-muted-foreground">{description}</p>}

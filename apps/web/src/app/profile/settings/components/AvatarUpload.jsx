@@ -82,7 +82,7 @@ export function AvatarUpload({
       onUpload(result.url); // 注意: 通用上传接口返回 { url: ... }
     } catch (err) {
       console.error('上传头像失败:', err);
-      toast.error('上传头像失败：' + err.message);
+      toast.error(err.message || '上传头像失败');
     } finally {
       setInternalUploading(false);
     }

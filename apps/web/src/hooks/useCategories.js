@@ -86,7 +86,7 @@ export function useCategories() {
       setCategories(rootCategories);
     } catch (err) {
       setError(err);
-      toast.error('获取分类列表失败: ' + err.message);
+      toast.error(err.message || '获取分类列表失败');
     } finally {
       setLoading(false);
     }

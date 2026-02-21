@@ -30,9 +30,9 @@ export default function AdminBadgesPage() {
     try {
       const { items } = await badgesApi.admin.getAll({ limit: 100 });
       setItems(items || []);
-    } catch (error) {
-      console.error('Failed to fetch badges:', error);
-      toast.error('加载勋章列表失败');
+    } catch (err) {
+      console.error('Failed to fetch badges:', err);
+      toast.error(err.message || '加载勋章列表失败');
     } finally {
       setLoading(false);
     }
@@ -67,7 +67,7 @@ export default function AdminBadgesPage() {
       fetchData();
     } catch (err) {
       console.error(`${dialogMode === 'create' ? '创建' : '更新'}勋章失败:`, err);
-      toast.error(`${dialogMode === 'create' ? '创建' : '更新'}失败`);
+      toast.error(err.message || '操作失败');
     }
   };
 
@@ -100,7 +100,7 @@ export default function AdminBadgesPage() {
              toast.error('操作被拒绝：只有创始人可以删除勋章');
         } else {
              console.error('删除勋章失败:', err);
-             toast.error('删除失败：' + (err.message || '未知错误'));
+             toast.error(err.message || '删除失败');
         }
     }
   };

@@ -75,9 +75,9 @@ export default function AdminPostsPage() {
       const data = await postApi.getAdminList(params);
       setPosts(data.items || []);
       setTotal(data.total || 0);
-    } catch (error) {
-      console.error('获取回复列表失败:', error);
-      toast.error('获取回复列表失败');
+    } catch (err) {
+      console.error('获取回复列表失败:', err);
+      toast.error(err.message || '获取回复列表失败');
     } finally {
       setLoading(false);
     }
@@ -121,9 +121,9 @@ export default function AdminPostsPage() {
 
         return updatedPosts;
       });
-    } catch (error) {
-      console.error('删除失败:', error);
-      toast.error('删除失败');
+    } catch (err) {
+      console.error('删除失败:', err);
+      toast.error(err.message || '删除失败');
     }
   };
 

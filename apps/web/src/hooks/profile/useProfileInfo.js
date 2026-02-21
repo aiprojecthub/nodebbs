@@ -73,7 +73,7 @@ export function useProfileInfo() {
       refreshUser();
     } catch (err) {
       console.error('更新头像失败:', err);
-      toast.error('更新头像失败：' + err.message);
+      toast.error(err.message || '更新头像失败');
       
       // 失败回滚
       setFormData((prev) => ({ ...prev, avatar: oldAvatar }));
@@ -102,7 +102,7 @@ export function useProfileInfo() {
       refreshUser();
     } catch (err) {
       console.error('更新资料失败:', err);
-      toast.error('更新失败：' + err.message);
+      toast.error(err.message || '更新失败');
       setLoading(false);
     }
   }, [formData, refreshUser]);

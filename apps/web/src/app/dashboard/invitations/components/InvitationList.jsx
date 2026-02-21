@@ -152,7 +152,7 @@ export function InvitationList() {
       }));
     } catch (err) {
       console.error('禁用失败:', err);
-      toast.error('禁用失败：' + err.message);
+      toast.error(err.message || '禁用失败');
     } finally {
       setSubmitting(false);
     }
@@ -198,7 +198,7 @@ export function InvitationList() {
       }));
     } catch (err) {
       console.error('恢复失败:', err);
-      toast.error('恢复失败：' + err.message);
+      toast.error(err.message || '恢复失败');
     } finally {
       setSubmitting(false);
     }

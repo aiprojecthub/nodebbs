@@ -58,7 +58,7 @@ export default function MessagesPage() {
     } catch (err) {
       console.error('获取会话列表失败:', err);
       setError(err.message);
-      toast.error('获取会话列表失败：' + err.message);
+      toast.error(err.message || '获取会话列表失败');
     } finally {
       setLoading(false);
     }
@@ -87,7 +87,7 @@ export default function MessagesPage() {
       setTotal((prev) => prev - 1);
     } catch (err) {
       console.error('删除会话失败:', err);
-      toast.error('删除失败：' + err.message);
+      toast.error(err.message || '删除失败');
     } finally {
       setDeletingUserId(null);
     }
