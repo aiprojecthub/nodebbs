@@ -118,25 +118,10 @@ export default async function categoryRoutes(fastify, options) {
       allCategories = await query.orderBy(categories.name);
     }
 
-    // 检查分类是否私有（包括继承的私有属性）
-    const isPrivateCategory = (category, allCats) => {
-      if (category.isPrivate) return true;
-
-      // 检查父分类是否私有
-      if (category.parentId) {
-        const parent = allCats.find(c => c.id === category.parentId);
-        if (parent) {
-          return isPrivateCategory(parent, allCats);
-        }
-      }
-
-      return false;
-    };
-
     // 过滤私有分类（只有有管理权限的用户可以看到）
     const canManageCategories = await fastify.permission.can(request, 'dashboard.categories');
     if (!canManageCategories) {
-      allCategories = allCategories.filter(cat => !isPrivateCategory(cat, allCategories));
+      allCategories = allCategories.filter(cat => !cat.isPrivate);
     }
 
     // 获取用户允许访问的分类（基于 RBAC 权限）
@@ -230,29 +215,8 @@ export default async function categoryRoutes(fastify, options) {
       return reply.code(404).send({ error: '分类不存在' });
     }
 
-    // 检查分类是否私有（包括继承的私有属性）
-    const checkPrivate = async (cat) => {
-      if (cat.isPrivate) return true;
-      
-      if (cat.parentId) {
-        const [parent] = await db
-          .select()
-          .from(categories)
-          .where(eq(categories.id, cat.parentId))
-          .limit(1);
-        
-        if (parent) {
-          return await checkPrivate(parent);
-        }
-      }
-      
-      return false;
-    };
-
-    const isPrivate = await checkPrivate(category);
-    
     // 如果是私有分类，检查权限
-    if (isPrivate && !await fastify.permission.can(request, 'dashboard.categories')) {
+    if (category.isPrivate && !await fastify.permission.can(request, 'dashboard.categories')) {
       return reply.code(403).send({ error: '无权访问此分类' });
     }
 

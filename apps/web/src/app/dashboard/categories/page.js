@@ -493,7 +493,7 @@ export default function CategoriesManagement() {
                   私有分类
                 </Label>
                 <p className='text-sm text-muted-foreground'>
-                  只有管理员和版主可以查看和发布
+                  私有分类不会出现在前台，仅拥有管理权限的用户可以访问
                 </p>
               </div>
               <Switch

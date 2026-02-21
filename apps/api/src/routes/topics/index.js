@@ -729,12 +729,12 @@ export default async function topicRoutes(fastify, options) {
         categoryId: category.id,
       });
 
-      // 检查私有分类权限（管理员可以在私有分类发帖）
-      if (category.isPrivate && !request.user.isAdmin) {
-        return reply.code(403).send({
-          error: '访问被拒绝',
-          message: '你没有权限在该私有分类中发帖',
-        });
+      // 检查私有分类权限
+      if (category.isPrivate) {
+        const canAccessPrivate = await fastify.permission.can(request, 'dashboard.topics', { categoryId: category.id });
+        if (!canAccessPrivate) {
+          return reply.code(403).send({ error: '没有权限在私有分类中发帖' });
+        }
       }
 
       // 检查是否开启内容审核
