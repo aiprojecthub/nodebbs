@@ -76,7 +76,7 @@ export default async function RootLayout({ children }) {
                 <ProgressBar>
                   <AppLayout apiInfo={apiInfo}>{children}</AppLayout>
                   <AutoCheckIn />
-                  <Toaster/>
+                  <Toaster />
                   <ConfirmPopoverPortal />
                   <ChineseNewYear />
                 </ProgressBar>
