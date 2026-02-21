@@ -26,7 +26,7 @@ import Time from '@/components/common/Time';
 import { usePermission } from '@/hooks/usePermission';
 
 export default function AdminTopicsPage() {
-  const { hasPermission, isAdmin } = usePermission();
+  const { hasPermission, hasCondition } = usePermission();
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -340,7 +340,7 @@ export default function AdminTopicsPage() {
               icon: Trash2,
               variant: 'destructive',
               onClick: (e) => handleDeleteClick(e, row, 'hard'),
-              hidden: !isAdmin,
+              hidden: !hasCondition('dashboard.topics', 'allowPermanent'),
             },
           ]}
         />

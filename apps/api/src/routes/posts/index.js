@@ -1063,9 +1063,15 @@ export default async function postRoutes(fastify, options) {
       return reply.code(400).send({ error: '无法删除第一条帖子，请删除话题' });
     }
 
-    // 只有管理员可以永久删除 (这个保留 isAdmin)
-    if (permanent && !request.user.isAdmin) {
-      return reply.code(403).send({ error: '只有管理员可以永久删除回复' });
+    // 永久删除需要 allowPermanent 条件
+    if (permanent) {
+      const slug = hasDashboardAccess ? 'dashboard.posts' : 'post.delete';
+      const { conditions } = await fastify.permission.check(request, slug, {
+        categoryId: topic?.categoryId,
+      });
+      if (!conditions?.allowPermanent) {
+        return reply.code(403).send({ error: '没有永久删除的权限' });
+      }
     }
 
     if (permanent) {

@@ -1121,13 +1121,17 @@ export default async function topicRoutes(fastify, options) {
         });
       }
 
-      // 仅管理员可以永久删除话题
-      if (permanent && !request.user.isAdmin) {
-        return reply
-          .code(403)
-          .send({
-            error: '只有管理员可以永久删除话题',
-          });
+      // 永久删除需要 allowPermanent 条件
+      if (permanent) {
+        const slug = hasDashboardAccess ? 'dashboard.topics' : 'topic.delete';
+        const { conditions } = await fastify.permission.check(request, slug, {
+          categoryId: topic.categoryId,
+        });
+        if (!conditions?.allowPermanent) {
+          return reply
+            .code(403)
+            .send({ error: '没有永久删除的权限' });
+        }
       }
 
       if (permanent) {

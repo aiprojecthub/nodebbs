@@ -131,6 +131,14 @@ export const CONDITION_TYPES = {
     },
   },
 
+  // ===== 操作级别 =====
+  allowPermanent: {
+    label: '高危操作',
+    type: 'boolean',
+    component: 'switch',
+    description: '是否允许执行高危操作（如永久删除、不可逆变更）。关闭时仅允许常规操作',
+  },
+
   // ===== 上传限制 =====
   maxFileSize: {
     label: '最大文件大小(KB)',
@@ -347,7 +355,7 @@ export const SYSTEM_PERMISSIONS = [
     module: 'dashboard',
     action: 'topics',
     isSystem: true,
-    conditions: ['categories'],
+    conditions: ['categories', 'allowPermanent'],
   },
   {
     slug: 'dashboard.posts',
@@ -355,7 +363,7 @@ export const SYSTEM_PERMISSIONS = [
     module: 'dashboard',
     action: 'posts',
     isSystem: true,
-    conditions: ['categories'],
+    conditions: ['categories', 'allowPermanent'],
   },
   {
     slug: 'dashboard.categories',
@@ -395,7 +403,7 @@ export const SYSTEM_PERMISSIONS = [
     module: 'dashboard',
     action: 'users',
     isSystem: true,
-    conditions: [],
+    conditions: ['allowPermanent'],
   },
   {
     slug: 'dashboard.roles',

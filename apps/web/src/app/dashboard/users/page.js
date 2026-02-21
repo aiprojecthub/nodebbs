@@ -20,7 +20,7 @@ import { BanUserDialog } from './components/BanUserDialog';
 import { usePermission } from '@/hooks/usePermission';
 
 export default function UsersManagement() {
-  const { hasPermission, isAdmin } = usePermission();
+  const { hasPermission, hasCondition } = usePermission();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -301,7 +301,7 @@ export default function UsersManagement() {
             { label: '封禁用户', icon: Ban, variant: 'warning', onClick: () => openBanDialog(user), disabled: !canModifyUser(user), hidden: user.isBanned || !hasPermission('dashboard.users') },
             { separator: true, hidden: !hasPermission('user.delete') },
             { label: '删除', icon: Trash2, variant: 'warning', onClick: (e) => handleDeleteClick(e, user, 'soft'), disabled: !canModifyUser(user), hidden: !hasPermission('user.delete') },
-            { label: '彻底删除', icon: Trash2, variant: 'destructive', onClick: (e) => handleDeleteClick(e, user, 'hard'), disabled: !canModifyUser(user), hidden: !isAdmin },
+            { label: '彻底删除', icon: Trash2, variant: 'destructive', onClick: (e) => handleDeleteClick(e, user, 'hard'), disabled: !canModifyUser(user), hidden: !hasCondition('dashboard.users', 'allowPermanent') },
           ]}
         />
       ),

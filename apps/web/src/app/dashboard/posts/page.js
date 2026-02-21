@@ -23,7 +23,7 @@ import Time from '@/components/common/Time';
 import { usePermission } from '@/hooks/usePermission';
 
 export default function AdminPostsPage() {
-  const { hasPermission, isAdmin } = usePermission();
+  const { hasPermission, hasCondition } = usePermission();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -255,7 +255,7 @@ export default function AdminPostsPage() {
               icon: Trash2,
               variant: 'destructive',
               onClick: (e) => handleDeleteClick(e, row, 'hard'),
-              hidden: !isAdmin,
+              hidden: !hasCondition('dashboard.posts', 'allowPermanent'),
             },
           ]}
         />

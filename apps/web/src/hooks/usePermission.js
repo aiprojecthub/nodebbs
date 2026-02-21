@@ -220,10 +220,24 @@ export function usePermission() {
      */
     const getPermissionConditions = (slug) => {
       if (!user) return null;
-      // 管理员无条件限制，返回空对象表示“无限制”
+      // 管理员无条件限制，返回空对象表示"无限制"
       if (isAdmin) return {};
       const perm = permissions.find(p => p.slug === slug);
       return perm?.conditions || null;
+    };
+
+    /**
+     * 检查用户是否拥有指定权限上的某个条件能力
+     * 管理员默认拥有所有条件能力
+     * @param {string} slug - 权限标识
+     * @param {string} conditionKey - 条件键名（如 'allowPermanent'）
+     * @returns {boolean}
+     */
+    const hasCondition = (slug, conditionKey) => {
+      if (!user) return false;
+      if (isAdmin) return true;
+      const perm = permissions.find(p => p.slug === slug);
+      return !!perm?.conditions?.[conditionKey];
     };
 
     return {
@@ -260,6 +274,7 @@ export function usePermission() {
 
       // 权限条件
       getPermissionConditions,
+      hasCondition,
     };
   }, [user]);
 }

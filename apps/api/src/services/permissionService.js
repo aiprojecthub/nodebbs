@@ -21,6 +21,7 @@ const PERMISSION_CACHE_TTL = 300; // 5 分钟
 const ADMIN_DEFAULT_CONDITIONS = {
   maxFileSize: MAX_UPLOAD_SIZE_ADMIN_KB,
   allowedFileTypes: ['*'],
+  allowPermanent: true,
 };
 
 /**
