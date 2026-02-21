@@ -130,14 +130,6 @@ export default function TopicContent() {
                 <Pin className='inline-block h-5 w-5 text-chart-5 -mt-1' />
               )}
               {topic.title}
-              {topic.isDeleted && (
-                <Badge
-                  variant='outline'
-                  className='ml-3 text-destructive border-destructive text-xs'
-                >
-                  已删除
-                </Badge>
-              )}
             </h1>
 
             {/* 元信息 */}

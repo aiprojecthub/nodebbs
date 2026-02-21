@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Lock, Archive, Loader2 } from 'lucide-react';
+import { Lock, Loader2 } from 'lucide-react';
 import UserAvatar from '@/components/user/UserAvatar';
 import { useReplyForm } from '@/hooks/topic/useReplyForm';
 import { Loading } from '@/components/common/Loading';
@@ -53,21 +53,6 @@ export default function ReplyForm({
 
   return (
     <div className='mt-4 sm:mt-6'>
-      {/* 话题已删除提示 */}
-      {isDeleted && (
-        <div className='mb-4 bg-destructive/10 border border-destructive/30 rounded-lg p-4 flex items-center space-x-3'>
-          <Archive className='h-5 w-5 text-destructive shrink-0' />
-          <div>
-            <p className='text-sm font-medium text-destructive'>
-              此话题已被删除
-            </p>
-            <p className='text-xs text-muted-foreground mt-1'>
-              已删除的话题不能发表新回复。
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* 话题已关闭提示 */}
       {!isDeleted && isClosed && (
         <div className='mb-4 bg-muted border border-border rounded-lg p-4 flex items-center space-x-3'>
