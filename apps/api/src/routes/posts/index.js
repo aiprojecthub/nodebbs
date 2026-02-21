@@ -46,6 +46,7 @@ export default async function postRoutes(fastify, options) {
           page: { type: 'number', default: 1 },
           limit: { type: 'number', default: 20, maximum: 100 },
           search: { type: 'string' },
+          dashboard: { type: 'boolean', default: false },
           // 管理员专用参数
           approvalStatus: { type: 'string', enum: ['all', 'pending', 'approved', 'rejected'] },
           isDeleted: { type: 'boolean' }
@@ -53,12 +54,13 @@ export default async function postRoutes(fastify, options) {
       }
     }
   }, async (request, reply) => {
-    const { 
-      topicId, 
-      userId, 
-      page = 1, 
-      limit = 20, 
+    const {
+      topicId,
+      userId,
+      page = 1,
+      limit = 20,
       search,
+      dashboard = false,
       approvalStatus = 'all',
       isDeleted
     } = request.query;
@@ -83,9 +85,9 @@ export default async function postRoutes(fastify, options) {
 
     // 检查是否具备回复管理权限（版主/管理员）
     const canManagePosts = await fastify.permission.can(request, 'dashboard.posts', { categoryId: topic?.categoryId });
-    
-    // 判断是否为管理员模式：具有管理权限且没有提供 topicId 或 userId
-    const isAdminMode = canManagePosts && !topicId && !userId;
+
+    // 判断是否为管理员模式：具有管理权限且明确声明 dashboard 模式
+    const isAdminMode = canManagePosts && dashboard && !topicId && !userId;
 
     // 非管理身份必须提供 topicId 或 userId
     if (!canManagePosts && !topicId && !userId) {
@@ -119,6 +121,15 @@ export default async function postRoutes(fastify, options) {
     if (isAdminMode) {
       // 排除话题的第一条回复（即话题内容本身）
       whereConditions.push(ne(posts.postNumber, 1));
+
+      // 应用 dashboard.posts 的分类限制
+      const manageCategoryIds = await fastify.permission.getAllowedCategories(request, 'dashboard.posts');
+      if (manageCategoryIds !== null) {
+        if (manageCategoryIds.length === 0) {
+          return { items: [], page, limit, total: 0 };
+        }
+        whereConditions.push(inArray(topics.categoryId, manageCategoryIds));
+      }
 
       // 删除状态过滤逻辑
       if (isDeleted !== undefined) {

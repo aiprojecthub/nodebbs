@@ -59,7 +59,7 @@ export default function AdminTopicsPage() {
       const params = {
         page,
         limit,
-        includeDeleted: true, // 管理员可以看到已删除的话题
+        dashboard: true,
       };
 
       // 添加搜索参数 - 使用防抖后的搜索词

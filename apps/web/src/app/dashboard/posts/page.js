@@ -54,6 +54,7 @@ export default function AdminPostsPage() {
       const params = {
         page,
         limit,
+        dashboard: true,
       };
 
       // 添加搜索参数

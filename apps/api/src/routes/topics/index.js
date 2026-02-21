@@ -130,7 +130,7 @@ export default async function topicRoutes(fastify, options) {
             isPinned: { type: 'boolean' },
             isClosed: { type: 'boolean' },
             isDeleted: { type: 'boolean' },
-            includeDeleted: { type: 'boolean', default: false },
+            dashboard: { type: 'boolean', default: false },
             approvalStatus: {
               type: 'string',
               enum: ['pending', 'approved', 'rejected'],
@@ -155,7 +155,7 @@ export default async function topicRoutes(fastify, options) {
         isPinned,
         isClosed,
         isDeleted,
-        includeDeleted = false,
+        dashboard = false,
         approvalStatus,
         sort = 'latest',
       } = request.query;
@@ -205,12 +205,26 @@ export default async function topicRoutes(fastify, options) {
 
       // 检查是否有管理分类和话题的全集权限通过穿透审核
       const canManageTopics = await fastify.permission.can(request, 'dashboard.topics', { categoryId: categoryId });
-      
+
+      // 是否处于后台管理上下文
+      const isDashboard = dashboard && canManageTopics;
+
+      // 后台管理上下文：应用 dashboard.topics 的分类限制
+      if (isDashboard) {
+        const manageCategoryIds = await fastify.permission.getAllowedCategories(request, 'dashboard.topics');
+        if (manageCategoryIds !== null) {
+          if (manageCategoryIds.length === 0) {
+            return { items: [], page, limit, total: 0 };
+          }
+          conditions.push(inArray(topics.categoryId, manageCategoryIds));
+        }
+      }
+
       if (isDeleted !== undefined) {
         // 明确指定查询已删除或未删除的话题
         conditions.push(eq(topics.isDeleted, isDeleted));
-      } else if (!includeDeleted || !canManageTopics) {
-        // 默认不显示已删除的话题，除非有管理权限且明确要求包含
+      } else if (!isDashboard) {
+        // 前台默认不显示已删除的话题；后台管理上下文自动包含
         conditions.push(eq(topics.isDeleted, false));
       }
 
