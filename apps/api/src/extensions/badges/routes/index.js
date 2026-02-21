@@ -32,9 +32,9 @@ export default async function badgeRoutes(fastify, options) {
   }, async (request, reply) => {
     const { page, limit, category, includeInactive: includeInactiveParam } = request.query;
     
-    const isAdmin = request.user?.isAdmin;
+    const canManage = await fastify.permission.can(request, 'dashboard.extensions');
     // Non-admin users: ignore includeInactive, force false
-    const includeInactive = isAdmin && (includeInactiveParam === true || includeInactiveParam === 'true');
+    const includeInactive = canManage && (includeInactiveParam === true || includeInactiveParam === 'true');
 
     // Public endpoint logic with admin support
     const result = await getBadges({ page, limit, category, includeInactive });

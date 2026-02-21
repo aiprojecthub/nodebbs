@@ -103,9 +103,9 @@ export default async function ledgerRoutes(fastify, options) {
        const offset = (page - 1) * limit;
        
        let filterUserId = req.user.id;
-       const isAdmin = req.user.isAdmin;
+       const canManage = await fastify.permission.can(req, 'dashboard.extensions');
 
-       if (isAdmin) {
+       if (canManage) {
            if (userId) {
                filterUserId = userId; // 管理员查看特定用户
            } else {
@@ -174,7 +174,8 @@ export default async function ledgerRoutes(fastify, options) {
       const { currency = DEFAULT_CURRENCY_CODE, userId } = req.query;
       
       let targetUserId = req.user.id;
-      if (req.user.isAdmin && userId) {
+      const canManage = await fastify.permission.can(req, 'dashboard.extensions');
+      if (canManage && userId) {
           targetUserId = userId;
       }
 
@@ -247,9 +248,9 @@ export default async function ledgerRoutes(fastify, options) {
           description: '获取所有货币配置'
       }
   }, async (req, reply) => {
-      const isAdmin = req.user?.isAdmin;
-      
-      if (!isAdmin) {
+      const canManage = await fastify.permission.can(req, 'dashboard.extensions');
+
+      if (!canManage) {
         // 非管理员只能看到活跃货币，且字段有限 (与 active-currencies 类似，但保持结构一致)
         return db.select({
             code: sysCurrencies.code,

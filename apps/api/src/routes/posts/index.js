@@ -70,32 +70,36 @@ export default async function postRoutes(fastify, options) {
       return { items: [], page, limit, total: 0 };
     }
 
-    // 检查是否为管理员
-    const isAdmin = request.user?.isAdmin;
-    
-    // 判断是否为管理员模式：管理员且没有提供 topicId 或 userId
-    const isAdminMode = isAdmin && !topicId && !userId;
-
-    // 非管理员必须提供 topicId 或 userId
-    if (!isAdmin && !topicId && !userId) {
-      return reply.code(400).send({ error: '必须提供 topicId 或 userId' });
-    }
-
-    // 非管理员不能使用管理员专用参数
-    if (!isAdmin && (approvalStatus !== 'all' || isDeleted !== undefined)) {
-      return reply.code(403).send({ error: '无权限使用管理员参数' });
-    }
-
-    // 如果提供了 topicId，验证话题是否存在
+    let topic = null;
+    // 如果提供了 topicId，提前验证话题是否存在，并获得 categoryId 等信息
     if (topicId) {
-      const [topic] = await db.select().from(topics).where(eq(topics.id, topicId)).limit(1);
+      const result = await db.select().from(topics).where(eq(topics.id, topicId)).limit(1);
+      topic = result[0];
 
       if (!topic) {
         return reply.code(404).send({ error: '话题不存在' });
       }
+    }
 
+    // 检查是否具备回复管理权限（版主/管理员）
+    const canManagePosts = await fastify.permission.can(request, 'dashboard.posts', { categoryId: topic?.categoryId });
+    
+    // 判断是否为管理员模式：具有管理权限且没有提供 topicId 或 userId
+    const isAdminMode = canManagePosts && !topicId && !userId;
+
+    // 非管理身份必须提供 topicId 或 userId
+    if (!canManagePosts && !topicId && !userId) {
+      return reply.code(400).send({ error: '必须提供 topicId 或 userId' });
+    }
+
+    // 非具有管理权限的人不能使用审核管理专用参数
+    if (!canManagePosts && (approvalStatus !== 'all' || isDeleted !== undefined)) {
+      return reply.code(403).send({ error: '无权限使用管理员参数' });
+    }
+
+    if (topic) {
       // 只有管理员和版主可以查看已删除话题的回复
-      if (topic.isDeleted && !isAdmin) {
+      if (topic.isDeleted && !canManagePosts) {
         return reply.code(404).send({ error: '话题不存在' });
       }
 
@@ -204,7 +208,7 @@ export default async function postRoutes(fastify, options) {
       // 1. 管理员/版主可以看到所有状态
       // 2. 用户可以看到：已批准的回复 或 自己的回复（无论状态）
       // 3. 未登录用户只能看到已批准的回复
-      if (!isAdmin) {
+      if (!canManagePosts) {
         if (request.user) {
           // 登录用户：显示已批准的回复 或 自己的回复
           whereConditions.push(
@@ -220,8 +224,8 @@ export default async function postRoutes(fastify, options) {
       }
       // 管理员/版主：不添加过滤条件，显示所有回复
 
-      // 过滤已封禁用户的回复（非管理员）
-      if (!isAdmin) {
+      // 过滤已封禁用户的回复（非管理员/版主）
+      if (!canManagePosts) {
         whereConditions.push(eq(users.isBanned, false));
       }
 
@@ -289,8 +293,8 @@ export default async function postRoutes(fastify, options) {
       // 复用之前查询的 blockedUserIds（已在第121-154行处理）
       // 无需重复查询数据库
 
-      // 1. 统一应用可见性规则（如隐藏被封禁用户的头像）
-      applyUserInfoVisibility(postsList, isAdmin);
+      // 1. 统一应用可见性规则（如隐藏被封禁用户的头像，版主除外）
+      applyUserInfoVisibility(postsList, canManagePosts);
 
       postsList.forEach(post => {
         // 2. 标记被拉黑用户的帖子（仅在话题详情页）
@@ -343,8 +347,8 @@ export default async function postRoutes(fastify, options) {
         .innerJoin(users, eq(posts.userId, users.id))
         .where(inArray(posts.id, replyToPostIds));
       
-      // 如果被回复的用户被封禁且访问者不是管理员/版主，隐藏头像
-      applyUserInfoVisibility(replyToPosts, isAdmin);
+      // 如果被回复的用户被封禁且访问者不是具有管理权限的人员，隐藏头像
+      applyUserInfoVisibility(replyToPosts, canManagePosts);
       
       const replyToPostMap = new Map(replyToPosts.map(p => [p.id, p]));
       
@@ -440,7 +444,7 @@ export default async function postRoutes(fastify, options) {
     const { id } = request.params;
     const { topicId, limit = 20 } = request.query;
 
-    const isAdmin = request.user?.isAdmin;
+    const canManagePosts = await fastify.permission.can(request, 'dashboard.posts');
 
     // 检查查看权限 (post.read)
     const canRead = await fastify.permission.hasPermission(request.user?.id, 'post.read');
@@ -471,7 +475,7 @@ export default async function postRoutes(fastify, options) {
     ];
 
     // 3. 应用审核状态过滤 (与列表逻辑一致)
-    if (!isAdmin) {
+    if (!canManagePosts) {
       if (request.user) {
         whereConditions.push(
           or(
@@ -558,7 +562,7 @@ export default async function postRoutes(fastify, options) {
   }, async (request, reply) => {
     const { id } = request.params;
 
-    const isAdmin = request.user?.isAdmin;
+    const canManagePosts = await fastify.permission.can(request, 'dashboard.posts');
 
     // 检查查看权限 (post.read)
     const canRead = await fastify.permission.hasPermission(request.user?.id, 'post.read');
@@ -602,7 +606,7 @@ export default async function postRoutes(fastify, options) {
     }
 
     // 如果用户被封禁且访问者不是管理员/版主，隐藏头像
-    if (shouldHideUserInfo({ isBanned: post.userIsBanned }, isAdmin)) {
+    if (shouldHideUserInfo({ isBanned: post.userIsBanned }, canManagePosts)) {
       post.userAvatar = null;
     }
     delete post.userIsBanned;
@@ -944,8 +948,8 @@ export default async function postRoutes(fastify, options) {
     let needsReapproval = false; // 区分是已批准内容的编辑还是被拒绝内容的重新提交
     const previousStatus = post.approvalStatus;
 
-    // 如果内容审核开启，且编辑者是普通用户（非管理员）
-    if (contentModerationEnabled && isOwner && !request.user.isAdmin) {
+    // 如果内容审核开启，且编辑者是普通用户（没有 dashboard.posts 审查权限）
+    if (contentModerationEnabled && isOwner && !hasDashboardAccess) {
       // 已批准的回复编辑后需要重新审核
       if (previousStatus === 'approved') {
         updates.approvalStatus = 'pending';
@@ -1059,7 +1063,7 @@ export default async function postRoutes(fastify, options) {
       return reply.code(400).send({ error: '无法删除第一条帖子，请删除话题' });
     }
 
-    // 只有管理员可以永久删除
+    // 只有管理员可以永久删除 (这个保留 isAdmin)
     if (permanent && !request.user.isAdmin) {
       return reply.code(403).send({ error: '只有管理员可以永久删除回复' });
     }

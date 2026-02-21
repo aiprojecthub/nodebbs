@@ -50,11 +50,11 @@ export default async function emailProvidersRoutes(fastify, options) {
     },
     async (request, reply) => {
       try {
-        const isAdmin = request.user?.isAdmin;
+        const canManage = await fastify.permission.can(request, 'dashboard.settings');
 
         let items;
 
-        if (isAdmin) {
+        if (canManage) {
           const results = await db
             .select()
             .from(messageProviders)

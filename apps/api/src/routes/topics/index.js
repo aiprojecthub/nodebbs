@@ -203,13 +203,14 @@ export default async function topicRoutes(fastify, options) {
         conditions.push(like(topics.title, `%${search.trim()}%`));
       }
 
-      // 管理员可以查看已删除的话题
-      const isAdmin = request.user?.isAdmin;
+      // 检查是否有管理分类和话题的全集权限通过穿透审核
+      const canManageTopics = await fastify.permission.can(request, 'dashboard.topics', { categoryId: categoryId });
+      
       if (isDeleted !== undefined) {
         // 明确指定查询已删除或未删除的话题
         conditions.push(eq(topics.isDeleted, isDeleted));
-      } else if (!includeDeleted || !isAdmin) {
-        // 默认不显示已删除的话题，除非是管理员且明确要求包含
+      } else if (!includeDeleted || !canManageTopics) {
+        // 默认不显示已删除的话题，除非有管理权限且明确要求包含
         conditions.push(eq(topics.isDeleted, false));
       }
 
@@ -217,12 +218,12 @@ export default async function topicRoutes(fastify, options) {
       // 如果是查看自己的话题，显示所有状态
       const isOwnTopics = userId && request.user && userId === request.user.id;
 
-      if (!isAdmin && !isOwnTopics) {
+      if (!canManageTopics && !isOwnTopics) {
         conditions.push(eq(topics.approvalStatus, 'approved'));
       }
 
       // 过滤已封禁用户的话题（非管理员）
-      if (!isAdmin) {
+      if (!canManageTopics) {
         conditions.push(eq(users.isBanned, false));
       }
 
@@ -271,7 +272,7 @@ export default async function topicRoutes(fastify, options) {
       }
 
       // 过滤私有分类（只有管理员和版主可以看到）
-      if (!isAdmin) {
+      if (!canManageTopics) {
         conditions.push(eq(categories.isPrivate, false));
       }
 
@@ -376,13 +377,13 @@ export default async function topicRoutes(fastify, options) {
 
       // 根据用户权限过滤敏感字段
       const finalResults = results.map((topic) => {
-        // 如果用户被封禁且访问者不是管理员/版主，隐藏头像
-        if (bannedUserIds.has(topic.userId) && !isAdmin) {
+        // 如果用户被封禁且访问者不是具有用户管理权限的用户，隐藏头像
+        if (bannedUserIds.has(topic.userId) && !canManageTopics) {
           topic.userAvatar = null;
         }
 
         // 管理员和版主可以看到所有字段
-        if (isAdmin) {
+        if (canManageTopics) {
           return topic;
         }
 
@@ -463,11 +464,12 @@ export default async function topicRoutes(fastify, options) {
     async (request, reply) => {
       const { id } = request.params;
 
-      const isAdmin = request.user?.isAdmin;
+      // 注意：这里由于还未获得 topic 实体，先使用全局的管理鉴定。对于获取具体某个话题的场景下这在大多数时候是足够的，或者之后再次验证
+      let canManageTopics = await fastify.permission.can(request, 'dashboard.topics');
 
-      // 构建查询条件：管理员和版主可以查看已删除的话题
+      // 构建查询条件：版主可看已删除话题
       const conditions = [eq(topics.id, id)];
-      if (!isAdmin) {
+      if (!canManageTopics) {
         conditions.push(eq(topics.isDeleted, false));
       }
 
@@ -509,8 +511,13 @@ export default async function topicRoutes(fastify, options) {
 
       const isAuthor = request.user && request.user.id === topic.userId;
 
-      // 检查私有分类访问权限
-      if (topic.categoryIsPrivate && !isAdmin) {
+      // 检查私有分类访问权限（版主也可以穿透私有分类查询）
+      // 在获取到 topic 包含的 categoryId 后如果需要的话重新验证一次管理分类的特权
+      if (!canManageTopics) {
+        canManageTopics = await fastify.permission.can(request, 'dashboard.topics', { categoryId: topic.categoryId });
+      }
+
+      if (topic.categoryIsPrivate && !canManageTopics) {
         return reply.code(404).send({ error: '话题不存在' });
       }
 
@@ -519,13 +526,13 @@ export default async function topicRoutes(fastify, options) {
         return reply.code(404).send({ error: '话题不存在' });
       }
 
-      // 检查访问权限：待审核或已拒绝的话题只有版主/管理员或作者本人可以访问
-      if (topic.approvalStatus !== 'approved' && !isAdmin && !isAuthor) {
+      // 检查访问权限：待审核或已拒绝的话题只有版主或作者本人可以访问
+      if (topic.approvalStatus !== 'approved' && !canManageTopics && !isAuthor) {
         return reply.code(404).send({ error: '话题不存在' });
       }
 
-      // 检查已删除话题的访问权限：只有管理员和版主可以查看
-      if (topic.isDeleted && !isAdmin) {
+      // 检查已删除话题的访问权限：只有版主可以查看
+      if (topic.isDeleted && !canManageTopics) {
         return reply.code(404).send({ error: '话题不存在' });
       }
 
@@ -645,7 +652,7 @@ export default async function topicRoutes(fastify, options) {
         firstPostId: firstPost?.id,
         firstPostLikeCount: firstPost?.likeCount || 0,
         // 如果被封禁则覆盖头像
-        userAvatar: shouldHideUserInfo({ isBanned: topic.userIsBanned }, isAdmin) ? null : topic.userAvatar,
+        userAvatar: shouldHideUserInfo({ isBanned: topic.userIsBanned }, canManageTopics) ? null : topic.userAvatar,
 
         isFirstPostLiked,
         editCount: firstPost?.editCount || 0,

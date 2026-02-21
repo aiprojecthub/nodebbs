@@ -81,11 +81,11 @@ export default async function oauthRoutes(fastify, options) {
     },
     async (request, reply) => {
       try {
-        const isAdmin = request.user?.isAdmin;
+        const canManage = await fastify.permission.can(request, 'dashboard.settings');
 
         let items;
 
-        if (isAdmin) {
+        if (canManage) {
           items = await db
             .select()
             .from(oauthProviders)

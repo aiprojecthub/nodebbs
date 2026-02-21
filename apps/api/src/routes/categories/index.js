@@ -133,8 +133,9 @@ export default async function categoryRoutes(fastify, options) {
       return false;
     };
 
-    // 过滤私有分类（只有管理员可以看到）
-    if (!user?.isAdmin) {
+    // 过滤私有分类（只有有管理权限的用户可以看到）
+    const canManageCategories = await fastify.permission.can(request, 'dashboard.categories');
+    if (!canManageCategories) {
       allCategories = allCategories.filter(cat => !isPrivateCategory(cat, allCategories));
     }
 
@@ -251,7 +252,7 @@ export default async function categoryRoutes(fastify, options) {
     const isPrivate = await checkPrivate(category);
     
     // 如果是私有分类，检查权限
-    if (isPrivate && !user?.isAdmin) {
+    if (isPrivate && !await fastify.permission.can(request, 'dashboard.categories')) {
       return reply.code(403).send({ error: '无权访问此分类' });
     }
 

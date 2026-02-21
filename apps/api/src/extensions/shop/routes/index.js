@@ -39,9 +39,9 @@ export default async function shopRoutes(fastify, options) {
     try {
       const { page, limit, type, includeInactive: includeInactiveParam } = request.query;
       
-      const isAdmin = request.user?.isAdmin;
+      const canManage = await fastify.permission.can(request, 'dashboard.extensions');
       // Non-admin users: ignore includeInactive, force false
-      const includeInactive = isAdmin && (includeInactiveParam === true || includeInactiveParam === 'true');
+      const includeInactive = canManage && (includeInactiveParam === true || includeInactiveParam === 'true');
       
       const result = await getShopItems({ page, limit, type, includeInactive });
       return result;

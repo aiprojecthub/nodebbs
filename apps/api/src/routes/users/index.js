@@ -352,11 +352,11 @@ export default async function userRoutes(fastify, options) {
     }
 
     // 检查访问者权限
-    const isAdmin = request.user?.isAdmin;
+    const canManageUsers = await permission.can(request, 'dashboard.users');
     const isOwner = request.user?.id === user.id;
 
-    // 如果用户已被删除且访问者不是管理员，返回 404
-    if (user.isDeleted && !isAdmin) {
+    // 如果用户已被删除且访问者没有管理权限，返回 404
+    if (user.isDeleted && !canManageUsers) {
       return reply.code(404).send({ error: '用户不存在' });
     }
 
@@ -364,17 +364,17 @@ export default async function userRoutes(fastify, options) {
     // 统一返回 404 避免信息泄露（不区分"不公开"和"需要登录"）
     // everyone: 所有人可见
     // authenticated: 仅登录用户可见
-    // private: 仅自己和管理员可见
+    // private: 仅自己和有管理权限的用户可见
     const visibility = user.contentVisibility || 'everyone';
-    if (visibility === 'private' && !isOwner && !isAdmin) {
+    if (visibility === 'private' && !isOwner && !canManageUsers) {
       return reply.code(404).send({ error: '用户不存在' });
     }
-    if (visibility === 'authenticated' && !request.user && !isAdmin) {
+    if (visibility === 'authenticated' && !request.user && !canManageUsers) {
       return reply.code(404).send({ error: '用户不存在' });
     }
 
-    // 如果用户被封禁且访问者不是管理员，隐藏头像
-    if (user.isBanned && !isAdmin) {
+    // 如果用户被封禁且访问者没有管理权限，隐藏头像
+    if (user.isBanned && !canManageUsers) {
       user.avatar = null;
     }
 
@@ -931,12 +931,12 @@ export default async function userRoutes(fastify, options) {
       .limit(limit)
       .offset(offset);
 
-    // 检查用户权限
-    const isAdmin = request.user?.isAdmin;
-    
-    // 如果用户被封禁且访问者不是管理员/版主，隐藏头像
+    // 检查用户权限：能否查看被封禁人员头像（通常为具有用户管理权限的人）
+    const canManageUsers = await fastify.permission.can(request, 'dashboard.users');
+
+    // 如果用户被封禁且访问者无权查看，隐藏头像
     followers.forEach(follower => {
-      if (follower.isBanned && !isAdmin) {
+      if (follower.isBanned && !canManageUsers) {
         follower.avatar = null;
       }
       delete follower.isBanned;
@@ -1004,12 +1004,12 @@ export default async function userRoutes(fastify, options) {
       .limit(limit)
       .offset(offset);
 
-    // 检查用户权限
-    const isAdmin = request.user?.isAdmin;
-    
-    // 如果用户被封禁且访问者不是管理员/版主，隐藏头像
+    // 检查用户权限：能否查看被封禁人员头像（通常为具有用户管理权限的人）
+    const canManageUsers = await fastify.permission.can(request, 'dashboard.users');
+
+    // 如果被关注用户被封禁且访问者无权查看，隐藏头像
     following.forEach(followedUser => {
-      if (followedUser.isBanned && !isAdmin) {
+      if (followedUser.isBanned && !canManageUsers) {
         followedUser.avatar = null;
       }
       delete followedUser.isBanned;
@@ -1067,13 +1067,12 @@ export default async function userRoutes(fastify, options) {
       return reply.code(404).send({ error: '用户不存在' });
     }
 
-    // 隐私检查：只有本人或管理员/版主可以查看收藏列表
+    // 隐私检查：只有本人或具有用户管理权限的用户可以查看收藏列表
     const currentUser = request.user;
     const isOwner = currentUser && currentUser.id === user.id;
-    const isAdmin =
-      currentUser?.isAdmin;
+    const canManageUsers = await fastify.permission.can(request, 'dashboard.users');
 
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !canManageUsers) {
       return reply.code(403).send({ error: '无权查看该用户的收藏列表' });
     }
     
@@ -1124,11 +1123,11 @@ export default async function userRoutes(fastify, options) {
       .limit(limit)
       .offset(offset);
 
-    // 检查用户权限（isAdmin 已在上文定义）
+    // 检查用户权限（canManageUsers 已在上文定义）
     
-    // 如果话题作者被封禁且访问者不是管理员/版主，隐藏头像
+    // 如果话题作者被封禁且访问者无权查看，隐藏头像
     bookmarkedTopics.forEach(topic => {
-      if (topic.userIsBanned && !isAdmin) {
+      if (topic.userIsBanned && !canManageUsers) {
         topic.userAvatar = null;
       }
       delete topic.userIsBanned;
