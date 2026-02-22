@@ -4,13 +4,13 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createIPX, ipxFSStorage, createIPXNodeServer } from 'ipx';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
 
 // 创建 IPX 实例，指定 uploads 目录为存储源 https://github.com/unjs/ipx
 const ipx = createIPX({
   storage: ipxFSStorage({
-    dir: path.join(__dirname, '..', '..', 'uploads'), // 与原 root 路径一致
+    dir: uploadsDir,
   }),
 });
 
@@ -46,7 +46,7 @@ async function staticPlugin(fastify, options) {
 
   // 保留原始静态文件服务（可选）
   fastify.register(fastifyStatic, {
-    root: path.join(__dirname, '..', '..', 'uploads'),
+    root: uploadsDir,
     prefix: '/uploads/',
   });
 }

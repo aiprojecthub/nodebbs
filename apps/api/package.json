@@ -23,6 +23,9 @@
   "dependencies": {
     "@alicloud/dysmsapi20170525": "^4.5.0",
     "@alicloud/openapi-client": "^0.4.15",
+    "@aws-sdk/client-s3": "^3.995.0",
+    "@aws-sdk/lib-storage": "^3.995.0",
+    "@aws-sdk/s3-request-presigner": "^3.995.0",
     "@dotenvx/dotenvx": "^1.52.0",
     "@fastify/autoload": "^6.3.1",
     "@fastify/cookie": "^11.0.2",

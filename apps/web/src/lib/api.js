@@ -809,6 +809,34 @@ export const smsConfigApi = {
   },
 };
 
+// ============= 存储服务配置 API =============
+export const storageConfigApi = {
+  // 管理员：获取所有存储服务配置
+  async getAllProviders() {
+    return apiClient.get('/storage-providers');
+  },
+
+  // 管理员：更新存储服务配置
+  async updateProvider(slug, data) {
+    return apiClient.patch(`/storage-providers/${slug}`, data);
+  },
+
+  // 管理员：测试存储服务连接
+  async testProvider(slug) {
+    return apiClient.post(`/storage-providers/${slug}/test`);
+  },
+
+  // 管理员：创建存储服务商
+  async createProvider(data) {
+    return apiClient.post('/storage-providers', data);
+  },
+
+  // 管理员：删除存储服务商
+  async deleteProvider(slug) {
+    return apiClient.delete(`/storage-providers/${slug}`);
+  },
+};
+
 // ============= CAPTCHA 配置 API =============
 export const captchaConfigApi = {
   // 获取当前 CAPTCHA 配置（公开）
@@ -839,17 +867,78 @@ export const dashboardApi = {
 };
 
 // ============= 通用上传 API =============
+function getImageDimensions(file) {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith('image/') || file.type === 'image/svg+xml') {
+      return resolve({ width: null, height: null });
+    }
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: null, height: null });
+    };
+    img.src = url;
+  });
+}
+
 export const uploadApi = {
   async upload(file, category = 'assets') {
+    // 1. 尝试获取预签名 URL
+    try {
+      const presignResult = await apiClient.post('/upload/presign', {
+        filename: file.name,
+        mimetype: file.type,
+        size: file.size,
+        category,
+      });
+
+      if (presignResult.mode === 'presigned') {
+        // 2. 客户端直传到云存储
+        const putResponse = await fetch(presignResult.uploadUrl, {
+          method: 'PUT',
+          headers: presignResult.headers || {},
+          body: file,
+        });
+
+        if (!putResponse.ok) {
+          throw new Error('直传上传失败');
+        }
+
+        // 3. 提取图片宽高
+        const { width, height } = await getImageDimensions(file);
+
+        // 4. 确认上传完成
+        return apiClient.post('/upload/confirm', {
+          key: presignResult.key,
+          filename: presignResult.filename,
+          originalName: file.name,
+          mimetype: file.type,
+          size: file.size,
+          category,
+          provider: presignResult.provider,
+          width,
+          height,
+        });
+      }
+    } catch (err) {
+      // presign 失败，降级到服务端上传
+      console.warn('Presign failed, falling back to server upload:', err.message);
+    }
+
+    // 降级：服务端上传
     const formData = new FormData();
     formData.append('file', file);
 
-    // 构建 URL，包含 category 参数
     const url = `${apiClient.baseURL}/upload?category=${category}`;
 
     const response = await fetch(url, {
       method: 'POST',
-      credentials: 'include', // 携带 Cookie
+      credentials: 'include',
       body: formData,
     });
 

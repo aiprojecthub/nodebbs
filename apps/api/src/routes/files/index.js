@@ -1,7 +1,4 @@
-import fs from 'fs';
-import path from 'path';
 import { eq, desc, and, like, sql } from 'drizzle-orm';
-import { dirname } from '../../utils/index.js';
 import { files, users } from '../../db/schema.js';
 
 export default async function filesRoutes(fastify) {
@@ -184,14 +181,14 @@ export default async function filesRoutes(fastify) {
       return reply.code(404).send({ error: '文件不存在' });
     }
 
-    // 删除物理文件
-    const __dirname = dirname(import.meta.url);
-    const filepath = path.join(__dirname, '../../../uploads', file.category, file.filename);
+    // 删除物理文件（根据 provider 分派）
+    const fileProvider = file.provider || 'local';
     try {
-      await fs.promises.unlink(filepath);
+      const storageKey = `${file.category}/${file.filename}`;
+      await fastify.storage.delete(storageKey, fileProvider);
     } catch (err) {
-      // 文件可能已经不存在，记录日志但继续删除数据库记录
-      fastify.log.warn(`Failed to delete physical file: ${filepath}`, err.message);
+      // 文件可能已经不存在，或 provider 不可用，记录日志但继续删除数据库记录
+      fastify.log.warn(`Failed to delete file from ${fileProvider}: ${file.filename}`, err.message);
     }
 
     // 删除数据库记录

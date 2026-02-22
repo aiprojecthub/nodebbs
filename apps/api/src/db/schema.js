@@ -857,6 +857,9 @@ export const files = pgTable(
     width: integer('width'),
     height: integer('height'),
 
+    // 存储服务商标识（记录文件存储在哪个服务商，便于旧文件读取）
+    provider: varchar('provider', { length: 50 }).default('local'),
+
     // 扩展元数据（JSON）
     metadata: text('metadata'), // blurhash, exif, duration 等
 
@@ -921,6 +924,9 @@ export * from '../extensions/ads/schema.js';
 
 // ============ Message System (消息系统) ============
 export * from '../plugins/message/schema.js';
+
+// ============ Storage System (存储系统) ============
+export * from '../plugins/storage/schema.js';
 
 // ============ RBAC System (权限系统) ============
 export * from './rbac-schema.js';

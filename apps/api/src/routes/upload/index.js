@@ -86,19 +86,20 @@ export default async function uploadRoutes(fastify) {
       return reply.code(400).send({ error: '文件内容与后缀不匹配，请上传正确的图片文件' });
     }
 
-    // 5. 生成唯一文件名
+    // 5. 生成唯一文件名和存储 key
     const filename = `${randomUUID()}.${ext}`;
+    const storageKey = `${category}/${filename}`;
 
-    // 6. 确保上传子目录存在
+    // 6. 先将文件流缓存到临时文件（用于大小检查和图片元数据提取）
     const __dirname = dirname(import.meta.url);
-    const uploadDir = path.join(__dirname, '../../../uploads', category);
-    await fs.promises.mkdir(uploadDir, { recursive: true });
-    const filepath = path.join(uploadDir, filename);
+    const tmpDir = path.join(__dirname, '../../../uploads', '.tmp');
+    await fs.promises.mkdir(tmpDir, { recursive: true });
+    const tmpPath = path.join(tmpDir, filename);
 
-    // 7. 保存文件并实施流式大小实时监控（Fusing 熔断机制）
+    // 7. 保存到临时文件并实施流式大小实时监控（Fusing 熔断机制）
     let byteCount = 0;
     const maxSizeBytes = maxFileSizeKB * 1024;
-    const writeStream = fs.createWriteStream(filepath);
+    const writeStream = fs.createWriteStream(tmpPath);
 
     try {
       // 使用 Transform 流进行流量监控（避免双重消费流）
@@ -116,9 +117,9 @@ export default async function uploadRoutes(fastify) {
 
       await pipeline(data.file, monitor, writeStream);
     } catch (err) {
-      // 捕获异常并清理可能已创建的部分文件
+      // 捕获异常并清理临时文件
       try {
-        await fs.promises.unlink(filepath);
+        await fs.promises.unlink(tmpPath);
       } catch (e) {
         // Ignore if file doesn't exist
       }
@@ -141,7 +142,7 @@ export default async function uploadRoutes(fastify) {
     let height = null;
     if (data.mimetype.startsWith('image/') && !['image/svg+xml'].includes(data.mimetype)) {
       try {
-        const imageMetadata = await sharp(filepath).metadata();
+        const imageMetadata = await sharp(tmpPath).metadata();
         width = imageMetadata.width || null;
         height = imageMetadata.height || null;
       } catch (err) {
@@ -149,8 +150,28 @@ export default async function uploadRoutes(fastify) {
       }
     }
 
-    // 9. 保存文件记录到数据库
-    const url = `/uploads/${category}/${filename}`;
+    // 9. 通过 storage 插件上传文件到目标存储
+    let storageResult;
+    try {
+      storageResult = await fastify.storage.uploadFromFile(tmpPath, storageKey, {
+        mimetype: data.mimetype,
+        size: byteCount,
+      });
+    } catch (err) {
+      fastify.log.error('Storage upload error:', err);
+      return reply.code(500).send({ error: '文件上传失败' });
+    } finally {
+      // 清理临时文件（本地存储已 rename，unlink 会静默失败）
+      try {
+        await fs.promises.unlink(tmpPath);
+      } catch (e) {
+        // Ignore
+      }
+    }
+
+    // 10. 保存文件记录到数据库
+    const url = storageResult.url;
+    const provider = storageResult.provider;
     const [file] = await fastify.db.insert(files).values({
       userId: request.user.id,
       filename,
@@ -161,9 +182,10 @@ export default async function uploadRoutes(fastify) {
       size: byteCount,
       width,
       height,
+      provider,
     }).returning();
 
-    // 10. 返回访问 URL 和文件元数据
+    // 11. 返回访问 URL 和文件元数据
     return {
       id: file.id,
       url,
@@ -174,6 +196,164 @@ export default async function uploadRoutes(fastify) {
       size: byteCount,
       width,
       height,
+    };
+  });
+
+  // ============= 预签名上传：获取直传 URL =============
+  fastify.post('/presign', {
+    preHandler: [fastify.authenticate],
+    schema: {
+      tags: ['upload'],
+      description: '获取预签名上传 URL（客户端直传）',
+      security: [{ bearerAuth: [] }],
+      body: {
+        type: 'object',
+        required: ['filename', 'mimetype', 'size'],
+        properties: {
+          filename: { type: 'string' },
+          mimetype: { type: 'string' },
+          size: { type: 'number' },
+          category: {
+            type: 'string',
+            enum: ['assets', 'avatars', 'badges', 'topics', 'items', 'frames', 'emojis'],
+            default: 'assets'
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const { filename: originalName, mimetype, size } = request.body;
+    const category = request.body.category || 'assets';
+
+    // 1. 鉴权 + RBAC 权限检查
+    let conditions = {};
+    try {
+      const result = await fastify.permission.check(request, `upload.${category}`);
+      conditions = result.conditions || {};
+    } catch (err) {
+      return reply.code(403).send({ error: err.message });
+    }
+
+    // 2. 验证文件大小
+    const maxFileSizeKB = conditions.maxFileSize || MAX_UPLOAD_SIZE_DEFAULT_KB;
+    const maxSizeBytes = maxFileSizeKB * 1024;
+    if (size > maxSizeBytes) {
+      const readableLimit = maxFileSizeKB >= 1024 ? (maxFileSizeKB / 1024).toFixed(1) + 'MB' : maxFileSizeKB + 'KB';
+      return reply.code(400).send({ error: `文件大小超过限制，当前等级最大允许 ${readableLimit}` });
+    }
+
+    // 3. 验证文件后缀
+    const ext = path.extname(originalName).toLowerCase().replace('.', '');
+    if (!ext) {
+      return reply.code(400).send({ error: '文件必须包含扩展名' });
+    }
+    const rawAllowedTypes = conditions.allowedFileTypes;
+    const allowedExts = rawAllowedTypes?.includes('*')
+      ? null
+      : (rawAllowedTypes || DEFAULT_ALLOWED_EXTENSIONS);
+    if (allowedExts && !allowedExts.includes(ext)) {
+      return reply.code(400).send({ error: `不支持的文件类型，允许：${allowedExts.join(', ')}` });
+    }
+
+    // 4. 验证 MIME 类型一致性
+    const expectedMimes = EXT_MIME_MAP[ext];
+    if (expectedMimes && !expectedMimes.includes(mimetype)) {
+      return reply.code(400).send({ error: '文件内容与后缀不匹配' });
+    }
+
+    // 5. 生成文件名和 key
+    const newFilename = `${randomUUID()}.${ext}`;
+    const storageKey = `${category}/${newFilename}`;
+
+    // 6. 调用 presign
+    try {
+      const presignResult = await fastify.storage.presign(storageKey, { mimetype });
+      if (!presignResult.supported) {
+        return { mode: 'server' };
+      }
+      return {
+        mode: 'presigned',
+        uploadUrl: presignResult.url,
+        headers: presignResult.headers,
+        key: storageKey,
+        filename: newFilename,
+        provider: presignResult.provider,
+      };
+    } catch (err) {
+      fastify.log.error('Presign error:', err);
+      return { mode: 'server' };
+    }
+  });
+
+  // ============= 预签名上传：确认上传完成 =============
+  fastify.post('/confirm', {
+    preHandler: [fastify.authenticate],
+    schema: {
+      tags: ['upload'],
+      description: '确认客户端直传完成',
+      security: [{ bearerAuth: [] }],
+      body: {
+        type: 'object',
+        required: ['key', 'filename', 'originalName', 'mimetype', 'size', 'category', 'provider'],
+        properties: {
+          key: { type: 'string' },
+          filename: { type: 'string' },
+          originalName: { type: 'string' },
+          mimetype: { type: 'string' },
+          size: { type: 'number' },
+          category: { type: 'string' },
+          provider: { type: 'string' },
+          width: { type: ['integer', 'null'] },
+          height: { type: ['integer', 'null'] },
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const { key, filename, originalName, mimetype, size, category, provider, width, height } = request.body;
+
+    // 1. 校验 key 格式（防路径遍历）
+    if (!/^[a-z]+\/[a-f0-9-]+\.\w+$/.test(key)) {
+      return reply.code(400).send({ error: '无效的文件 key' });
+    }
+
+    // 2. 验证文件确实已上传到存储
+    try {
+      const exists = await fastify.storage.exists(key, provider);
+      if (!exists) {
+        return reply.code(400).send({ error: '文件未找到，请重新上传' });
+      }
+    } catch (err) {
+      fastify.log.error('Confirm exists check error:', err);
+      return reply.code(500).send({ error: '验证文件失败' });
+    }
+
+    // 3. 获取文件 URL
+    const url = await fastify.storage.getUrlAsync(key, provider);
+
+    // 4. 写入数据库
+    const [file] = await fastify.db.insert(files).values({
+      userId: request.user.id,
+      filename,
+      originalName,
+      url,
+      category,
+      mimetype,
+      size,
+      width: width || null,
+      height: height || null,
+      provider,
+    }).returning();
+
+    return {
+      id: file.id,
+      url,
+      filename,
+      originalName,
+      mimetype,
+      category,
+      size,
+      width: width || null,
+      height: height || null,
     };
   });
 }

@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select';
 import { useSettings } from '@/contexts/SettingsContext';
 import { toast } from 'sonner';
-import { Settings, ToggleLeft, Gauge, Layers, MessageSquare, Shield } from 'lucide-react';
+import { Settings, ToggleLeft, Gauge, Layers, MessageSquare, Shield, HardDrive } from 'lucide-react';
 import { Loading } from '@/components/common/Loading';
 import { PageHeader } from '@/components/common/PageHeader';
 
@@ -20,6 +20,7 @@ import { GeneralSettings } from './components/GeneralSettings';
 import { FeatureSettings } from './components/FeatureSettings';
 import { OAuthSettings } from './components/OAuthProviderCard';
 import { MessageSettings } from './components/MessageSettings';
+import { StorageSettings } from './components/StorageProviderCard';
 import { RateLimitSettings } from './components/RateLimitSettings';
 import { CaptchaSettings } from './components/CaptchaSettings';
 
@@ -49,6 +50,12 @@ const tabItems = [
     label: '消息服务',
     shortLabel: '消息',
     icon: MessageSquare,
+  },
+  {
+    value: 'storage',
+    label: '存储服务',
+    shortLabel: '存储',
+    icon: HardDrive,
   },
   {
     value: 'rate-limit',
@@ -192,6 +199,11 @@ export default function SystemSettingsPage() {
         {/* 消息服务配置 Tab */}
         <TabsContent value='message'>
           <MessageSettings />
+        </TabsContent>
+
+        {/* 存储服务配置 Tab */}
+        <TabsContent value='storage'>
+          <StorageSettings />
         </TabsContent>
 
         {/* 访问限速 Tab */}

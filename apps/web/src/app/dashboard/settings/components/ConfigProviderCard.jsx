@@ -73,20 +73,24 @@ export function ConfigProviderCard({
                 className="data-[state=checked]:bg-primary"
               />
             </div>
-            <div className="w-px h-6 bg-border mx-1" />
-            <Button
-              variant={isEditing ? "ghost" : "outline"}
-              size="icon"
-              onClick={isEditing ? onCancelClick : onEditClick}
-              className={cn(
-                "h-8 w-8 transition-all duration-200",
-                isEditing
-                  ? "bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive active:scale-95"
-                  : "active:scale-95"
-              )}
-            >
-              {isEditing ? <X className="h-4 w-4" /> : <Settings2 className="h-4 w-4" />}
-            </Button>
+            {onEditClick && (
+              <>
+                <div className="w-px h-6 bg-border mx-1" />
+                <Button
+                  variant={isEditing ? "ghost" : "outline"}
+                  size="icon"
+                  onClick={isEditing ? onCancelClick : onEditClick}
+                  className={cn(
+                    "h-8 w-8 transition-all duration-200",
+                    isEditing
+                      ? "bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive active:scale-95"
+                      : "active:scale-95"
+                  )}
+                >
+                  {isEditing ? <X className="h-4 w-4" /> : <Settings2 className="h-4 w-4" />}
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
