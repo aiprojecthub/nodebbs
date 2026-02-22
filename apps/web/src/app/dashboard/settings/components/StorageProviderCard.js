@@ -199,6 +199,7 @@ export function StorageSettings() {
               onChange={(e) => setNewProvider({ ...newProvider, displayName: e.target.value })}
               placeholder='如 阿里云 OSS、Cloudflare R2'
             />
+            <p />
           </div>
         </div>
       </FormDialog>
