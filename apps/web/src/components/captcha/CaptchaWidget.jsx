@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+
+// 降级标记 token：当验证服务不可用时，前端发送此值通知后端降级放行
+export const CAPTCHA_UNAVAILABLE_TOKEN = '__captcha_unavailable__';
 import Script from 'next/script';
 import { useCaptchaConfig } from '@/hooks/useCaptcha';
 
@@ -47,6 +50,7 @@ function ReCaptchaV2Widget({ siteKey, onVerify, onExpire, onError, className }) 
       <Script
         src={`https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit`}
         strategy="lazyOnload"
+        onError={() => onError?.()}
       />
       <div ref={containerRef} className={className} />
     </>
@@ -99,6 +103,7 @@ function ReCaptchaV3Widget({ siteKey, action = 'submit', onVerify, className }) 
       <Script
         src={`https://www.google.com/recaptcha/api.js?render=${siteKey}&onload=onRecaptchaV3Load`}
         strategy="lazyOnload"
+        onError={() => onVerify?.(CAPTCHA_UNAVAILABLE_TOKEN)}
       />
       <div className={className} style={{ display: 'none' }} />
     </>
@@ -144,6 +149,7 @@ function HCaptchaWidget({ siteKey, onVerify, onExpire, onError, className }) {
       <Script
         src="https://js.hcaptcha.com/1/api.js?onload=onHcaptchaLoad&render=explicit"
         strategy="lazyOnload"
+        onError={() => onError?.()}
       />
       <div ref={containerRef} className={className} />
     </>
@@ -190,6 +196,7 @@ function TurnstileWidget({ siteKey, onVerify, onExpire, onError, className }) {
       <Script
         src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit"
         strategy="lazyOnload"
+        onError={() => onError?.()}
       />
       <div ref={containerRef} className={className} />
     </>
@@ -249,6 +256,12 @@ export function CaptchaWidget({
 }) {
   const { config, loading, isRequired } = useCaptchaConfig();
 
+  // 验证服务不可用时的降级处理：发送特殊 token 标记
+  const handleCaptchaError = useCallback(() => {
+    console.warn('[CaptchaWidget] 验证服务异常，发送降级标记');
+    onVerify?.(CAPTCHA_UNAVAILABLE_TOKEN);
+  }, [onVerify]);
+
   // 加载中或未配置，不渲染
   if (loading) {
     return null;
@@ -280,7 +293,7 @@ export function CaptchaWidget({
           siteKey={siteKey}
           onVerify={onVerify}
           onExpire={onExpire}
-          onError={onError}
+          onError={handleCaptchaError}
           className={className}
         />
       );
@@ -291,7 +304,7 @@ export function CaptchaWidget({
           siteKey={siteKey}
           onVerify={onVerify}
           onExpire={onExpire}
-          onError={onError}
+          onError={handleCaptchaError}
           className={className}
         />
       );
@@ -302,7 +315,7 @@ export function CaptchaWidget({
           siteKey={siteKey}
           onVerify={onVerify}
           onExpire={onExpire}
-          onError={onError}
+          onError={handleCaptchaError}
           className={className}
         />
       );
@@ -312,7 +325,7 @@ export function CaptchaWidget({
         <CapWidgetWrapper
           config={config}
           onVerify={onVerify}
-          onError={onError}
+          onError={handleCaptchaError}
           className={className}
         />
       );

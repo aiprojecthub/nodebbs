@@ -131,14 +131,19 @@ export class CaptchaService {
 
     try {
       const result = await provider.verify(token, config, ip);
+
+      // 服务端请求错误（网络不通、配置错误等）→ 降级放行
+      // 仅当验证服务本身不可用时放行，明确的验证失败（token 无效）仍然阻断
+      if (!result.success && result.reason === 'request_error') {
+        console.warn(`[CAPTCHA] 验证服务不可用，降级放行: provider=${config.provider}, scene=${scene}`);
+        return { success: true, skipReason: 'service_unavailable_fallback' };
+      }
+
       return result;
     } catch (error) {
-      console.error(`[CAPTCHA] 验证异常: ${error.message}`);
-      return {
-        success: false,
-        reason: 'verification_error',
-        message: '验证服务暂时不可用，请稍后重试',
-      };
+      // 未预期的异常（代码 bug、网络超时等）→ 降级放行，避免阻断用户操作
+      console.error(`[CAPTCHA] 验证异常，降级放行: ${error.message}`);
+      return { success: true, skipReason: 'service_error_fallback' };
     }
   }
 
