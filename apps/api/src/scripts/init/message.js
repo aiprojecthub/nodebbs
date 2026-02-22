@@ -17,7 +17,6 @@ export const MESSAGE_PROVIDERS = [
     channel: 'email',
     provider: 'smtp',
     isEnabled: false,
-    isDefault: false,
     displayName: 'SMTP',
     displayOrder: 1,
     config: JSON.stringify({
@@ -34,7 +33,6 @@ export const MESSAGE_PROVIDERS = [
     channel: 'email',
     provider: 'sendgrid',
     isEnabled: false,
-    isDefault: false,
     displayName: 'SendGrid',
     displayOrder: 2,
     config: JSON.stringify({
@@ -48,7 +46,6 @@ export const MESSAGE_PROVIDERS = [
     channel: 'email',
     provider: 'resend',
     isEnabled: false,
-    isDefault: false,
     displayName: 'Resend',
     displayOrder: 3,
     config: JSON.stringify({
@@ -62,7 +59,6 @@ export const MESSAGE_PROVIDERS = [
     channel: 'email',
     provider: 'aliyun',
     isEnabled: false,
-    isDefault: false,
     displayName: '阿里云邮件推送',
     displayOrder: 4,
     config: JSON.stringify({
@@ -81,7 +77,6 @@ export const MESSAGE_PROVIDERS = [
     channel: 'sms',
     provider: 'aliyun',
     isEnabled: false,
-    isDefault: false,
     displayName: '阿里云短信',
     displayOrder: 1,
     config: JSON.stringify({
@@ -104,7 +99,6 @@ export const MESSAGE_PROVIDERS = [
     channel: 'sms',
     provider: 'tencent',
     isEnabled: false,
-    isDefault: false,
     displayName: '腾讯云短信',
     displayOrder: 2,
     config: JSON.stringify({

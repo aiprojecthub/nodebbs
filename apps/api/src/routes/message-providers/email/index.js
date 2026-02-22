@@ -34,7 +34,6 @@ export default async function emailProvidersRoutes(fastify, options) {
                     channel: { type: 'string' },
                     provider: { type: 'string' },
                     isEnabled: { type: 'boolean' },
-                    isDefault: { type: 'boolean' },
                     config: { type: ['object', 'null'], additionalProperties: true },
                     displayName: { type: ['string', 'null'] },
                     displayOrder: { type: 'number' },
@@ -110,7 +109,6 @@ export default async function emailProvidersRoutes(fastify, options) {
           type: 'object',
           properties: {
             isEnabled: { type: 'boolean' },
-            isDefault: { type: 'boolean' },
             config: { type: 'object' },
             displayName: { type: 'string' },
             displayOrder: { type: 'number' },
@@ -144,20 +142,20 @@ export default async function emailProvidersRoutes(fastify, options) {
           return reply.code(404).send({ error: '邮件提供商不存在' });
         }
 
-        if (updateData.isDefault === true) {
+        // 互斥逻辑：启用一个时禁用同渠道其他所有
+        if (updateData.isEnabled === true) {
           await db
             .update(messageProviders)
-            .set({ isDefault: false })
+            .set({ isEnabled: false })
             .where(and(
               eq(messageProviders.channel, CHANNEL),
-              eq(messageProviders.isDefault, true)
+              eq(messageProviders.isEnabled, true)
             ));
         }
 
         const setData = {};
 
         if (updateData.isEnabled !== undefined) setData.isEnabled = updateData.isEnabled;
-        if (updateData.isDefault !== undefined) setData.isDefault = updateData.isDefault;
         if (updateData.displayName !== undefined) setData.displayName = updateData.displayName;
         if (updateData.displayOrder !== undefined) setData.displayOrder = updateData.displayOrder;
         if (updateData.config !== undefined) {

@@ -1067,7 +1067,6 @@ async function docsPlugin(fastify, opts) {
                 description: '提供商类型',
               },
               isEnabled: { type: 'boolean', description: '是否启用' },
-              isDefault: { type: 'boolean', description: '是否为默认' },
               displayName: {
                 type: 'string',
                 nullable: true,

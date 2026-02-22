@@ -53,9 +53,9 @@ export function CaptchaSettings() {
   const updateProvider = (providerName, updates) => {
     setProviders((prev) =>
       prev.map((p) => {
-        // 如果当前更新设置为默认，则取消其他 provider 的默认状态
-        if (updates.isDefault && p.provider !== providerName) {
-          return { ...p, isDefault: false };
+        // 如果当前更新启用了某个 provider，则禁用其他 provider
+        if (updates.isEnabled && p.provider !== providerName) {
+          return { ...p, isEnabled: false };
         }
         // 更新目标 provider
         if (p.provider === providerName) {
@@ -106,7 +106,6 @@ function CaptchaProviderCard({
   const isEditing = editingProvider === provider.provider;
   const [formData, setFormData] = useState({
     isEnabled: provider.isEnabled || false,
-    isDefault: provider.isDefault || false,
     config: provider.config || {},
     enabledScenes: provider.enabledScenes || {},
   });
@@ -116,7 +115,6 @@ function CaptchaProviderCard({
   useEffect(() => {
     setFormData({
       isEnabled: provider.isEnabled || false,
-      isDefault: provider.isDefault || false,
       config: provider.config || {},
       enabledScenes: provider.enabledScenes || {},
     });
@@ -142,10 +140,6 @@ function CaptchaProviderCard({
   const handleToggleEnabled = async (checked) => {
     try {
       const newData = { ...formData, isEnabled: checked };
-      // 如果禁用，同时取消默认
-      if (!checked) {
-        newData.isDefault = false;
-      }
       await captchaConfigApi.updateProvider(provider.provider, newData);
       onUpdate(provider.provider, newData);
       setFormData(newData);
@@ -203,21 +197,17 @@ function CaptchaProviderCard({
       description={description}
       icon={Shield}
       isEnabled={provider.isEnabled}
-      isDefault={provider.isDefault}
       isEditing={isEditing}
       onToggleEnabled={handleToggleEnabled}
       onEditClick={() => {
         setEditingProvider(provider.provider);
         setFormData({
           isEnabled: provider.isEnabled || false,
-          isDefault: provider.isDefault || false,
           config: provider.config || {},
           enabledScenes: provider.enabledScenes || {},
         });
       }}
-      onCancelClick={() => { setEditingProvider(null); setFormData(prev => ({ ...prev, isDefault: provider.isDefault })); }}
-      onToggleDefault={(checked) => setFormData({ ...formData, isDefault: checked })}
-      isDefaultChecked={formData.isDefault}
+      onCancelClick={() => { setEditingProvider(null); }}
       summary={summaryContent}
     >
       <div className="space-y-4 pt-2">

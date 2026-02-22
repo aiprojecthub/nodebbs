@@ -2,7 +2,7 @@
  * CAPTCHA 核心验证服务
  * 管理 CAPTCHA 配置和验证逻辑
  */
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import db from '../../db/index.js';
 import { captchaProviders } from '../../db/schema.js';
 import { ReCaptchaProvider } from './providers/recaptcha.js';
@@ -37,10 +37,7 @@ export class CaptchaService {
     const [provider] = await db
       .select()
       .from(captchaProviders)
-      .where(and(
-        eq(captchaProviders.isEnabled, true),
-        eq(captchaProviders.isDefault, true)
-      ))
+      .where(eq(captchaProviders.isEnabled, true))
       .limit(1);
 
     if (!provider) {
@@ -59,17 +56,16 @@ export class CaptchaService {
     if (!fullConfig) return null;
 
     // 排除敏感信息和内部字段
-    const { 
-      secretKey, 
-      provider, 
-      isEnabled, 
-      isDefault, 
-      displayName, 
+    const {
+      secretKey,
+      provider,
+      isEnabled,
+      displayName,
       enabledScenes,
       siteKey,
       version,
       mode,
-      ...otherConfig 
+      ...otherConfig
     } = fullConfig;
 
     return {
@@ -175,7 +171,6 @@ export class CaptchaService {
     return {
       provider: provider.provider,
       isEnabled: provider.isEnabled,
-      isDefault: provider.isDefault,
       displayName: provider.displayName,
       enabledScenes,
       

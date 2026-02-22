@@ -38,8 +38,9 @@ export function EmailSettings() {
   const updateProvider = (providerName, updates) => {
     setProviders((prev) =>
       prev.map((p) => {
-        if (updates.isDefault && p.provider !== providerName) {
-          return { ...p, isDefault: false };
+        // 如果当前更新启用了某个 provider，则禁用其他 provider
+        if (updates.isEnabled && p.provider !== providerName) {
+          return { ...p, isEnabled: false };
         }
         if (p.provider === providerName) {
           return { ...p, ...updates };
@@ -89,7 +90,6 @@ function EmailProviderCard({
   
   const [formData, setFormData] = useState({
     isEnabled: provider.isEnabled,
-    isDefault: provider.isDefault,
     // 配置字段（存储在 config JSON 中）
     smtpHost: config.smtpHost || '',
     smtpPort: config.smtpPort || 587,
@@ -114,7 +114,6 @@ function EmailProviderCard({
       // 将配置字段打包到 config 对象中
       const updatePayload = {
         isEnabled: formData.isEnabled,
-        isDefault: formData.isDefault,
         config: {
           fromEmail: formData.fromEmail,
           fromName: formData.fromName,
@@ -138,7 +137,6 @@ function EmailProviderCard({
       // 局部更新状态
       onUpdate(provider.provider, {
         isEnabled: formData.isEnabled,
-        isDefault: formData.isDefault,
         config: updatePayload.config,
       });
     } catch (error) {
@@ -172,7 +170,7 @@ function EmailProviderCard({
 
   const handleToggleEnabled = async (checked) => {
     try {
-      const payload = { isEnabled: checked, ...(checked ? {} : { isDefault: false }) };
+      const payload = { isEnabled: checked };
       await emailConfigApi.updateProvider(provider.provider, payload);
       toast.success(checked ? `${provider.displayName} 已启用` : `${provider.displayName} 已禁用`);
       onUpdate(provider.provider, payload);
@@ -199,7 +197,6 @@ function EmailProviderCard({
       title={provider.displayName}
       icon={Mail}
       isEnabled={provider.isEnabled}
-      isDefault={provider.isDefault}
       isEditing={isEditing}
       onToggleEnabled={handleToggleEnabled}
       onEditClick={() => {
@@ -207,7 +204,6 @@ function EmailProviderCard({
         const cfg = provider.config || {};
         setFormData({
           isEnabled: provider.isEnabled,
-          isDefault: provider.isDefault,
           smtpHost: cfg.smtpHost || '',
           smtpPort: cfg.smtpPort || 587,
           smtpSecure: cfg.smtpSecure !== undefined ? cfg.smtpSecure : true,
@@ -219,9 +215,7 @@ function EmailProviderCard({
           apiEndpoint: cfg.apiEndpoint || '',
         });
       }}
-      onCancelClick={() => { setEditingProvider(null); setFormData(prev => ({ ...prev, isDefault: provider.isDefault })); }}
-      onToggleDefault={(checked) => setFormData({ ...formData, isDefault: checked })}
-      isDefaultChecked={formData.isDefault}
+      onCancelClick={() => { setEditingProvider(null); }}
       summary={summaryContent}
     >
       <div className='space-y-4 pt-2'>

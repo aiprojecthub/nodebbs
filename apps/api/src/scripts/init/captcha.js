@@ -13,7 +13,6 @@ const CAPTCHA_PROVIDERS = [
     displayName: 'Google reCAPTCHA',
     displayOrder: 1,
     isEnabled: false,
-    isDefault: false,
     config: JSON.stringify({
       version: 'v2', // v2 或 v3
       siteKey: '',
@@ -30,7 +29,6 @@ const CAPTCHA_PROVIDERS = [
     displayName: 'hCaptcha',
     displayOrder: 2,
     isEnabled: false,
-    isDefault: false,
     config: JSON.stringify({
       siteKey: '',
       secretKey: '',
@@ -45,7 +43,6 @@ const CAPTCHA_PROVIDERS = [
     displayName: 'Cloudflare Turnstile',
     displayOrder: 3,
     isEnabled: false,
-    isDefault: false,
     config: JSON.stringify({
       siteKey: '',
       secretKey: '',
@@ -61,7 +58,6 @@ const CAPTCHA_PROVIDERS = [
     displayName: 'Cap (自托管 PoW)',
     displayOrder: 4,
     isEnabled: false,
-    isDefault: false,
     config: JSON.stringify({
       // Cap Standalone 模式需配置 API 端点
       apiEndpoint: '', // 例如: http://localhost:3000

@@ -24,7 +24,6 @@ export const messageProviders = pgTable(
     // 提供商标识：'smtp', 'sendgrid', 'resend', 'aliyun', 'tencent'
     provider: varchar('provider', { length: 50 }).notNull(),
     isEnabled: boolean('is_enabled').notNull().default(false),
-    isDefault: boolean('is_default').notNull().default(false),
     // 通用配置 JSON，根据提供商类型存储不同字段
     // Email SMTP: { smtpHost, smtpPort, smtpSecure, smtpUser, smtpPassword, fromEmail, fromName }
     // Email API: { apiKey, apiEndpoint, fromEmail, fromName }
@@ -38,7 +37,6 @@ export const messageProviders = pgTable(
     unique('message_providers_channel_provider').on(table.channel, table.provider),
     index('message_providers_channel_idx').on(table.channel),
     index('message_providers_is_enabled_idx').on(table.isEnabled),
-    index('message_providers_is_default_idx').on(table.isDefault),
     index('message_providers_display_order_idx').on(table.displayOrder),
   ]
 );

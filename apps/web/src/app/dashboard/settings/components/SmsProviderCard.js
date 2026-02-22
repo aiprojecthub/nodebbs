@@ -36,8 +36,9 @@ export function SmsSettings() {
   const updateProvider = (providerName, updates) => {
     setProviders((prev) =>
       prev.map((p) => {
-        if (updates.isDefault && p.provider !== providerName) {
-          return { ...p, isDefault: false };
+        // 如果当前更新启用了某个 provider，则禁用其他 provider
+        if (updates.isEnabled && p.provider !== providerName) {
+          return { ...p, isEnabled: false };
         }
         if (p.provider === providerName) {
           return { ...p, ...updates };
@@ -87,7 +88,6 @@ function SmsProviderCard({
   
   const [formData, setFormData] = useState({
     isEnabled: provider.isEnabled,
-    isDefault: provider.isDefault,
     // 阿里云配置
     accessKeyId: config.accessKeyId || '',
     accessKeySecret: config.accessKeySecret || '',
@@ -110,7 +110,6 @@ function SmsProviderCard({
       setSaving(true);
       const updatePayload = {
         isEnabled: formData.isEnabled,
-        isDefault: formData.isDefault,
         config: {
           signName: formData.signName,
           ...(isAliyun && {
@@ -132,7 +131,6 @@ function SmsProviderCard({
       setEditingProvider(null);
       onUpdate(provider.provider, {
         isEnabled: formData.isEnabled,
-        isDefault: formData.isDefault,
         config: updatePayload.config,
       });
     } catch (error) {
@@ -145,7 +143,7 @@ function SmsProviderCard({
 
   const handleToggleEnabled = async (checked) => {
     try {
-      const payload = { isEnabled: checked, ...(checked ? {} : { isDefault: false }) };
+      const payload = { isEnabled: checked };
       await smsConfigApi.updateProvider(provider.provider, payload);
       toast.success(checked ? `${provider.displayName} 已启用` : `${provider.displayName} 已禁用`);
       onUpdate(provider.provider, payload);
@@ -172,7 +170,6 @@ function SmsProviderCard({
       title={provider.displayName}
       icon={MessageSquareText}
       isEnabled={provider.isEnabled}
-      isDefault={provider.isDefault}
       isEditing={isEditing}
       onToggleEnabled={handleToggleEnabled}
       onEditClick={() => {
@@ -180,7 +177,6 @@ function SmsProviderCard({
         const cfg = provider.config || {};
         setFormData({
           isEnabled: provider.isEnabled,
-          isDefault: provider.isDefault,
           accessKeyId: cfg.accessKeyId || '',
           accessKeySecret: cfg.accessKeySecret || '',
           signName: cfg.signName || '',
@@ -191,9 +187,7 @@ function SmsProviderCard({
           templates: cfg.templates || {},
         });
       }}
-      onCancelClick={() => { setEditingProvider(null); setFormData(prev => ({ ...prev, isDefault: provider.isDefault })); }}
-      onToggleDefault={(checked) => setFormData({ ...formData, isDefault: checked })}
-      isDefaultChecked={formData.isDefault}
+      onCancelClick={() => { setEditingProvider(null); }}
       summary={summaryContent}
     >
       <div className='space-y-4 pt-2'>

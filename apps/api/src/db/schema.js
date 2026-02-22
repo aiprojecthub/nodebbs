@@ -756,7 +756,6 @@ export const emailProviders = pgTable(
     ...$defaults,
     provider: varchar('provider', { length: 50 }).notNull().unique(), // 'smtp', 'sendgrid', 'resend', 'aliyun'
     isEnabled: boolean('is_enabled').notNull().default(false),
-    isDefault: boolean('is_default').notNull().default(false), // 是否为默认提供商
     // SMTP 通用配置
     smtpHost: varchar('smtp_host', { length: 255 }),
     smtpPort: integer('smtp_port'),
@@ -777,7 +776,6 @@ export const emailProviders = pgTable(
   (table) => [
     index('email_providers_provider_idx').on(table.provider),
     index('email_providers_is_enabled_idx').on(table.isEnabled),
-    index('email_providers_is_default_idx').on(table.isDefault),
     index('email_providers_display_order_idx').on(table.displayOrder),
   ]
 );
@@ -792,7 +790,6 @@ export const captchaProviders = pgTable(
     // === 核心字段（可索引、可查询）===
     provider: varchar('provider', { length: 50 }).notNull().unique(), // 'recaptcha', 'hcaptcha', 'turnstile'
     isEnabled: boolean('is_enabled').notNull().default(false),
-    isDefault: boolean('is_default').notNull().default(false),
     displayName: varchar('display_name', { length: 100 }),
     displayOrder: integer('display_order').notNull().default(0),
     // === 灵活配置（JSON 存储）===
@@ -802,7 +799,6 @@ export const captchaProviders = pgTable(
   (table) => [
     index('captcha_providers_provider_idx').on(table.provider),
     index('captcha_providers_is_enabled_idx').on(table.isEnabled),
-    index('captcha_providers_is_default_idx').on(table.isDefault),
   ]
 );
 

@@ -116,7 +116,6 @@ export default async function captchaRoutes(fastify, options) {
           type: 'object',
           properties: {
             isEnabled: { type: 'boolean' },
-            isDefault: { type: 'boolean' },
             config: { type: 'object' },
             enabledScenes: { type: 'object' },
           },
@@ -125,7 +124,7 @@ export default async function captchaRoutes(fastify, options) {
     },
     async (request, reply) => {
       const { provider } = request.params;
-      const { isEnabled, isDefault, config, enabledScenes } = request.body;
+      const { isEnabled, config, enabledScenes } = request.body;
 
       // 检查记录是否存在
       const [existing] = await db
@@ -135,22 +134,19 @@ export default async function captchaRoutes(fastify, options) {
         .limit(1);
 
       if (!existing) {
-        // 因不使用预定义列表，无法验证 provider 是否合法（除非使用 service.providers 校验，但此处简化为只查库）
-        // 如果库里没有，就认为是不合法的或未初始化的
         return reply.code(404).send({ error: 'CAPTCHA 提供商不存在或未初始化' });
       }
 
-      // 如果设置为默认，先取消其他提供商的默认状态
-      if (isDefault) {
+      // 互斥逻辑：启用一个时禁用其他所有
+      if (isEnabled) {
         await db
           .update(captchaProviders)
-          .set({ isDefault: false })
-          .where(eq(captchaProviders.isDefault, true));
+          .set({ isEnabled: false })
+          .where(eq(captchaProviders.isEnabled, true));
       }
 
       const updateData = {
         isEnabled: isEnabled !== undefined ? isEnabled : existing.isEnabled,
-        isDefault: isDefault !== undefined ? isDefault : existing.isDefault,
         // 只更新提供的字段
         ...(config && { config: JSON.stringify(config) }),
         ...(enabledScenes && { enabledScenes: JSON.stringify(enabledScenes) }),

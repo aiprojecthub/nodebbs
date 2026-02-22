@@ -27,8 +27,7 @@ export class EmailChannel extends BaseChannel {
       .from(messageProviders)
       .where(and(
         eq(messageProviders.channel, this.channelType),
-        eq(messageProviders.isEnabled, true),
-        eq(messageProviders.isDefault, true)
+        eq(messageProviders.isEnabled, true)
       ))
       .limit(1);
 
@@ -161,7 +160,8 @@ export class EmailChannel extends BaseChannel {
         '邮件服务未配置'
       );
     }
-    if (!provider.isEnabled) {
+    // 只在未显式指定 provider 时检查 isEnabled
+    if (!providerName && !provider.isEnabled) {
       throw new MessageError(
         MessageErrorCode.PROVIDER_DISABLED,
         '邮件服务未启用',
