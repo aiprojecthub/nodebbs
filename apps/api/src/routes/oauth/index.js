@@ -1,15 +1,13 @@
 /**
  * OAuth 认证路由主入口
- * 
+ *
  * 目录结构：
  * - index.js          # 主入口，注册子路由和管理 API
- * - helpers.js        # 通用辅助函数
  * - github.js         # GitHub OAuth
  * - google.js         # Google OAuth
  * - apple.js          # Apple OAuth
  * - wechat.js         # 微信 OAuth（开放平台/公众号/小程序）
  */
-import db from '../../db/index.js';
 import { oauthProviders } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import {
@@ -27,6 +25,7 @@ import wechatRoutes from './wechat.js';
  * OAuth 认证路由
  */
 export default async function oauthRoutes(fastify, options) {
+  const db = fastify.db;
   // ============= 注册各 Provider 路由 =============
   await fastify.register(githubRoutes);
   await fastify.register(googleRoutes);
@@ -226,22 +225,19 @@ export default async function oauthRoutes(fastify, options) {
       const { provider } = request.params;
 
       try {
-        const config = await db
-          .select()
-          .from(oauthProviders)
-          .where(eq(oauthProviders.provider, provider))
-          .limit(1);
+        const providerConfig = await fastify.oauth.getProviderConfig(provider);
 
-        if (config.length === 0) {
+        if (!providerConfig) {
           return reply.code(404).send({ error: 'OAuth 提供商不存在' });
         }
 
-        const providerConfig = config[0];
+        const providerInstance = await fastify.oauth.getProvider(provider);
+        const validation = providerInstance.validateConfig(providerConfig);
 
-        if (!providerConfig.clientId || !providerConfig.clientSecret) {
+        if (!validation.valid) {
           return {
             success: false,
-            message: '缺少必要的配置信息（Client ID 或 Client Secret）',
+            message: validation.message,
           };
         }
 

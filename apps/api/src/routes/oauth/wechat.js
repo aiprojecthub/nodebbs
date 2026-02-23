@@ -1,16 +1,9 @@
 /**
  * 微信 OAuth 路由（开放平台、公众号、小程序）
  */
-import { 
-  normalizeOAuthProfile, 
-  generateRandomState, 
-  handleOAuthLogin 
-} from '../../services/oauthService.js';
+import { handleOAuthLogin, generateRandomState } from '../../services/oauthService.js';
 import { isProd } from '../../config/env.js';
 
-/**
- * 注册微信 OAuth 路由
- */
 export default async function wechatRoutes(fastify, options) {
   // ============= 微信开放平台（Web 扫码登录）=============
 
@@ -35,25 +28,19 @@ export default async function wechatRoutes(fastify, options) {
     },
     async (request, reply) => {
       try {
-        const config = await fastify.getOAuthProviderConfig('wechat_open');
+        const config = await fastify.oauth.getProviderConfig('wechat_open');
         if (!config || !config.isEnabled) {
           return reply.code(500).send({ error: '微信扫码登录未启用' });
         }
 
-        if (!config.clientId || !config.clientSecret) {
-          return reply.code(500).send({ error: '微信开放平台配置不完整' });
+        const provider = await fastify.oauth.getProvider('wechat_open');
+        const validation = provider.validateConfig(config);
+        if (!validation.valid) {
+          return reply.code(500).send({ error: `微信开放平台配置不完整: ${validation.message}` });
         }
 
         const state = generateRandomState();
-        const params = new URLSearchParams({
-          appid: config.clientId,
-          redirect_uri: config.callbackUrl,
-          response_type: 'code',
-          scope: 'snsapi_login',
-          state: state,
-        });
-
-        const authorizationUri = `https://open.weixin.qq.com/connect/qrconnect?${params.toString()}#wechat_redirect`;
+        const authorizationUri = await provider.getAuthorizationUrl(config, state);
 
         reply.setCookie('oauth_state', state, {
           path: '/',
@@ -121,40 +108,20 @@ export default async function wechatRoutes(fastify, options) {
 
         reply.clearCookie('oauth_state');
 
-        const config = await fastify.getOAuthProviderConfig('wechat_open');
+        const config = await fastify.oauth.getProviderConfig('wechat_open');
         if (!config || !config.isEnabled) {
           return reply.code(500).send({ error: '微信扫码登录未启用' });
         }
 
-        const tokenUrl = `https://api.weixin.qq.com/sns/oauth2/access_token?appid=${config.clientId}&secret=${config.clientSecret}&code=${code}&grant_type=authorization_code`;
-        const tokenResponse = await fetch(tokenUrl);
-        const tokenData = await tokenResponse.json();
-
-        if (tokenData.errcode) {
-          throw new Error(tokenData.errmsg || '获取 access_token 失败');
-        }
-
-        const userInfoUrl = `https://api.weixin.qq.com/sns/userinfo?access_token=${tokenData.access_token}&openid=${tokenData.openid}&lang=zh_CN`;
-        const userInfoResponse = await fetch(userInfoUrl);
-        const wechatUser = await userInfoResponse.json();
-
-        if (wechatUser.errcode) {
-          throw new Error(wechatUser.errmsg || '获取用户信息失败');
-        }
+        const provider = await fastify.oauth.getProvider('wechat_open');
+        const { profile, providerAccountId, tokenData } = await provider.handleCallback(config, code);
 
         const result = await handleOAuthLogin(
           fastify,
           'wechat_open',
-          wechatUser.unionid || wechatUser.openid,
-          normalizeOAuthProfile('wechat', wechatUser),
-          {
-            accessToken: tokenData.access_token,
-            refreshToken: tokenData.refresh_token,
-            expiresAt: tokenData.expires_in
-              ? new Date(Date.now() + tokenData.expires_in * 1000)
-              : null,
-            scope: tokenData.scope,
-          }
+          providerAccountId,
+          profile,
+          tokenData
         );
 
         const authToken = reply.generateAuthToken({
@@ -192,25 +159,19 @@ export default async function wechatRoutes(fastify, options) {
     },
     async (request, reply) => {
       try {
-        const config = await fastify.getOAuthProviderConfig('wechat_mp');
+        const config = await fastify.oauth.getProviderConfig('wechat_mp');
         if (!config || !config.isEnabled) {
           return reply.code(500).send({ error: '微信公众号授权未启用' });
         }
 
-        if (!config.clientId) {
-          return reply.code(500).send({ error: '微信公众号配置不完整' });
+        const provider = await fastify.oauth.getProvider('wechat_mp');
+        const validation = provider.validateConfig(config);
+        if (!validation.valid) {
+          return reply.code(500).send({ error: `微信公众号配置不完整: ${validation.message}` });
         }
 
         const state = generateRandomState();
-        const params = new URLSearchParams({
-          appid: config.clientId,
-          redirect_uri: config.callbackUrl,
-          response_type: 'code',
-          scope: 'snsapi_userinfo',
-          state: state,
-        });
-
-        const authorizationUri = `https://open.weixin.qq.com/connect/oauth2/authorize?${params.toString()}#wechat_redirect`;
+        const authorizationUri = await provider.getAuthorizationUrl(config, state);
 
         reply.setCookie('oauth_state', state, {
           path: '/',
@@ -278,40 +239,20 @@ export default async function wechatRoutes(fastify, options) {
 
         reply.clearCookie('oauth_state');
 
-        const config = await fastify.getOAuthProviderConfig('wechat_mp');
+        const config = await fastify.oauth.getProviderConfig('wechat_mp');
         if (!config || !config.isEnabled) {
           return reply.code(500).send({ error: '微信公众号授权未启用' });
         }
 
-        const tokenUrl = `https://api.weixin.qq.com/sns/oauth2/access_token?appid=${config.clientId}&secret=${config.clientSecret}&code=${code}&grant_type=authorization_code`;
-        const tokenResponse = await fetch(tokenUrl);
-        const tokenData = await tokenResponse.json();
-
-        if (tokenData.errcode) {
-          throw new Error(tokenData.errmsg || '获取 access_token 失败');
-        }
-
-        const userInfoUrl = `https://api.weixin.qq.com/sns/userinfo?access_token=${tokenData.access_token}&openid=${tokenData.openid}&lang=zh_CN`;
-        const userInfoResponse = await fetch(userInfoUrl);
-        const wechatUser = await userInfoResponse.json();
-
-        if (wechatUser.errcode) {
-          throw new Error(wechatUser.errmsg || '获取用户信息失败');
-        }
+        const provider = await fastify.oauth.getProvider('wechat_mp');
+        const { profile, providerAccountId, tokenData } = await provider.handleCallback(config, code);
 
         const result = await handleOAuthLogin(
           fastify,
           'wechat_mp',
-          wechatUser.unionid || wechatUser.openid,
-          normalizeOAuthProfile('wechat', wechatUser),
-          {
-            accessToken: tokenData.access_token,
-            refreshToken: tokenData.refresh_token,
-            expiresAt: tokenData.expires_in
-              ? new Date(Date.now() + tokenData.expires_in * 1000)
-              : null,
-            scope: tokenData.scope,
-          }
+          providerAccountId,
+          profile,
+          tokenData
         );
 
         const authToken = reply.generateAuthToken({
@@ -378,36 +319,24 @@ export default async function wechatRoutes(fastify, options) {
       try {
         const { code, userInfo } = request.body;
 
-        const config = await fastify.getOAuthProviderConfig('wechat_miniprogram');
+        const config = await fastify.oauth.getProviderConfig('wechat_miniprogram');
         if (!config || !config.isEnabled) {
           return reply.code(500).send({ error: '微信小程序登录未启用' });
         }
 
-        const sessionUrl = `https://api.weixin.qq.com/sns/jscode2session?appid=${config.clientId}&secret=${config.clientSecret}&js_code=${code}&grant_type=authorization_code`;
-        const sessionResponse = await fetch(sessionUrl);
-        const sessionData = await sessionResponse.json();
-
-        if (sessionData.errcode) {
-          throw new Error(sessionData.errmsg || '小程序登录失败');
-        }
-
-        const wechatProfile = {
-          openid: sessionData.openid,
-          unionid: sessionData.unionid,
-          nickname: userInfo?.nickName || null,
-          headimgurl: userInfo?.avatarUrl || null,
-        };
+        const provider = await fastify.oauth.getProvider('wechat_miniprogram');
+        const { profile, providerAccountId, tokenData } = await provider.handleCallback(
+          config,
+          code,
+          { userInfo }
+        );
 
         const result = await handleOAuthLogin(
           fastify,
           'wechat_miniprogram',
-          sessionData.unionid || sessionData.openid,
-          normalizeOAuthProfile('wechat', wechatProfile),
-          {
-            accessToken: null,
-            refreshToken: null,
-            expiresAt: null,
-          }
+          providerAccountId,
+          profile,
+          tokenData
         );
 
         const authToken = reply.generateAuthToken({

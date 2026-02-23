@@ -1,8 +1,11 @@
 /**
  * hCaptcha 验证提供商
  */
-export class HCaptchaProvider {
+import { BaseCaptchaProvider } from './base.js';
+
+export class HCaptchaProvider extends BaseCaptchaProvider {
   constructor() {
+    super();
     this.name = 'hcaptcha';
     this.defaultEndpoint = 'https://hcaptcha.com/siteverify';
   }

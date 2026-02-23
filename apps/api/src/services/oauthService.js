@@ -13,11 +13,10 @@ import { getSetting } from './settingsService.js';
 import { getPermissionService } from './permissionService.js';
 
 /**
- * 生成随机 state 参数
+ * 生成随机 state 参数（密码学安全）
  */
 export function generateRandomState() {
-  return Math.random().toString(36).substring(2, 15) + 
-         Math.random().toString(36).substring(2, 15);
+  return crypto.randomBytes(16).toString('hex');
 }
 
 /**
@@ -47,13 +46,7 @@ export async function handleOAuthLogin(
     });
 
     // 如果 OAuth 提供商确认邮箱已验证，且当前用户未验证，则同步更新状态
-    if (profile.isEmailVerified && !user.isEmailVerified && user.email === profile.email) {
-      const [updatedUser] = await db.update(users)
-        .set({ isEmailVerified: true })
-        .where(eq(users.id, user.id))
-        .returning();
-      user = updatedUser;
-    }
+    user = await syncEmailVerified(user, profile);
   } else {
     // 2. 如果有邮箱，查找是否已有相同邮箱的用户
     if (profile.email) {
@@ -66,14 +59,7 @@ export async function handleOAuthLogin(
           ...tokenData,
         });
 
-        // 如果 OAuth 提供商确认邮箱已验证，且当前用户未验证，则更新状态
-        if (profile.isEmailVerified && !user.isEmailVerified) {
-          const [updatedUser] = await db.update(users)
-            .set({ isEmailVerified: true })
-            .where(eq(users.id, user.id))
-            .returning();
-          user = updatedUser;
-        }
+        user = await syncEmailVerified(user, profile);
       }
     }
 
@@ -81,11 +67,11 @@ export async function handleOAuthLogin(
     if (!user) {
       // 检查注册模式
       const registrationMode = await getSetting('registration_mode', 'open');
-      
+
       if (registrationMode === 'closed') {
         throw new Error('系统当前已关闭用户注册，无法通过 OAuth 创建新账号');
       }
-      
+
       user = await createOAuthUser(profile, provider);
       await linkOAuthAccount(user.id, provider, {
         providerAccountId,
@@ -116,6 +102,20 @@ export async function handleOAuthLogin(
       isEmailVerified: user.isEmailVerified,
     },
   };
+}
+
+/**
+ * 同步 OAuth 提供商的邮箱验证状态到本地用户
+ */
+async function syncEmailVerified(user, profile) {
+  if (profile.isEmailVerified && !user.isEmailVerified && user.email === profile.email) {
+    const [updatedUser] = await db.update(users)
+      .set({ isEmailVerified: true })
+      .where(eq(users.id, user.id))
+      .returning();
+    return updatedUser;
+  }
+  return user;
 }
 
 /**
@@ -343,59 +343,3 @@ async function generateUniqueUsername(baseUsername) {
   return `${username}_${Date.now()}`;
 }
 
-/**
- * 从 OAuth 提供商的用户信息中提取标准化的 profile
- */
-export function normalizeOAuthProfile(provider, rawProfile) {
-  switch (provider) {
-    case 'github':
-      return {
-        id: rawProfile.id.toString(),
-        email: normalizeEmail(rawProfile.email),
-        name: rawProfile.name || rawProfile.login,
-        username: rawProfile.login,
-        avatar: rawProfile.avatar_url,
-        isEmailVerified: true, // GitHub 登录且能获取到 Email 通常意味着已验证（或我们在获取时筛选了verified）
-      };
-
-    case 'google':
-      return {
-        id: rawProfile.sub || rawProfile.id,
-        email: normalizeEmail(rawProfile.email),
-        name: rawProfile.name,
-        username: rawProfile.email?.split('@')[0],
-        avatar: rawProfile.picture,
-        isEmailVerified: rawProfile.email_verified === true // Google 字段: email_verified
-      };
-
-    case 'apple':
-      return {
-        id: rawProfile.sub,
-        email: normalizeEmail(rawProfile.email),
-        name: rawProfile.name || rawProfile.email?.split('@')[0],
-        username: rawProfile.email?.split('@')[0],
-        avatar: null, // Apple 不提供头像
-        isEmailVerified: true, // Apple 提供的邮箱已验证
-      };
-
-    case 'wechat':
-      return {
-        id: rawProfile.unionid || rawProfile.openid, // 优先使用 unionid 实现跨端统一
-        email: null, // 微信不提供邮箱
-        name: rawProfile.nickname,
-        username: null, // 需要自动生成
-        avatar: rawProfile.headimgurl,
-        isEmailVerified: false, // 微信用户需要后续绑定邮箱
-      };
-
-    default:
-      return {
-        id: rawProfile.id?.toString(),
-        email: normalizeEmail(rawProfile.email),
-        name: rawProfile.name,
-        username: rawProfile.username || rawProfile.email?.split('@')[0],
-        avatar: rawProfile.avatar || rawProfile.picture,
-        isEmailVerified: !!rawProfile.email_verified,
-      };
-  }
-}

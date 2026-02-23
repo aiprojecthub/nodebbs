@@ -1,8 +1,11 @@
 /**
  * Cloudflare Turnstile 验证提供商
  */
-export class TurnstileProvider {
+import { BaseCaptchaProvider } from './base.js';
+
+export class TurnstileProvider extends BaseCaptchaProvider {
   constructor() {
+    super();
     this.name = 'turnstile';
     this.defaultEndpoint = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
   }

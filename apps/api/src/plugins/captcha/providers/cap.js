@@ -2,8 +2,11 @@
  * Cap (https://capjs.js.org) 验证提供商
  * 隐私优先、自托管的 proof-of-work CAPTCHA
  */
-export class CapProvider {
+import { BaseCaptchaProvider } from './base.js';
+
+export class CapProvider extends BaseCaptchaProvider {
   constructor() {
+    super();
     this.name = 'cap';
   }
 

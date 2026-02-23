@@ -1,9 +1,9 @@
 // CAPTCHA 配置管理路由
 import { eq, asc } from 'drizzle-orm';
-import db from '../../db/index.js';
 import { captchaProviders } from '../../db/schema.js';
 
 export default async function captchaRoutes(fastify, options) {
+  const db = fastify.db;
 
   // ============ 公开接口 ============
 

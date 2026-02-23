@@ -2,8 +2,11 @@
  * Google reCAPTCHA 验证提供商
  * 支持 v2 和 v3 版本
  */
-export class ReCaptchaProvider {
+import { BaseCaptchaProvider } from './base.js';
+
+export class ReCaptchaProvider extends BaseCaptchaProvider {
   constructor() {
+    super();
     this.name = 'recaptcha';
     this.defaultEndpoint = 'https://www.google.com/recaptcha/api/siteverify';
   }
