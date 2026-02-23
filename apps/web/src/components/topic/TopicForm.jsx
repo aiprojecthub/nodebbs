@@ -35,6 +35,7 @@ export default function TopicForm({
   const { hasPermission } = usePermission();
   const canUseTags = hasPermission('tag.read');
   const canCreateTag = hasPermission('tag.create');
+  const canUpload = hasPermission('upload.topics');
 
   return (
     <form onSubmit={handleSubmit}>
@@ -88,7 +89,7 @@ export default function TopicForm({
               </p>
             )}
             <p className='text-xs text-muted-foreground'>
-              支持 Markdown 格式，支持粘贴或拖拽上传图片
+              支持 Markdown 格式{canUpload ? '，支持粘贴或拖拽上传图片' : ''}
             </p>
           </div>
         </div>
@@ -183,7 +184,7 @@ export default function TopicForm({
                 <p>• 提供详细的背景信息和上下文</p>
                 <p>• 选择合适的分类便于他人查找</p>
                 <p>• 添加相关标签提高话题可见度</p>
-                <p>• 支持拖拽或粘贴上传图片</p>
+                {canUpload && <p>• 支持拖拽或粘贴上传图片</p>}
               </div>
             </div>
           </aside>
