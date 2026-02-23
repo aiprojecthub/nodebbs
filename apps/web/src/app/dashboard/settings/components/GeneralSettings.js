@@ -5,11 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { IconUpload } from '@/components/common/IconUpload';
+import { Switch } from '@/components/ui/switch';
 
 export function GeneralSettings({
   settings,
   handleStringChange,
   handleNumberChange,
+  handleBooleanChange,
   saving,
 }) {
   return (
@@ -33,6 +35,25 @@ export function GeneralSettings({
               disabled={saving}
               className='max-w-md'
             />
+
+            {settings.show_logo_text && (
+              <div className='flex items-center space-x-2 pt-2'>
+                <Switch
+                  id='show_logo_text'
+                  checked={settings.show_logo_text.value === true}
+                  onCheckedChange={(checked) =>
+                    handleBooleanChange('show_logo_text', checked)
+                  }
+                  disabled={saving}
+                />
+                <Label
+                  htmlFor='show_logo_text'
+                  className='text-sm font-normal cursor-pointer text-muted-foreground'
+                >
+                  {settings.show_logo_text.description}
+                </Label>
+              </div>
+            )}
           </div>
         </div>
       )}

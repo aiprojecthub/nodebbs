@@ -175,6 +175,7 @@ export default function SystemSettingsPage() {
           <GeneralSettings
             settings={settings}
             handleStringChange={handleStringChange}
+            handleBooleanChange={handleBooleanChange}
             handleNumberChange={handleNumberChange}
             saving={saving}
           />

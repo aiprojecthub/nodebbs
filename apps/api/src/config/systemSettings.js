@@ -36,6 +36,14 @@ export const SETTING_KEYS = {
     category: 'general',
     accessLevel: ACCESS_LEVEL.PUBLIC,
   },
+  SHOW_LOGO_TEXT: {
+    key: 'show_logo_text',
+    defaultValue: 'true',
+    valueType: 'boolean',
+    description: '在 Logo 旁显示站点名称',
+    category: 'general',
+    accessLevel: ACCESS_LEVEL.PUBLIC,
+  },
   SITE_DESCRIPTION: {
     key: 'site_description',
     defaultValue: '一个基于 Node.js 和 React 的现代化论坛系统',

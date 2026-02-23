@@ -44,6 +44,26 @@ function filterSettingsByRole(settings, userRole) {
   return filtered;
 }
 
+/**
+ * 将字符串配置值转换为对应的类型
+ */
+function parseSettingValue(value, valueType) {
+  if (valueType === 'boolean') {
+    return value === 'true';
+  }
+  if (valueType === 'number') {
+    return parseFloat(value);
+  }
+  if (valueType === 'json') {
+    try {
+      return JSON.parse(value);
+    } catch (e) {
+      return value;
+    }
+  }
+  return value;
+}
+
 export default async function settingsRoutes(fastify) {
   // 获取所有系统配置（根据用户角色过滤）
   fastify.get(
@@ -68,20 +88,8 @@ export default async function settingsRoutes(fastify) {
 
         // 转换值类型
         const formattedSettings = settings.reduce((acc, setting) => {
-          let value = setting.value;
-          if (setting.valueType === 'boolean') {
-            value = setting.value === 'true';
-          } else if (setting.valueType === 'number') {
-            value = parseFloat(setting.value);
-          } else if (setting.valueType === 'json') {
-            try {
-              value = JSON.parse(setting.value);
-            } catch (e) {
-              value = setting.value;
-            }
-          }
           acc[setting.key] = {
-            value,
+            value: parseSettingValue(setting.value, setting.valueType),
             valueType: setting.valueType,
             description: setting.description,
           };
@@ -146,18 +154,7 @@ export default async function settingsRoutes(fastify) {
           return reply.code(404).send({ error: '配置项不存在' });
         }
 
-        let value = setting.value;
-        if (setting.valueType === 'boolean') {
-          value = setting.value === 'true';
-        } else if (setting.valueType === 'number') {
-          value = parseFloat(setting.value);
-        } else if (setting.valueType === 'json') {
-          try {
-            value = JSON.parse(setting.value);
-          } catch (e) {
-            value = setting.value; // Fallback to string if parse fails
-          }
-        }
+        const value = parseSettingValue(setting.value, setting.valueType);
 
         return {
           key: setting.key,

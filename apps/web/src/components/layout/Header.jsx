@@ -91,9 +91,11 @@ export default function Header() {
                 alt='logo'
                 className='h-7 w-auto max-w-[120px] transition-transform group-hover:scale-105'
               />
-              <span className='text-base font-semibold text-foreground hidden sm:inline'>
-                {settings?.site_name?.value || 'NodeBBS'}
-              </span>
+              {settings?.show_logo_text?.value !== false && (
+                <span className='text-base font-semibold text-foreground hidden sm:inline'>
+                  {settings?.site_name?.value || 'NodeBBS'}
+                </span>
+              )}
             </Link>
 
             {/* 桌面端导航 */}
