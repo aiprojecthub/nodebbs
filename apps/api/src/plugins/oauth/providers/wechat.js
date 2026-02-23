@@ -6,10 +6,11 @@ import { normalizeOAuthProfile } from './normalize.js';
 
 /**
  * 微信网页授权通用回调（开放平台 & 公众号共用）
+ * 注意：微信 API 要求 secret 通过查询参数传递（这是微信的 API 设计规范）
  */
-async function wechatWebHandleCallback(config, code) {
+async function wechatWebHandleCallback(provider, config, code) {
   const tokenUrl = `https://api.weixin.qq.com/sns/oauth2/access_token?appid=${config.clientId}&secret=${config.clientSecret}&code=${code}&grant_type=authorization_code`;
-  const tokenResponse = await fetch(tokenUrl);
+  const tokenResponse = await provider.fetch(tokenUrl);
   const tokenData = await tokenResponse.json();
 
   if (tokenData.errcode) {
@@ -17,7 +18,7 @@ async function wechatWebHandleCallback(config, code) {
   }
 
   const userInfoUrl = `https://api.weixin.qq.com/sns/userinfo?access_token=${tokenData.access_token}&openid=${tokenData.openid}&lang=zh_CN`;
-  const userInfoResponse = await fetch(userInfoUrl);
+  const userInfoResponse = await provider.fetch(userInfoUrl);
   const wechatUser = await userInfoResponse.json();
 
   if (wechatUser.errcode) {
@@ -60,7 +61,7 @@ export class WechatOpenProvider extends BaseOAuthProvider {
   }
 
   async handleCallback(config, code) {
-    return wechatWebHandleCallback(config, code);
+    return wechatWebHandleCallback(this, config, code);
   }
 }
 
@@ -86,7 +87,7 @@ export class WechatMpProvider extends BaseOAuthProvider {
   }
 
   async handleCallback(config, code) {
-    return wechatWebHandleCallback(config, code);
+    return wechatWebHandleCallback(this, config, code);
   }
 }
 
@@ -110,7 +111,7 @@ export class WechatMiniprogramProvider extends BaseOAuthProvider {
     const { userInfo } = extra;
 
     const sessionUrl = `https://api.weixin.qq.com/sns/jscode2session?appid=${config.clientId}&secret=${config.clientSecret}&js_code=${code}&grant_type=authorization_code`;
-    const sessionResponse = await fetch(sessionUrl);
+    const sessionResponse = await this.fetch(sessionUrl);
     const sessionData = await sessionResponse.json();
 
     if (sessionData.errcode) {

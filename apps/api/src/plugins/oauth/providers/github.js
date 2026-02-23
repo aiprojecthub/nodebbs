@@ -25,7 +25,7 @@ export class GitHubProvider extends BaseOAuthProvider {
 
   async handleCallback(config, code) {
     // 用 code 换取 access_token
-    const tokenResponse = await fetch(
+    const tokenResponse = await this.fetch(
       'https://github.com/login/oauth/access_token',
       {
         method: 'POST',
@@ -53,7 +53,7 @@ export class GitHubProvider extends BaseOAuthProvider {
     }
 
     // 获取用户信息
-    const userInfoResponse = await fetch('https://api.github.com/user', {
+    const userInfoResponse = await this.fetch('https://api.github.com/user', {
       headers: {
         Authorization: `Bearer ${token.access_token}`,
         'User-Agent': 'Fastify-OAuth-App',
@@ -68,7 +68,7 @@ export class GitHubProvider extends BaseOAuthProvider {
 
     // 如果没有公开邮箱，获取邮箱列表
     if (!githubUser.email) {
-      const emailResponse = await fetch(
+      const emailResponse = await this.fetch(
         'https://api.github.com/user/emails',
         {
           headers: {

@@ -125,7 +125,7 @@ export class AppleProvider extends BaseOAuthProvider {
     );
 
     // 获取 Token
-    const tokenResponse = await fetch(
+    const tokenResponse = await this.fetch(
       'https://appleid.apple.com/auth/token',
       {
         method: 'POST',
@@ -160,21 +160,14 @@ export class AppleProvider extends BaseOAuthProvider {
 
     const payload = await verifyAppleIdToken(idToken, config.clientId);
 
-    // 提取用户名
+    // 提取用户名（appleUserWrap 已在上方解析，无需重复 JSON.parse）
     let fullName = null;
-    if (appleUserWrap) {
-      try {
-        const userObj = typeof appleUserWrap === 'string' ? JSON.parse(appleUserWrap) : appleUserWrap;
-        if (userObj.name) {
-          const { firstName, lastName } = userObj.name;
-          if (firstName && lastName) {
-            fullName = `${firstName} ${lastName}`;
-          } else {
-            fullName = firstName || lastName || null;
-          }
-        }
-      } catch {
-        // ignore
+    if (appleUserWrap?.name) {
+      const { firstName, lastName } = appleUserWrap.name;
+      if (firstName && lastName) {
+        fullName = `${firstName} ${lastName}`;
+      } else {
+        fullName = firstName || lastName || null;
       }
     }
 

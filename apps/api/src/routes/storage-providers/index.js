@@ -239,8 +239,8 @@ export default async function storageProvidersRoutes(fastify) {
       const { slug, type, displayName, config } = request.body;
 
       // 校验 slug 格式
-      if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) {
-        return reply.code(400).send({ error: '标识只能包含小写字母、数字和连字符，且不能以连字符开头' });
+      if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) {
+        return reply.code(400).send({ error: '标识只能包含小写字母、数字和连字符，且不能以连字符开头或结尾' });
       }
 
       if (slug.length > 50) {

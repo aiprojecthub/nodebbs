@@ -77,4 +77,26 @@ export class BaseOAuthProvider {
     }
     return { valid: true };
   }
+
+  /**
+   * 带超时的 fetch 请求
+   * @param {string} url
+   * @param {object} options - fetch options
+   * @param {number} timeoutMs - 超时毫秒数，默认 30000
+   * @returns {Promise<Response>}
+   */
+  async fetch(url, options = {}, timeoutMs = 30000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, { ...options, signal: controller.signal });
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error(`OAuth 请求超时 (${timeoutMs}ms): ${url}`);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
 }

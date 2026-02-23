@@ -29,7 +29,7 @@ export class GoogleProvider extends BaseOAuthProvider {
 
   async handleCallback(config, code) {
     // 用 code 换取 access_token
-    const tokenResponse = await fetch(
+    const tokenResponse = await this.fetch(
       'https://oauth2.googleapis.com/token',
       {
         method: 'POST',
@@ -62,9 +62,26 @@ export class GoogleProvider extends BaseOAuthProvider {
       throw new Error('未收到 id_token');
     }
 
+    // id_token 从 Google 令牌端点直接获取（服务端到服务端 HTTPS），解码后验证关键字段
     const googleUser = jwt.decode(idToken);
     if (!googleUser) {
       throw new Error('解码 id_token 失败');
+    }
+
+    // 验证签发者
+    if (googleUser.iss !== 'https://accounts.google.com' && googleUser.iss !== 'accounts.google.com') {
+      throw new Error('id_token 签发者无效');
+    }
+
+    // 验证受众
+    if (googleUser.aud !== config.clientId) {
+      throw new Error('id_token 受众无效');
+    }
+
+    // 验证过期时间
+    const now = Math.floor(Date.now() / 1000);
+    if (googleUser.exp < now) {
+      throw new Error('id_token 已过期');
     }
 
     return {
