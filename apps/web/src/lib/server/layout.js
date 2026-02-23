@@ -86,9 +86,6 @@ export async function getLayoutMetadata() {
     console.error('Error fetching settings for metadata:', error);
   }
 
-  // 动态确定 logo 的 MIME 类型
-  const logoType = siteLogo.endsWith('.svg') ? 'image/svg+xml' : 'image/png';
-
   // 生成社交分享图片的绝对 URL
   const ogImageUrl =
     siteUrl && !siteLogo.startsWith('http') ? `${siteUrl}${siteLogo}` : siteLogo;
@@ -105,10 +102,7 @@ export async function getLayoutMetadata() {
       title: siteName,
     },
     icons: {
-      icon: [
-        { url: siteLogo, type: logoType },
-        { url: favicon, type: 'image/x-icon', sizes: 'any' },
-      ],
+      icon: favicon,
       apple: appleTouchIcon,
     },
     openGraph: {
