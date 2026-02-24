@@ -11,11 +11,12 @@ import { getItemTypeLabel } from '@/extensions/shop/utils/itemTypes';
  * @param {Array} props.items - 用户物品数组
  * @param {Function} props.onEquip - 点击装备按钮时的回调
  * @param {Function} props.onUnequip - 点击卸下按钮时的回调
+ * @param {Function} props.onUse - 点击使用按钮时的回调（消耗品）
  * @param {number} props.actioningItemId - 当前正在操作的物品 ID
  * @param {boolean} props.loading - 加载状态
  * @param {string} props.itemType - 当前物品类型筛选
  */
-export function ItemInventoryGrid({ items, onEquip, onUnequip, actioningItemId, loading, itemType }) {
+export function ItemInventoryGrid({ items, onEquip, onUnequip, onUse, actioningItemId, loading, itemType }) {
   if (loading) {
     return (
       <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:grid-cols-5">
@@ -55,6 +56,7 @@ export function ItemInventoryGrid({ items, onEquip, onUnequip, actioningItemId, 
           item={item}
           onEquip={onEquip}
           onUnequip={onUnequip}
+          onUse={onUse}
           actioning={actioningItemId === item.id}
         />
       ))}

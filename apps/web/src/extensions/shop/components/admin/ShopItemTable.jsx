@@ -1,23 +1,28 @@
-import { useState } from 'react';
 import { DataTable } from '@/components/common/DataTable';
 import { ActionMenu } from '@/components/common/ActionMenu';
 import { Badge } from '@/components/ui/badge';
 
 import { Edit, Trash2 } from 'lucide-react';
-import { Loading } from '@/components/common/Loading';
 import { ItemTypeIcon } from '../shared/ItemTypeIcon';
 import { getItemTypeLabel } from '../../utils/itemTypes';
+import { useLedger } from '../../../ledger/contexts/LedgerContext';
 
 /**
- * Shop items management table for admin
+ * 管理后台商品列表表格
  * @param {Object} props
- * @param {Array} props.items - Array of shop items
- * @param {boolean} props.loading - Loading state
+ * @param {Array} props.items - 商品数组
+ * @param {boolean} props.loading - 加载状态
  * @param {Object} props.pagination - { page, total, limit, onPageChange }
- * @param {Function} props.onEdit - Callback when edit button clicked
- * @param {Function} props.onDelete - Callback when delete confirmed
+ * @param {Function} props.onEdit - 点击编辑时的回调
+ * @param {Function} props.onDelete - 确认删除时的回调
  */
 export function ShopItemTable({ items, loading, pagination, onEdit, onDelete }) {
+  const { currencies } = useLedger();
+
+  const getCurrencyName = (code) => {
+    const c = currencies.find(c => c.code === code);
+    return c?.name || code;
+  };
 
   const columns = [
     {
@@ -45,7 +50,7 @@ export function ShopItemTable({ items, loading, pagination, onEdit, onDelete }) 
               <img
                 src={row.imageUrl}
                 alt={row.name}
-                className="object-cover"
+                className="object-contain w-full h-full"
               />
             </div>
           )}
@@ -65,6 +70,13 @@ export function ShopItemTable({ items, loading, pagination, onEdit, onDelete }) 
       key: 'price',
       render: (value) => (
         <span className="font-semibold text-yellow-600">{value}</span>
+      ),
+    },
+    {
+      label: '货币',
+      key: 'currencyCode',
+      render: (value) => (
+        <span className="text-muted-foreground">{getCurrencyName(value)}</span>
       ),
     },
     {
@@ -124,20 +136,12 @@ export function ShopItemTable({ items, loading, pagination, onEdit, onDelete }) 
     },
   ];
 
-  if (loading) {
-    return <Loading text="加载中..." className="py-12" />;
-  }
-
   return (
-    <>
       <DataTable
         columns={columns}
         data={items}
         loading={loading}
         pagination={pagination}
       />
-
-
-    </>
   );
 }

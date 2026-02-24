@@ -11,6 +11,7 @@ import {
   deleteShopItem,
   giftItem,
   getEquippedAvatarFrame,
+  useItem,
 } from '../services/shopService.js';
 import db from '../../../db/index.js';
 import { users } from '../../../db/schema.js';
@@ -40,10 +41,11 @@ export default async function shopRoutes(fastify, options) {
       const { page, limit, type, includeInactive: includeInactiveParam } = request.query;
       
       const canManage = await fastify.permission.can(request, 'dashboard.extensions');
-      // Non-admin users: ignore includeInactive, force false
       const includeInactive = canManage && (includeInactiveParam === true || includeInactiveParam === 'true');
       
-      const result = await getShopItems({ page, limit, type, includeInactive });
+      // 传递当前用户 ID 用于查询 ownership
+      const userId = request.user?.id || null;
+      const result = await getShopItems({ page, limit, type, includeInactive, userId });
       return result;
     } catch (error) {
       fastify.log.error('[商城] 获取商品列表失败:', error);
@@ -93,8 +95,10 @@ export default async function shopRoutes(fastify, options) {
           description: { type: 'string' },
           price: { type: 'integer', minimum: 0 },
           type: { type: 'string' },
+          consumeType: { type: 'string', enum: ['non_consumable', 'consumable'] },
           imageUrl: { type: 'string' },
           stock: { type: ['integer', 'null'], minimum: 0 },
+          maxOwn: { type: ['integer', 'null'], minimum: 1 },
           isActive: { type: 'boolean' },
           displayOrder: { type: 'integer' },
           metadata: { type: 'string' },
@@ -133,8 +137,10 @@ export default async function shopRoutes(fastify, options) {
           description: { type: 'string' },
           price: { type: 'integer', minimum: 0 },
           type: { type: 'string' },
+          consumeType: { type: 'string', enum: ['non_consumable', 'consumable'] },
           imageUrl: { type: 'string' },
-          stock: { type: ['integer', 'string', 'null'] }, // string 用于处理表单输入的情况
+          stock: { type: ['integer', 'string', 'null'] },
+          maxOwn: { type: ['integer', 'string', 'null'] },
           isActive: { type: 'boolean' },
           displayOrder: { type: 'integer' },
           metadata: { type: 'string' },
@@ -205,14 +211,21 @@ export default async function shopRoutes(fastify, options) {
           itemId: { type: 'integer' },
         },
       },
+      body: {
+        type: 'object',
+        properties: {
+          quantity: { type: 'integer', minimum: 1, maximum: 99, default: 1 },
+        },
+      },
     },
   }, async (request, reply) => {
     try {
       const { itemId } = request.params;
-      const result = await buyItem(request.user.id, itemId);
+      const quantity = request.body?.quantity || 1;
+      const result = await buyItem(request.user.id, itemId, quantity);
       return result;
     } catch (error) {
-      if (error.message.includes('余额不足') || error.message.includes('已经拥有') || error.message.includes('库存不足')) {
+      if (error.message.includes('余额不足') || error.message.includes('已经拥有') || error.message.includes('库存不足') || error.message.includes('持有上限') || error.message.includes('最多还能') || error.message.includes('非消耗品')) {
         return reply.code(400).send({ error: error.message });
       }
       fastify.log.error('[商城] 购买失败:', error);
@@ -241,17 +254,18 @@ export default async function shopRoutes(fastify, options) {
         properties: {
           receiverId: { type: 'integer' },
           message: { type: 'string', maxLength: 200 },
+          quantity: { type: 'integer', minimum: 1, maximum: 99, default: 1 },
         },
       },
     },
   }, async (request, reply) => {
     try {
       const { itemId } = request.params;
-      const { receiverId, message } = request.body;
-      const result = await giftItem(request.user.id, receiverId, itemId, message);
+      const { receiverId, message, quantity = 1 } = request.body;
+      const result = await giftItem(request.user.id, receiverId, itemId, message, quantity);
       return result;
     } catch (error) {
-      if (error.message.includes('余额不足') || error.message.includes('已经拥有') || error.message.includes('库存不足') || error.message.includes('不能赠送') || error.message.includes('用户不存在')) {
+      if (error.message.includes('余额不足') || error.message.includes('已经拥有') || error.message.includes('库存不足') || error.message.includes('不能赠送') || error.message.includes('用户不存在') || error.message.includes('持有上限') || error.message.includes('最多还能') || error.message.includes('非消耗品')) {
         return reply.code(400).send({ error: error.message });
       }
       fastify.log.error('[商城] 赠送失败:', error);
@@ -351,6 +365,44 @@ export default async function shopRoutes(fastify, options) {
       }
       fastify.log.error('[商城] 卸下失败:', error);
       return reply.code(500).send({ error: '卸下失败' });
+    }
+  });
+
+  // 使用消耗品
+  fastify.post('/my-items/:userItemId/use', {
+    preHandler: [fastify.authenticate],
+    schema: {
+      tags: ['shop'],
+      description: '使用消耗品',
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        required: ['userItemId'],
+        properties: {
+          userItemId: { type: 'integer' },
+        },
+      },
+      body: {
+        type: 'object',
+        properties: {
+          targetType: { type: 'string', maxLength: 20 },
+          targetId: { type: 'integer' },
+          metadata: { type: 'object', additionalProperties: true, maxProperties: 10 },
+        },
+        additionalProperties: false,
+      },
+    },
+  }, async (request, reply) => {
+    try {
+      const { userItemId } = request.params;
+      const result = await useItem(request.user.id, userItemId, request.body);
+      return result;
+    } catch (error) {
+      if (error.message.includes('未找到') || error.message.includes('不是消耗品') || error.message.includes('数量不足')) {
+        return reply.code(400).send({ error: error.message });
+      }
+      fastify.log.error('[商城] 使用道具失败:', error);
+      return reply.code(500).send({ error: '使用失败' });
     }
   });
 }

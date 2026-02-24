@@ -64,6 +64,7 @@ export function useUserItems(options = {}) {
 
   return {
     items,
+    setItems,
     loading,
     error,
     refetch: fetchItems,

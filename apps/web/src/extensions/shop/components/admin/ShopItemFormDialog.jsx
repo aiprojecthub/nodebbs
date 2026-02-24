@@ -53,11 +53,13 @@ const IMAGE_FRAME_EXAMPLE = JSON.stringify({
 export function ShopItemFormDialog({ open, onOpenChange, mode, initialData, onSubmit, submitting }) {
   const [formData, setFormData] = useState({
     type: ITEM_TYPES.AVATAR_FRAME,
+    consumeType: 'non_consumable',
     name: '',
     description: '',
     price: 0,
     imageUrl: '',
     stock: null,
+    maxOwn: null,
     displayOrder: 0,
     isActive: true,
     metadata: '',
@@ -116,12 +118,14 @@ export function ShopItemFormDialog({ open, onOpenChange, mode, initialData, onSu
     if (mode === 'edit' && initialData) {
       setFormData({
         type: initialData.type,
+        consumeType: initialData.consumeType || 'non_consumable',
         name: initialData.name,
         description: initialData.description || '',
         price: initialData.price,
         currencyCode: initialData.currencyCode || DEFAULT_CURRENCY_CODE,
         imageUrl: initialData.imageUrl || '',
         stock: initialData.stock,
+        maxOwn: initialData.maxOwn,
         displayOrder: initialData.displayOrder || 0,
         isActive: initialData.isActive,
         metadata: initialData.metadata || '',
@@ -129,12 +133,14 @@ export function ShopItemFormDialog({ open, onOpenChange, mode, initialData, onSu
     } else if (mode === 'create') {
       setFormData({
         type: ITEM_TYPES.AVATAR_FRAME,
+        consumeType: 'non_consumable',
         name: '',
         description: '',
         price: 0,
         currencyCode: DEFAULT_CURRENCY_CODE,
         imageUrl: '',
         stock: null,
+        maxOwn: null,
         displayOrder: 0,
         isActive: true,
         metadata: '',
@@ -186,6 +192,29 @@ export function ShopItemFormDialog({ open, onOpenChange, mode, initialData, onSu
               </SelectContent>
             </Select>
           </div>
+
+          {/* 消耗类型 - 暂时隐藏，待消耗品业务逻辑实现后启用 */}
+          {/* <div className="space-y-2">
+            <Label htmlFor="consumeType">消耗类型</Label>
+            <Select
+              value={formData.consumeType}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, consumeType: value }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="选择消耗类型" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="non_consumable">非消耗品（只能拥有一个）</SelectItem>
+                <SelectItem value="consumable">消耗品（可重复购买、使用即消）</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {formData.consumeType === 'non_consumable' && '用户只能拥有一个，如头像框、勋章'}
+              {formData.consumeType === 'consumable' && '用户可重复购买，使用后数量减少，如改名卡、置顶卡'}
+            </p>
+          </div> */}
 
           {/* 头像框预览 */}
           {formData.type === ITEM_TYPES.AVATAR_FRAME && (
@@ -346,6 +375,26 @@ export function ShopItemFormDialog({ open, onOpenChange, mode, initialData, onSu
                 placeholder="不限"
               />
             </div>
+
+            {/* 持有上限（消耗品时显示） */}
+            {formData.consumeType !== 'non_consumable' && (
+              <div className="space-y-2">
+                <Label htmlFor="maxOwn">持有上限</Label>
+                <Input
+                  id="maxOwn"
+                  type="number"
+                  min="1"
+                  value={formData.maxOwn === null ? '' : formData.maxOwn}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      maxOwn: e.target.value === '' ? null : e.target.value,
+                    }))
+                  }
+                  placeholder="不限"
+                />
+              </div>
+            )}
 
             {/* 显示顺序 */}
             <div className="space-y-2">

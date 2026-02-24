@@ -1,14 +1,29 @@
 import db from '../../../db/index.js';
-import {
-  shopItems,
-  userItems,
-  users,
-} from '../../../db/schema.js';
+import { users } from '../../../db/schema.js';
+import { shopItems, userItems, userItemLogs } from '../schema.js';
+
 import { sysAccounts, sysTransactions, sysCurrencies } from '../../ledger/schema.js';
 import { userBadges } from '../../badges/schema.js';
-import { eq, and, desc, sql, asc, count } from 'drizzle-orm';
+import { eq, ne, and, desc, sql, asc, count, inArray } from 'drizzle-orm';
 import { grantBadge } from '../../badges/services/badgeService.js';
 import { notificationService } from '../../../services/notificationService.js';
+
+/**
+ * 安全解析 metadata JSON 字符串（兼容双重 JSON.stringify 的历史数据）
+ * @param {string|object|null} raw
+ * @returns {object}
+ */
+function parseMetadata(raw) {
+  if (!raw) return {};
+  if (typeof raw === 'object') return raw;
+  try {
+    let parsed = JSON.parse(raw);
+    if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+    return parsed || {};
+  } catch {
+    return {};
+  }
+}
 
 /**
  * 获取商店商品列表
@@ -17,10 +32,11 @@ import { notificationService } from '../../../services/notificationService.js';
  * @param {number} options.limit - 每页数量
  * @param {string} [options.type] - 商品类型筛选
  * @param {boolean} [options.includeInactive] - 是否包含下架商品 (管理员用)
+ * @param {number} [options.userId] - 当前登录用户 ID（用于查询 ownership 状态）
  * @returns {Promise<Object>}
  */
 export async function getShopItems(options = {}) {
-  const { page = 1, limit = 20, type = null, includeInactive = false } = options;
+  const { page = 1, limit = 20, type = null, includeInactive = false, userId = null } = options;
   const offset = (page - 1) * limit;
 
   try {
@@ -54,8 +70,35 @@ export async function getShopItems(options = {}) {
 
     const [{ count: total }] = await countQuery;
 
+    // 查询当前用户的 ownership 状态
+    let enrichedItems = items;
+    if (userId && items.length > 0) {
+      const itemIds = items.map(i => i.id);
+      const ownedRecords = await db
+        .select({
+          itemId: userItems.itemId,
+          quantity: userItems.quantity,
+        })
+        .from(userItems)
+        .where(
+          and(
+            eq(userItems.userId, userId),
+            inArray(userItems.itemId, itemIds),
+            eq(userItems.status, 'active')
+          )
+        );
+
+      const ownedMap = new Map(ownedRecords.map(r => [r.itemId, r.quantity]));
+
+      enrichedItems = items.map(item => ({
+        ...item,
+        owned: ownedMap.has(item.id),
+        ownedCount: ownedMap.get(item.id) || 0,
+      }));
+    }
+
     return {
-      items,
+      items: enrichedItems,
       page,
       limit,
       total,
@@ -86,7 +129,9 @@ export async function getShopItemById(itemId) {
  * @param {number} itemId - 商品ID
  * @returns {Promise<Object>}
  */
-export async function buyItem(userId, itemId) {
+export async function buyItem(userId, itemId, quantity = 1) {
+  // 数量安全校验
+  quantity = Math.max(1, Math.floor(Number(quantity) || 1));
   try {
     return await db.transaction(async (tx) => {
       // 1. 获取商品信息
@@ -105,33 +150,39 @@ export async function buyItem(userId, itemId) {
       }
 
       // 检查库存
-      if (item.stock !== null && item.stock <= 0) {
+      if (item.stock !== null && item.stock < quantity) {
         throw new Error('商品库存不足');
       }
 
-      // 2. 检查用户是否已拥有（对于非消耗品，如头像框，通常只能拥有一个）
+      // 2. 根据 consumeType 处理拥有检查
+      const consumeType = item.consumeType || 'non_consumable';
+
       const [existingItem] = await tx
         .select()
         .from(userItems)
         .where(and(eq(userItems.userId, userId), eq(userItems.itemId, itemId)))
         .limit(1);
 
-      if (existingItem) {
-        throw new Error('您已经拥有该商品');
+      if (consumeType === 'non_consumable') {
+        // 非消耗品：不允许重复购买，且数量只能为 1
+        if (quantity > 1) {
+          throw new Error('非消耗品每次只能购买 1 个');
+        }
+        if (existingItem) {
+          throw new Error('您已经拥有该商品');
+        }
+      } else {
+        // 消耗品/订阅型：检查 maxOwn 上限
+        const currentQuantity = existingItem ? existingItem.quantity : 0;
+        if (item.maxOwn !== null && currentQuantity + quantity > item.maxOwn) {
+          const canBuy = item.maxOwn - currentQuantity;
+          throw new Error(canBuy > 0 ? `最多还能购买 ${canBuy} 个（持有上限 ${item.maxOwn}）` : `您已达到该商品的持有上限（${item.maxOwn}）`);
+        }
       }
 
       // 2.5 对于勋章类型商品，检查用户是否已拥有该勋章
       if (item.type === 'badge') {
-        let badgeId = null;
-        try {
-          let meta = item.metadata ? JSON.parse(item.metadata) : {};
-          if (typeof meta === 'string') {
-            try { meta = JSON.parse(meta); } catch (e) { /* ignore */ }
-          }
-          badgeId = meta.badgeId;
-        } catch (e) {
-          // ignore parse error
-        }
+        const badgeId = parseMetadata(item.metadata).badgeId;
 
         if (badgeId) {
           const [existingBadge] = await tx
@@ -156,7 +207,6 @@ export async function buyItem(userId, itemId) {
         .limit(1);
 
       if (!account) {
-         // Create account if not exists
          [account] = await tx.insert(sysAccounts).values({
              userId,
              currencyCode,
@@ -168,13 +218,15 @@ export async function buyItem(userId, itemId) {
 
       const currencySymbol = (await tx.select({ symbol: sysCurrencies.symbol }).from(sysCurrencies).where(eq(sysCurrencies.code, currencyCode)).limit(1))[0]?.symbol || '';
 
-      if (account.balance < item.price) {
-        throw new Error(`余额不足，需要 ${item.price} ${currencySymbol}`);
+      const totalPrice = item.price * quantity;
+
+      if (account.balance < totalPrice) {
+        throw new Error(`余额不足，需要 ${totalPrice} ${currencySymbol}`);
       }
 
       // 4. 扣除积分
-      const newBalance = Number(account.balance) - item.price;
-      const newTotalSpent = Number(account.totalSpent) + item.price;
+      const newBalance = Number(account.balance) - totalPrice;
+      const newTotalSpent = Number(account.totalSpent) + totalPrice;
 
       await tx
         .update(sysAccounts)
@@ -187,44 +239,53 @@ export async function buyItem(userId, itemId) {
       // 5. 记录交易日志 (sys_transactions)
       await tx.insert(sysTransactions).values({
         userId,
-        accountId: account.id, // Fixed: Added missing accountId
+        accountId: account.id,
         currencyCode,
-        amount: -item.price,
+        amount: -totalPrice,
         balanceAfter: newBalance,
         type: 'shop_purchase',
         referenceType: 'shop_item',
         referenceId: String(itemId),
-        description: `购买商品: ${item.name}`,
+        description: quantity > 1 ? `购买商品: ${item.name} ×${quantity}` : `购买商品: ${item.name}`,
         metadata: JSON.stringify({
           itemId: item.id,
           itemName: item.name,
           itemType: item.type,
+          quantity,
         }),
       });
 
-      // 6. 发放商品给用户 (库存记录)
-      const [userItem] = await tx
-        .insert(userItems)
-        .values({
-          userId,
-          itemId,
-          isEquipped: false,
-        })
-        .returning();
+      // 6. 发放商品给用户
+      let userItem;
+      if (consumeType !== 'non_consumable' && existingItem) {
+        // 消耗品/订阅型且已有记录：叠加数量
+        const [updated] = await tx
+          .update(userItems)
+          .set({
+            quantity: existingItem.quantity + quantity,
+            status: 'active',
+          })
+          .where(eq(userItems.id, existingItem.id))
+          .returning();
+        userItem = updated;
+      } else {
+        // 非消耗品 或 消耗品首次购买：创建新记录
+        const [created] = await tx
+          .insert(userItems)
+          .values({
+            userId,
+            itemId,
+            isEquipped: false,
+            quantity,
+            status: 'active',
+          })
+          .returning();
+        userItem = created;
+      }
 
-      // 7. 特殊处理：如果由于购买的是勋章，则同时调用勋章系统授予勋章
+      // 7. 特殊处理：勋章商品同时授予勋章
       if (item.type === 'badge') {
-        let badgeId = null;
-        try {
-          // 尝试从 metadata 解析 badgeId
-          let meta = item.metadata ? JSON.parse(item.metadata) : {};
-          if (typeof meta === 'string') {
-             try { meta = JSON.parse(meta); } catch (e) { /* ignore */ }
-          }
-          badgeId = meta.badgeId;
-        } catch (e) {
-          console.error('[商城] 解析勋章商品 metadata 失败', e);
-        }
+        const badgeId = parseMetadata(item.metadata).badgeId;
 
         if (badgeId) {
            try {
@@ -238,12 +299,12 @@ export async function buyItem(userId, itemId) {
         }
       }
 
-      // 8. 更新商品库存 (如果有库存限制)
+      // 8. 更新商品库存 (如果有库存限制) — 使用 SQL 原子表达式防止并发超卖
       if (item.stock !== null) {
         await tx
           .update(shopItems)
           .set({
-            stock: item.stock - 1,
+            stock: sql`${shopItems.stock} - ${quantity}`,
           })
           .where(eq(shopItems.id, itemId));
       }
@@ -274,7 +335,10 @@ export async function getUserItems(userId, options = {}) {
   const offset = (page - 1) * limit;
 
   try {
-    const conditions = [eq(userItems.userId, userId)];
+    const conditions = [
+      eq(userItems.userId, userId),
+      ne(userItems.status, 'exhausted'),
+    ];
 
     if (type) {
       conditions.push(eq(shopItems.type, type));
@@ -290,12 +354,15 @@ export async function getUserItems(userId, options = {}) {
         userId: userItems.userId,
         itemId: userItems.itemId,
         isEquipped: userItems.isEquipped,
+        quantity: userItems.quantity,
+        status: userItems.status,
         createdAt: userItems.createdAt,
         expiresAt: userItems.expiresAt,
-        // Flattened item properties for frontend convenience
+        // 扁平化商品属性
         itemName: shopItems.name,
         itemDescription: shopItems.description,
         itemType: shopItems.type,
+        consumeType: shopItems.consumeType,
         price: shopItems.price,
         itemImageUrl: shopItems.imageUrl,
         itemMetadata: shopItems.metadata,
@@ -381,10 +448,13 @@ export async function equipItem(userId, userItemId) {
         throw new Error('未找到该物品或不属于您');
       }
 
-      // 2. 如果是互斥类型（如头像框），先卸下同类型其他已装备物品
-      if (['avatar_frame', 'profile_bg'].includes(userItem.type)) {
-         // 找到所有已装备的同类型物品
-         const equippedSameType = await tx
+      // 2. 只有头像框支持装备
+      if (userItem.type !== 'avatar_frame') {
+        throw new Error('该物品类型不支持装备');
+      }
+
+      // 3. 先卸下同类型其他已装备物品（头像框互斥，同时只能装备一个）
+      const equippedSameType = await tx
            .select({ id: userItems.id })
            .from(userItems)
            .innerJoin(shopItems, eq(userItems.itemId, shopItems.id))
@@ -403,9 +473,8 @@ export async function equipItem(userId, userItemId) {
              .set({ isEquipped: false })
              .where(sql`${userItems.id} IN ${idsToUnequip}`);
          }
-      }
 
-      // 3. 装备新物品
+      // 4. 装备新物品
       await tx
         .update(userItems)
         .set({ isEquipped: true })
@@ -501,6 +570,7 @@ export async function createShopItem(data) {
       ...data,
       metadata,
       stock: data.stock === '' || data.stock === null ? null : Number(data.stock),
+      maxOwn: data.maxOwn === '' || data.maxOwn === null ? null : (data.maxOwn !== undefined ? Number(data.maxOwn) : null),
     })
     .returning();
   return item;
@@ -522,11 +592,18 @@ export async function updateShopItem(id, data) {
     if (updateData.metadata === '') updateData.metadata = null;
   }
 
-  // 处理 stock: 如果传 null 代表无限
+  // 处理 stock
   if (updateData.stock === '') {
     updateData.stock = null;
   } else if (updateData.stock !== undefined && updateData.stock !== null) {
     updateData.stock = Number(updateData.stock);
+  }
+
+  // 处理 maxOwn
+  if (updateData.maxOwn === '') {
+    updateData.maxOwn = null;
+  } else if (updateData.maxOwn !== undefined && updateData.maxOwn !== null) {
+    updateData.maxOwn = Number(updateData.maxOwn);
   }
 
   const [item] = await db
@@ -553,7 +630,8 @@ export async function deleteShopItem(id) {
  * @param {string} message - 赠言
  * @returns {Promise<Object>}
  */
-export async function giftItem(senderId, receiverId, itemId, message) {
+export async function giftItem(senderId, receiverId, itemId, message, quantity = 1) {
+  quantity = Math.max(1, Math.floor(Number(quantity) || 1));
   try {
     const result = await db.transaction(async (tx) => {
       // 1. 获取商品信息
@@ -565,7 +643,7 @@ export async function giftItem(senderId, receiverId, itemId, message) {
 
       if (!item) throw new Error('商品不存在');
       if (!item.isActive) throw new Error('商品已下架');
-      if (item.stock !== null && item.stock <= 0) throw new Error('商品库存不足');
+      if (item.stock !== null && item.stock < quantity) throw new Error('商品库存不足');
 
       if (senderId === receiverId) {
         throw new Error('不能赠送给自己，请直接购买');
@@ -598,33 +676,37 @@ export async function giftItem(senderId, receiverId, itemId, message) {
 
       const currencySymbol = (await tx.select({ symbol: sysCurrencies.symbol }).from(sysCurrencies).where(eq(sysCurrencies.code, currencyCode)).limit(1))[0]?.symbol || '';
 
-      if (senderAccount.balance < item.price) {
-        throw new Error(`余额不足，需要 ${item.price} ${currencySymbol}`);
+      const totalPrice = item.price * quantity;
+
+      if (senderAccount.balance < totalPrice) {
+        throw new Error(`余额不足，需要 ${totalPrice} ${currencySymbol}`);
       }
 
-      // 3. 检查接收者是否已拥有
+      // 3. 根据 consumeType 检查接收者 ownership
+      const consumeType = item.consumeType || 'non_consumable';
+
       const [existingItem] = await tx
         .select()
         .from(userItems)
         .where(and(eq(userItems.userId, receiverId), eq(userItems.itemId, itemId)))
         .limit(1);
 
-      if (existingItem) {
-        throw new Error('对方已经拥有该商品');
+      if (consumeType === 'non_consumable') {
+        if (quantity > 1) throw new Error('非消耗品每次只能赠送 1 个');
+        if (existingItem) {
+          throw new Error('对方已经拥有该商品');
+        }
+      } else {
+        const currentQuantity = existingItem ? existingItem.quantity : 0;
+        if (item.maxOwn !== null && currentQuantity + quantity > item.maxOwn) {
+          const canGift = item.maxOwn - currentQuantity;
+          throw new Error(canGift > 0 ? `对方最多还能接收 ${canGift} 个（持有上限 ${item.maxOwn}）` : `对方已达到该商品的持有上限（${item.maxOwn}）`);
+        }
       }
 
       // 3.5 对于勋章类型商品，检查接收者是否已拥有该勋章
       if (item.type === 'badge') {
-        let badgeId = null;
-        try {
-          let meta = item.metadata ? JSON.parse(item.metadata) : {};
-          if (typeof meta === 'string') {
-            try { meta = JSON.parse(meta); } catch (e) { /* ignore */ }
-          }
-          badgeId = meta.badgeId;
-        } catch (e) {
-          // ignore parse error
-        }
+        const badgeId = parseMetadata(item.metadata).badgeId;
 
         if (badgeId) {
           const [existingBadge] = await tx
@@ -640,8 +722,8 @@ export async function giftItem(senderId, receiverId, itemId, message) {
       }
 
       // 4. 扣除发送者积分
-      const newBalance = Number(senderAccount.balance) - item.price;
-      const newTotalSpent = Number(senderAccount.totalSpent) + item.price;
+      const newBalance = Number(senderAccount.balance) - totalPrice;
+      const newTotalSpent = Number(senderAccount.totalSpent) + totalPrice;
       
       await tx
         .update(sysAccounts)
@@ -656,47 +738,52 @@ export async function giftItem(senderId, receiverId, itemId, message) {
         userId: senderId,
         accountId: senderAccount.id,
         currencyCode,
-        amount: -item.price,
+        amount: -totalPrice,
         balanceAfter: newBalance,
         type: 'gift_sent',
         referenceType: 'shop_item',
         referenceId: String(itemId),
         relatedUserId: receiverId,
-        description: `赠送给 ${receiver.username || '用户'}: ${item.name}`,
+        description: quantity > 1 ? `赠送给 ${receiver.username || '用户'}: ${item.name} ×${quantity}` : `赠送给 ${receiver.username || '用户'}: ${item.name}`,
         metadata: JSON.stringify({
           receiverId,
           itemId,
+          quantity,
           message,
           giftedAt: new Date().toISOString()
         })
       });
 
       // 6. 发放商品给接收者
-      const metadata = JSON.stringify({
+      const giftMeta = JSON.stringify({
         fromUserId: senderId,
         fromUsername: await tx.select({ username: users.username }).from(users).where(eq(users.id, senderId)).then(r => r[0]?.username),
         message,
         giftedAt: new Date().toISOString(),
       });
 
-      await tx.insert(userItems).values({
-        userId: receiverId,
-        itemId: item.id,
-        metadata,
-      });
+      if (consumeType !== 'non_consumable' && existingItem) {
+        await tx
+          .update(userItems)
+          .set({
+            quantity: existingItem.quantity + quantity,
+            status: 'active',
+            metadata: giftMeta,
+          })
+          .where(eq(userItems.id, existingItem.id));
+      } else {
+        await tx.insert(userItems).values({
+          userId: receiverId,
+          itemId: item.id,
+          quantity,
+          status: 'active',
+          metadata: giftMeta,
+        });
+      }
 
       // 7. 如果是勋章，自动佩戴/检查逻辑
       if (item.type === 'badge') {
-        let badgeId = null;
-        try {
-          let meta = item.metadata ? JSON.parse(item.metadata) : {};
-          if (typeof meta === 'string') {
-             try { meta = JSON.parse(meta); } catch (e) { /* ignore */ }
-          }
-          badgeId = meta.badgeId;
-        } catch (e) {
-          console.error('[商城] 解析勋章商品 metadata 失败', e);
-        }
+        const badgeId = parseMetadata(item.metadata).badgeId;
 
         if (badgeId) {
            try {
@@ -707,11 +794,11 @@ export async function giftItem(senderId, receiverId, itemId, message) {
         }
       }
 
-      // 8. 扣减库存
+      // 8. 扣减库存 — 使用 SQL 原子表达式防止并发超卖
       if (item.stock !== null) {
         await tx
           .update(shopItems)
-          .set({ stock: item.stock - 1 })
+          .set({ stock: sql`${shopItems.stock} - ${quantity}` })
           .where(eq(shopItems.id, itemId));
       }
 
@@ -752,3 +839,147 @@ export async function giftItem(senderId, receiverId, itemId, message) {
     throw error;
   }
 }
+
+// ============= 道具使用/激活 =============
+
+/**
+ * 使用瞬时消耗品（改名卡、置顶卡等）
+ * action 从 shopItems.metadata.action 读取，前端只传运行时参数
+ *
+ * @param {number} userId - 用户 ID
+ * @param {number} userItemId - user_items 表主键 ID
+ * @param {Object} [useData] - 运行时参数（前端传入）
+ * @param {string} [useData.targetType] - 目标类型（如 'topic'）
+ * @param {number} [useData.targetId] - 目标 ID（如帖子 ID）
+ * @param {Object} [useData.metadata] - 附加参数（如 { newUsername }）
+ * @returns {Promise<Object>}
+ */
+export async function useItem(userId, userItemId, useData = {}) {
+  try {
+    return await db.transaction(async (tx) => {
+      // 1. 验证物品归属和状态，同时获取商品 metadata
+      const [record] = await tx
+        .select({
+          id: userItems.id,
+          itemId: userItems.itemId,
+          quantity: userItems.quantity,
+          status: userItems.status,
+          consumeType: shopItems.consumeType,
+          itemName: shopItems.name,
+          itemType: shopItems.type,
+          itemMetadata: shopItems.metadata, // 商品配置（含 action）
+        })
+        .from(userItems)
+        .innerJoin(shopItems, eq(userItems.itemId, shopItems.id))
+        .where(
+          and(
+            eq(userItems.id, userItemId),
+            eq(userItems.userId, userId)
+          )
+        )
+        .limit(1);
+
+      if (!record) {
+        throw new Error('未找到该物品或不属于您');
+      }
+
+      if (record.consumeType !== 'consumable') {
+        throw new Error('该物品不是消耗品，无法使用');
+      }
+
+      if (record.status !== 'active' || record.quantity <= 0) {
+        throw new Error('该物品数量不足或不可用');
+      }
+
+      // 解析商品 metadata，获取 action 等配置
+      const itemMeta = parseMetadata(record.itemMetadata);
+
+      const action = itemMeta.action || 'generic_use';
+
+      // 2. 扣减数量
+      const newQuantity = record.quantity - 1;
+      const newStatus = newQuantity <= 0 ? 'exhausted' : 'active';
+
+      await tx
+        .update(userItems)
+        .set({ quantity: newQuantity, status: newStatus })
+        .where(eq(userItems.id, userItemId));
+
+      // ======== 业务副作用分发（按商品 metadata.action 扩展）========
+      // switch (action) {
+      //   case 'topic_pin': {
+      //     // 置顶卡：将帖子置顶 N 天
+      //     // 前端传入 targetType: 'topic', targetId: topicId
+      //     // 置顶天数从 itemMeta.durationDays 读取
+      //     const { targetId } = useData;
+      //     if (!targetId) throw new Error('请指定要置顶的帖子');
+      //     const days = itemMeta.durationDays || 7;
+      //     await tx.update(topics)
+      //       .set({ isPinned: true, pinnedUntil: new Date(Date.now() + days * 86400000) })
+      //       .where(eq(topics.id, targetId));
+      //     break;
+      //   }
+      //   case 'rename': {
+      //     // 改名卡：修改用户名
+      //     // 前端传入 metadata: { newUsername }
+      //     const newName = useData.metadata?.newUsername;
+      //     if (!newName) throw new Error('请提供新用户名');
+      //     // TODO: 检查重名
+      //     await tx.update(users)
+      //       .set({ username: newName })
+      //       .where(eq(users.id, userId));
+      //     break;
+      //   }
+      //   case 'topic_highlight': {
+      //     // 加精卡：帖子加精
+      //     const { targetId } = useData;
+      //     if (!targetId) throw new Error('请指定要加精的帖子');
+      //     await tx.update(topics)
+      //       .set({ isHighlighted: true })
+      //       .where(eq(topics.id, targetId));
+      //     break;
+      //   }
+      //   case 'double_points': {
+      //     // 双倍积分卡（瞬时）：下一次签到积分 ×2
+      //     await tx.update(users)
+      //       .set({ doublePointsNext: true })
+      //       .where(eq(users.id, userId));
+      //     break;
+      //   }
+      //   default:
+      //     // 通用消耗：只扣减数量+写日志，不执行额外副作用
+      //     break;
+      // }
+
+      // 3. 写入使用日志
+      const [log] = await tx
+        .insert(userItemLogs)
+        .values({
+          userId,
+          itemId: record.itemId,
+          userItemId,
+          action, // 从商品 metadata 读取
+          targetType: useData.targetType || null,
+          targetId: useData.targetId || null,
+          quantityUsed: 1,
+          status: 'completed',
+          metadata: JSON.stringify({
+            ...itemMeta,                  // 保留商品配置快照
+            ...(useData.metadata || {}),  // 合并运行时参数
+          }),
+        })
+        .returning();
+
+      return {
+        message: '使用成功',
+        action,
+        log,
+        remainingQuantity: newQuantity,
+      };
+    });
+  } catch (error) {
+    console.error('[商城] 使用道具失败:', error);
+    throw error;
+  }
+}
+

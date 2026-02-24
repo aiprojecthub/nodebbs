@@ -8,13 +8,18 @@ export const shopApi = {
   },
 
   // 购买商品
-  async buyItem(itemId) {
-    return apiClient.post(`/shop/items/${itemId}/buy`);
+  async buyItem(itemId, quantity = 1) {
+    return apiClient.post(`/shop/items/${itemId}/buy`, { quantity });
   },
 
   // 赠送商品
-  async giftItem(itemId, receiverId, message) {
-    return apiClient.post(`/shop/items/${itemId}/gift`, { receiverId, message });
+  async giftItem(itemId, receiverId, message, quantity = 1) {
+    return apiClient.post(`/shop/items/${itemId}/gift`, { receiverId, message, quantity });
+  },
+
+  // 使用消耗品
+  async useItem(userItemId, data) {
+    return apiClient.post(`/shop/my-items/${userItemId}/use`, data);
   },
 
   // 获取我的商品列表
