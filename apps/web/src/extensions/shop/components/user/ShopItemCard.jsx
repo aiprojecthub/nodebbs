@@ -56,13 +56,6 @@ export function ShopItemCard({ item, userBalance, onPurchase, isAuthenticated })
                 已有 ×{ownedCount}
               </Badge>
             )}
-            {/* 非消耗品已拥有标记 */}
-            {isAlreadyOwned && (
-              <Badge variant="outline" className="text-[10px] md:text-xs px-1 h-5 md:h-auto whitespace-nowrap text-green-600 border-green-600">
-                <Check className="w-3 h-3 mr-0.5" />
-                已拥有
-              </Badge>
-            )}
             {/* 库存紧张 */}
             {item.stock !== null && item.stock <= 10 && item.stock > 0 && (
               <Badge variant="destructive" className="text-[10px] md:text-xs px-1 h-5 md:h-auto whitespace-nowrap">
