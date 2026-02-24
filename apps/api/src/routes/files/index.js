@@ -38,6 +38,7 @@ export default async function filesRoutes(fastify) {
                   size: { type: 'integer' },
                   width: { type: ['integer', 'null'] },
                   height: { type: ['integer', 'null'] },
+                  provider: { type: ['string', 'null'] },
                   createdAt: { type: 'string' },
                   user: {
                     type: 'object',
@@ -108,6 +109,7 @@ export default async function filesRoutes(fastify) {
         size: files.size,
         width: files.width,
         height: files.height,
+        provider: files.provider,
         createdAt: files.createdAt,
         user: {
           id: users.id,

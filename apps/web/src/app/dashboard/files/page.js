@@ -10,7 +10,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import UserAvatar from '@/components/user/UserAvatar';
 import { confirm } from '@/components/common/ConfirmPopover';
 import ImagePreview from '@/components/common/ImagePreview';
-import { Trash2, ExternalLink, Image, FileText, Film, Music } from 'lucide-react';
+import { Trash2, ExternalLink, Image, FileText, Film, Music, HardDrive, Cloud } from 'lucide-react';
 import { filesApi } from '@/lib/api';
 import { toast } from 'sonner';
 import Time from '@/components/common/Time';
@@ -187,6 +187,26 @@ export default function FilesManagement() {
           {formatFileSize(value)}
         </span>
       ),
+    },
+    {
+      key: 'provider',
+      label: '存储',
+      width: 'w-[100px]',
+      render: (value) => {
+        const provider = value || 'local';
+        const isLocal = provider === 'local';
+        const Icon = isLocal ? HardDrive : Cloud;
+        return (
+          <Badge variant="outline" className={`gap-1 ${
+            isLocal
+              ? 'border-slate-300 text-slate-600'
+              : 'border-sky-300 text-sky-700'
+          }`}>
+            <Icon className="w-3 h-3" />
+            {provider}
+          </Badge>
+        );
+      },
     },
     {
       key: 'user',
