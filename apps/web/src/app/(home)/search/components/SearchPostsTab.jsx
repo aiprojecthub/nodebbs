@@ -5,24 +5,19 @@ import { Loading } from '@/components/common/Loading';
 
 /**
  * 回复搜索结果 Tab 组件
- * 纯 UI 组件，接收 props 渲染回复搜索结果
  */
-export function SearchPostsTab({
-  loading,
-  typeLoading,
-  results,
-  onLoadPage,
-}) {
+export function SearchPostsTab({ loading, results, onLoadPage }) {
   const { items, total, page, limit } = results;
   const totalPages = Math.ceil(total / limit);
-  const isLoading = loading || typeLoading;
 
-  // 加载状态
-  if (isLoading) {
-    return <Loading text='加载中...' className='py-16' />;
+  if (loading) {
+    return (
+      <div className='mx-3 sm:mx-0 bg-card border border-border rounded-lg'>
+        <Loading text='加载中...' className='py-16' />
+      </div>
+    );
   }
 
-  // 空状态
   if (total === 0) {
     return (
       <div className='text-center py-16 mx-3 sm:mx-0 bg-card border border-border rounded-lg'>
@@ -39,12 +34,6 @@ export function SearchPostsTab({
 
   return (
     <div className='space-y-3'>
-      <div className='px-3 sm:px-0 text-sm text-muted-foreground'>
-        找到{' '}
-        <span className='font-semibold text-foreground'>{total}</span>{' '}
-        个相关回复
-      </div>
-      
       {/* 回复列表 */}
       <div className='space-y-3'>
         {items.map((post) => (

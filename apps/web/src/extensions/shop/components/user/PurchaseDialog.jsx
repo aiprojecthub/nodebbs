@@ -42,12 +42,10 @@ export function PurchaseDialog({ open, item, accounts = [], onConfirm, onCancel,
     }
   }, [open]);
 
-  // 搜索用户
+  // 搜索用户（响应结构：{ items, total, page, limit }）
   const searchUsers = async (query) => {
     const res = await searchApi.search(query, 'users', 1, 5);
-    if (res?.users?.items) return res.users.items;
-    if (Array.isArray(res?.users)) return res.users;
-    return [];
+    return res?.items || [];
   };
 
   const transformUser = (user) => ({

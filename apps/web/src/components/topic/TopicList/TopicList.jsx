@@ -161,7 +161,11 @@ export default function TopicList({
 
   // 6. 渲染
   if (displayLoading) {
-    return <Loading text='加载中...' className='py-16' />;
+    return (
+      <div className='bg-card border-0 sm:border sm:border-border sm:rounded-xl'>
+        <Loading text='加载中...' className='py-16' />
+      </div>
+    );
   }
 
   if (displayError) {

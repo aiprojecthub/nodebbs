@@ -13,7 +13,6 @@ export default function SearchLayout() {
     searchType,
     setSearchType,
     loading,
-    loadingTypes,
     searchResults,
     loadTypePage,
   } = useSearch();
@@ -24,7 +23,6 @@ export default function SearchLayout() {
       searchType={searchType}
       onSearchTypeChange={setSearchType}
       loading={loading}
-      loadingTypes={loadingTypes}
       searchResults={searchResults}
       onLoadPage={loadTypePage}
     />

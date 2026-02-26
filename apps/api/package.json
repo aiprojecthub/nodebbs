@@ -10,10 +10,11 @@
   "scripts": {
     "dev": "dotenvx run -- node --watch src/app.js",
     "prod": "dotenvx run -- pm2 start ecosystem.config.cjs",
-    "db:push": "drizzle-kit push",
+    "db:push": "drizzle-kit push && pnpm run db:setup",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
+    "db:setup": "dotenvx run -- node src/scripts/db-setup.js",
     "seed": "dotenvx run -- node src/scripts/init/index.js",
     "seed:reset": "dotenvx run -- node src/scripts/init/index.js --reset",
     "seed:list": "dotenvx run -- node src/scripts/init/index.js --list",

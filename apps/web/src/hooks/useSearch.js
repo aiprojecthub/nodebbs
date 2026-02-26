@@ -1,101 +1,102 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { searchApi } from '@/lib/api';
 
 /**
  * 搜索逻辑 Hook
- * 管理搜索状态、API 调用和分页逻辑
- * 
- * 设计说明：
- * - 从 URL 参数读取搜索关键词和类型
- * - 支持三种搜索类型：话题、回复、用户
- * - 初始搜索使用 type='all' 获取所有类型的第一页
- * - 单独加载特定类型的分页
  *
- * @returns {Object} 搜索状态和操作方法
+ * 设计说明：
+ * - 懒加载：初始只请求当前 Tab（默认话题），切换 Tab 时按需加载
+ * - AbortController 防止竞态条件
+ * - 不预请求所有类型，不显示计数
  */
 export function useSearch() {
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('s') || '';
   const typeParam = searchParams.get('type') || 'topics';
 
-  const [loading, setLoading] = useState(true);
+  // 有搜索关键词时初始为 loading，避免首帧闪烁"暂无话题"
+  const [loading, setLoading] = useState(!!searchQuery);
   const [searchType, setSearchType] = useState(typeParam);
-  const [searchResults, setSearchResults] = useState({
-    topics: { items: [], total: 0, page: 1, limit: 20 },
-    posts: { items: [], total: 0, page: 1, limit: 20 },
-    users: { items: [], total: 0, page: 1, limit: 20 },
-  });
-  const [loadingTypes, setLoadingTypes] = useState({
-    topics: false,
-    posts: false,
-    users: false,
-  });
+  // 按类型缓存已加载的结果，避免切换 Tab 时重复请求
+  const [cache, setCache] = useState({});
+  const abortControllerRef = useRef(null);
 
-  // 初始搜索：当搜索关键词改变时，获取所有类型的第一页
-  useEffect(() => {
-    if (searchQuery.trim()) {
-      performInitialSearch();
-    } else {
-      // 清空搜索结果
-      setSearchResults({
-        topics: { items: [], total: 0, page: 1, limit: 20 },
-        posts: { items: [], total: 0, page: 1, limit: 20 },
-        users: { items: [], total: 0, page: 1, limit: 20 },
-      });
-      setLoading(false);
+  // 当前类型的搜索结果
+  const currentResults = cache[searchType] || { items: [], total: 0, page: 1, limit: 20 };
+
+  /**
+   * 加载指定类型的数据
+   */
+  const loadData = useCallback(async (type, page = 1, forceReload = false) => {
+    const q = searchQuery.trim();
+    if (!q) return;
+
+    // 如果已有缓存且不是翻页/强制刷新，跳过
+    if (!forceReload && page === 1 && cache[type]?.items?.length > 0) return;
+
+    // 取消之前的请求
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    setLoading(true);
+    try {
+      const data = await searchApi.search(q, type, page, 20);
+      if (controller.signal.aborted) return;
+
+      setCache((prev) => ({
+        ...prev,
+        [type]: data,
+      }));
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+      console.error('搜索失败:', error);
+    } finally {
+      if (!controller.signal.aborted) {
+        setLoading(false);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
 
-  /**
-   * 执行初始搜索，获取所有类型的数据
-   */
-  const performInitialSearch = async () => {
-    setLoading(true);
-    try {
-      const data = await searchApi.search(searchQuery.trim(), 'all', 1, 20);
-      setSearchResults(data);
-    } catch (error) {
-      console.error('搜索失败:', error);
-    } finally {
-      setLoading(false);
+  // 搜索关键词改变时：清空缓存，加载当前 Tab
+  useEffect(() => {
+    setCache({});
+    if (searchQuery.trim()) {
+      loadData(searchType, 1, true);
     }
-  };
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
+
+  // 切换 Tab 时：按需加载（有缓存则跳过）
+  const handleTypeChange = useCallback((type) => {
+    setSearchType(type);
+    loadData(type);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadData]);
 
   /**
-   * 加载特定类型的特定页
-   * @param {string} type - 搜索类型 (topics/posts/users)
-   * @param {number} page - 页码
+   * 加载特定类型的分页
    */
-  const loadTypePage = async (type, page) => {
-    setLoadingTypes((prev) => ({ ...prev, [type]: true }));
-    try {
-      const data = await searchApi.search(searchQuery.trim(), type, page, 20);
-      setSearchResults((prev) => ({
-        ...prev,
-        [type]: data[type],
-      }));
-    } catch (error) {
-      console.error(`加载 ${type} 第 ${page} 页失败:`, error);
-    } finally {
-      setLoadingTypes((prev) => ({ ...prev, [type]: false }));
-    }
-  };
+  const loadTypePage = useCallback((type, page) => {
+    loadData(type, page, true);
+  }, [loadData]);
 
   return {
     /** 搜索关键词 */
     searchQuery,
     /** 当前搜索类型 */
     searchType,
-    /** 设置搜索类型 */
-    setSearchType,
-    /** 初始加载状态 */
+    /** 切换搜索类型 */
+    setSearchType: handleTypeChange,
+    /** 加载状态 */
     loading,
-    /** 各类型的加载状态 */
-    loadingTypes,
-    /** 搜索结果 */
-    searchResults,
+    /** 当前类型的搜索结果 */
+    searchResults: currentResults,
     /** 加载特定类型的分页 */
     loadTypePage,
   };

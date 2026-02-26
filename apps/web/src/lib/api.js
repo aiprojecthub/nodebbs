@@ -540,8 +540,8 @@ export const notificationApi = {
 
 // ============= 搜索 API =============
 export const searchApi = {
-  // 全局搜索
-  async search(query, type = 'all', page = 1, limit = 20) {
+  // 搜索（单类型：topics / posts / users）
+  async search(query, type, page = 1, limit = 20) {
     return apiClient.get('/search', { q: query, type, page, limit });
   },
 };
