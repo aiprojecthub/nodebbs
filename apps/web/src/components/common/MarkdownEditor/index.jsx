@@ -143,7 +143,7 @@ export default function MarkdownEditor({
         {isPreviewMode ? (
           <article 
             className={cn(
-              'min-h-[300px] lg:max-h-[calc(100vh-430px)] overflow-y-auto p-4 border rounded-lg max-w-none prose prose-stone dark:prose-invert break-all',
+              'min-h-75 lg:max-h-[calc(100vh-430px)] overflow-y-auto p-4 border rounded-lg max-w-none prose prose-stone dark:prose-invert break-all',
               showToolbar && 'rounded-tl-none rounded-tr-none',
               editorClassName
             )}
@@ -161,7 +161,7 @@ export default function MarkdownEditor({
             onPaste={handlePaste}
             onDrop={handleDrop}
             className={cn(
-              'min-h-[300px] max-h-[50vh] lg:max-h-[calc(100vh-430px)] resize-none overflow-y-auto field-sizing-fixed sm:field-sizing-content break-all',
+              'min-h-75 max-h-[50vh] lg:max-h-[calc(100vh-430px)] resize-none overflow-y-auto field-sizing-fixed sm:field-sizing-content break-all',
               showToolbar ? 'rounded-tl-none rounded-tr-none' : 'rounded-lg',
               editorClassName
             )}

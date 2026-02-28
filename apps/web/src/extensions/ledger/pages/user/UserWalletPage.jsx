@@ -86,7 +86,7 @@ export default function UserWalletPage() {
             </p>
           </div>
 
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <Link href="/rank">
               <Button variant="outline" className="gap-2 bg-background/50 backdrop-blur-sm hover:bg-background/80 transition-colors border-border/50 shadow-sm">
                 <Trophy className="h-4 w-4 text-yellow-500" />

@@ -35,7 +35,7 @@ export function BadgeTable({ items, loading, onEdit, onDelete }) {
     {
       key: 'unlockCondition',
       label: '解锁条件',
-      render: (value) => <div className="max-w-[200px] truncate">{value || '-'}</div>,
+      render: (value) => <div className="max-w-50 truncate">{value || '-'}</div>,
     },
     {
       key: 'isActive',

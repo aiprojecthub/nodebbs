@@ -156,7 +156,7 @@ export default function FilesManagement() {
       key: 'filename',
       label: '文件名',
       render: (_, file) => (
-        <div className="max-w-[200px]">
+        <div className="max-w-50">
           <div className="font-medium text-sm truncate" title={file.originalName || file.filename}>
             {file.originalName || file.filename}
           </div>
@@ -171,7 +171,7 @@ export default function FilesManagement() {
     {
       key: 'category',
       label: '分类',
-      width: 'w-[100px]',
+      width: 'w-25',
       render: (value) => (
         <Badge variant="secondary" className={categoryColors[value] || ''}>
           {value}
@@ -181,7 +181,7 @@ export default function FilesManagement() {
     {
       key: 'size',
       label: '大小',
-      width: 'w-[100px]',
+      width: 'w-25',
       render: (value) => (
         <span className="text-sm text-muted-foreground">
           {formatFileSize(value)}
@@ -191,7 +191,7 @@ export default function FilesManagement() {
     {
       key: 'provider',
       label: '存储',
-      width: 'w-[100px]',
+      width: 'w-25',
       render: (value) => {
         const provider = value || 'local';
         const isLocal = provider === 'local';
@@ -224,7 +224,7 @@ export default function FilesManagement() {
     {
       key: 'createdAt',
       label: '上传时间',
-      width: 'w-[120px]',
+      width: 'w-30',
       render: (value) => (
         <span className="text-xs text-muted-foreground">
           <Time date={value} />

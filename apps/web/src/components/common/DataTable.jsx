@@ -137,7 +137,7 @@ export function DataTable({
             </div>
           )}
           {filterList.map((filterItem, index) => (
-            <div key={index} className={filterItem.width || 'w-full sm:w-[180px]'}>
+            <div key={index} className={filterItem.width || 'w-full sm:w-45'}>
               {filterItem.label && (
                 <label className='text-xs font-medium text-muted-foreground mb-1.5 block ml-1'>
                   {filterItem.label}

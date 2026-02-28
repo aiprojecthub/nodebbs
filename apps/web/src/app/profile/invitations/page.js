@@ -120,14 +120,14 @@ export default function InvitationsPage() {
 
       {/* 初始加载状态 */}
       {isInitialLoading ? (
-        <Loading text="加载中..." className="min-h-[300px]" />
+        <Loading text="加载中..." className="min-h-75" />
       ) : (
         <>
           {/* 统计卡片区域 */}
           {quota ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {/* 今日剩余 */}
-          <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 shadow-none">
+          <Card className="relative overflow-hidden border-0 bg-linear-to-br from-primary/5 via-primary/10 to-primary/5 shadow-none">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -221,7 +221,7 @@ export default function InvitationsPage() {
       {/* 筛选器 */}
       <div className="flex items-center gap-3">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[140px] h-9">
+          <SelectTrigger className="w-35 h-9">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -257,7 +257,7 @@ export default function InvitationsPage() {
             </CardContent>
           </Card>
         ) : loading ? (
-          <Loading text="加载中..." className="min-h-[200px]" />
+          <Loading text="加载中..." className="min-h-50" />
         ) : (
           codes.map((code) => (
             <Card key={code.id} className="group shadow-none hover:border-primary/30 transition-colors">
@@ -307,7 +307,7 @@ export default function InvitationsPage() {
                       value={code.code}
                       variant="outline"
                       size="sm"
-                      className="h-8 w-[72px] gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity"
+                      className="h-8 w-18 gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity"
                     >
                       {({ copied }) => (
                         copied ? (

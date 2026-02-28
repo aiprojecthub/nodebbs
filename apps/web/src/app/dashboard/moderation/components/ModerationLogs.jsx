@@ -91,7 +91,7 @@ export function ModerationLogs() {
       {/* 筛选器 */}
       <div className='flex flex-wrap gap-4 items-center justify-between'>
         <div className='flex items-center gap-4'>
-          <div className='w-[200px]'>
+          <div className='w-50'>
             <Input
               placeholder='搜索操作人用户名...'
               value={search}
@@ -107,7 +107,7 @@ export function ModerationLogs() {
               value={filters.targetType}
               onValueChange={(value) => handleFilterChange('targetType', value)}
             >
-              <SelectTrigger className='w-[140px]'>
+              <SelectTrigger className='w-35'>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -125,7 +125,7 @@ export function ModerationLogs() {
             value={filters.action}
             onValueChange={(value) => handleFilterChange('action', value)}
           >
-            <SelectTrigger className='w-[140px]'>
+            <SelectTrigger className='w-35'>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

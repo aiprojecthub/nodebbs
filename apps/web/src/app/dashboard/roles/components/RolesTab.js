@@ -579,7 +579,7 @@ export function RolesTab() {
                         </Badge>
                       )}
                       {/* 条件配置按钮 */}
-                      <div className="flex-shrink-0 flex justify-center">
+                      <div className="shrink-0 flex justify-center">
                         {selected && conditionCount > 0 && (
                           <ConditionEditor
                             conditions={conditions}

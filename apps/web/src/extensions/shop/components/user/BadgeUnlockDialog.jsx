@@ -70,10 +70,10 @@ export function BadgeUnlockDialog({ open, onOpenChange, badgeItem }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md border-0 bg-transparent shadow-none" showCloseButton={false}>
-        <div className="relative flex flex-col items-center justify-center p-6 bg-gradient-to-br from-yellow-500/10 to-amber-500/10 backdrop-blur-xl border border-yellow-500/20 rounded-xl overflow-hidden">
+        <div className="relative flex flex-col items-center justify-center p-6 bg-linear-to-br from-yellow-500/10 to-amber-500/10 backdrop-blur-xl border border-yellow-500/20 rounded-xl overflow-hidden">
           
           {/* 光效 */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-yellow-500/5 to-transparent animate-pulse pointer-events-none" />
+          <div className="absolute inset-0 bg-linear-to-tr from-transparent via-yellow-500/5 to-transparent animate-pulse pointer-events-none" />
 
           {/* 徽章动画 */}
           <motion.div
@@ -122,7 +122,7 @@ export function BadgeUnlockDialog({ open, onOpenChange, badgeItem }) {
             className="mt-8 z-10"
           >
              <Button 
-               className="bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-black font-semibold border-0 shadow-[0_0_20px_rgba(234,179,8,0.4)] hover:shadow-[0_0_30px_rgba(234,179,8,0.6)]"
+               className="bg-linear-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-black font-semibold border-0 shadow-[0_0_20px_rgba(234,179,8,0.4)] hover:shadow-[0_0_30px_rgba(234,179,8,0.6)]"
                onClick={() => onOpenChange(false)}
              >
                太棒了！

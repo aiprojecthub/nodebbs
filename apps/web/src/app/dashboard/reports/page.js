@@ -188,7 +188,7 @@ export default function ReportsManagement() {
     {
       key: 'reportType',
       label: '类型',
-      width: 'w-[100px]',
+      width: 'w-25',
       render: (value) => getTypeBadge(value),
     },
     {
@@ -238,7 +238,7 @@ export default function ReportsManagement() {
     {
       key: 'reporter',
       label: '举报人',
-      width: 'w-[120px]',
+      width: 'w-30',
       render: (_, row) => (
         <span className='text-sm'>
           {row.reporterName || row.reporterUsername}
@@ -248,7 +248,7 @@ export default function ReportsManagement() {
     {
       key: 'reason',
       label: '举报原因',
-      width: 'w-[200px]',
+      width: 'w-50',
       render: (value) => (
         <div className='text-sm text-muted-foreground line-clamp-2'>
           {value}
@@ -258,7 +258,7 @@ export default function ReportsManagement() {
     {
       key: 'status',
       label: '状态',
-      width: 'w-[120px]',
+      width: 'w-30',
       render: (value) => getStatusBadge(value),
     },
     {
@@ -399,7 +399,7 @@ export default function ReportsManagement() {
                 value={resolveNote}
                 onChange={(e) => setResolveNote(e.target.value)}
                 disabled={resolving}
-                className='min-h-[100px]'
+                className='min-h-25'
                 maxLength={500}
               />
             </div>
@@ -412,7 +412,7 @@ export default function ReportsManagement() {
           onOpenChange={setDetailDialogOpen}
           title="举报详情"
           cancelText="关闭"
-          maxWidth='sm:max-w-[600px]'
+          maxWidth='sm:max-w-150'
           // Read-only, so no submit button
       >
           {detailReport && (

@@ -49,7 +49,7 @@ export function ShopItemCard({ item, userBalance, onPurchase, isAuthenticated })
                 {item.name}
             </CardTitle>
           </div>
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             {/* 消耗品/订阅型已拥有数量角标 */}
             {!isNonConsumable && ownedCount > 0 && (
               <Badge variant="secondary" className="text-[10px] md:text-xs px-1 h-5 md:h-auto whitespace-nowrap">

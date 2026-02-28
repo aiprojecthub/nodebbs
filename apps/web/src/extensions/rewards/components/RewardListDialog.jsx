@@ -76,7 +76,7 @@ export function RewardListDialog({ open, onOpenChange, postId }) {
       }
       footer={null}
     >
-        <ScrollArea className="h-[300px] pr-4">
+        <ScrollArea className="h-75 pr-4">
           {loading && page === 1 ? (
             <div className="flex justify-center items-center h-full py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -111,7 +111,7 @@ export function RewardListDialog({ open, onOpenChange, postId }) {
                       </span>
                     </div>
                     {reward.message && (
-                      <p className="text-sm text-muted-foreground mt-1 break-words">
+                      <p className="text-sm text-muted-foreground mt-1 wrap-break-word">
                         {reward.message}
                       </p>
                     )}

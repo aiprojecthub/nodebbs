@@ -113,7 +113,7 @@ export function ItemInventoryCard({ item, onEquip, onUnequip, onUse, actioning }
                 {item.itemName}
             </CardTitle>
           </div>
-          <div className="flex gap-1 flex-shrink-0">
+          <div className="flex gap-1 shrink-0">
             {/* 消耗品数量角标 */}
             {isConsumable && (
               <Badge variant="secondary" className="text-[10px] md:text-xs px-1.5 h-5 md:h-auto">

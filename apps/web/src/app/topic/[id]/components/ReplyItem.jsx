@@ -215,7 +215,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
           </div>
 
           {/* 内容区域 */}
-          <div className="pl-0 sm:pl-[52px]">
+          <div className="pl-0 sm:pl-13">
             {/* 引用/回复目标 */}
             {localReply.replyToPostId && localReply.replyToPost && (
               <div className='mb-3 text-xs text-muted-foreground/60 flex items-center gap-1.5 bg-muted/30 px-3 py-2 rounded-md border border-border/50 w-fit max-w-full'>
@@ -228,7 +228,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
                 >
                   #{localReply.replyToPost.postNumber}
                 </Link>
-                <span className="truncate max-w-[150px] sm:max-w-xs">
+                <span className="truncate max-w-37.5 sm:max-w-xs">
                   {localReply.replyToPost.userName || localReply.replyToPost.userUsername}
                 </span>
               </div>
@@ -244,7 +244,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
                   </span>
                 </div>
                 <MarkdownEditor
-                  editorClassName='min-h-[120px]'
+                  editorClassName='min-h-30'
                   placeholder='编辑回复内容...'
                   value={editContent}
                   onChange={setEditContent}
@@ -290,9 +290,9 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
               <div className="relative">
                 <div 
                   ref={contentRef}
-                  className={`max-w-none prose prose-stone dark:prose-invert prose-sm sm:prose-base break-words transition-all duration-300 ${
+                  className={`max-w-none prose prose-stone dark:prose-invert prose-sm sm:prose-base wrap-break-word transition-all duration-300 ${
                     // 检测完成前默认折叠，检测完成后根据实际情况决定
-                    (!hasCheckedHeight || (!isExpanded && needsCollapse)) ? 'max-h-[300px] overflow-hidden' : ''
+                    (!hasCheckedHeight || (!isExpanded && needsCollapse)) ? 'max-h-75 overflow-hidden' : ''
                   }`}
                   style={{
                     // 只有检测完成且确认需要折叠时才显示渐变遮罩
@@ -373,7 +373,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
                   likingPostIds.has(localReply.id) ||
                   !isAuthenticated
                 }
-                className={`h-8 min-w-[3rem] px-3 gap-1.5 ${
+                className={`h-8 min-w-12 px-3 gap-1.5 ${
                   localReply.isLiked
                     ? 'text-destructive hover:text-destructive/80 bg-destructive/5'
                     : 'text-muted-foreground/70 hover:text-destructive hover:bg-destructive/5'
@@ -407,7 +407,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
                     }
                     setRewardDialogOpen(true);
                   }}
-                  className={`h-8 min-w-[3rem] px-3 gap-1.5 transition-colors ${
+                  className={`h-8 min-w-12 px-3 gap-1.5 transition-colors ${
                     localRewardStats.totalAmount > 0
                       ? 'text-amber-600 bg-amber-50 hover:bg-amber-100 dark:text-amber-400 dark:bg-amber-900/20 dark:hover:bg-amber-900/40 border-amber-200/50 dark:border-amber-900/50'
                       : 'text-muted-foreground/70 hover:text-yellow-600 hover:bg-yellow-500/10'
@@ -513,7 +513,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
                 </span>
               </div>
               <MarkdownEditor
-                editorClassName='min-h-[120px]'
+                editorClassName='min-h-30'
                 placeholder='写下你的回复...'
                 value={replyToContent}
                 onChange={setReplyToContent}

@@ -189,7 +189,7 @@ export default function AdminTopicsPage() {
     {
       key: 'id',
       label: 'ID',
-      width: 'w-[60px]',
+      width: 'w-15',
       render: (value) => <span className='font-mono text-xs'>#{value}</span>,
     },
     {
@@ -221,7 +221,7 @@ export default function AdminTopicsPage() {
     {
       key: 'categoryName',
       label: '分类',
-      width: 'w-[120px]',
+      width: 'w-30',
       render: (value) => (
         <Badge variant='secondary' className='text-xs'>
           {value}
@@ -231,7 +231,7 @@ export default function AdminTopicsPage() {
     {
       key: 'username',
       label: '作者',
-      width: 'w-[120px]',
+      width: 'w-30',
       render: (value) => (
         <Link
           href={`/users/${value}`}
@@ -245,7 +245,7 @@ export default function AdminTopicsPage() {
     {
       key: 'status',
       label: '状态',
-      width: 'w-[100px]',
+      width: 'w-25',
       render: (_, row) => {
         // 优先显示审核状态
         if (row.approvalStatus === 'pending') {
@@ -293,7 +293,7 @@ export default function AdminTopicsPage() {
     {
       key: 'createdAt',
       label: '创建时间',
-      width: 'w-[120px]',
+      width: 'w-30',
       render: (value) => (
         <span className='text-xs text-muted-foreground'>
           <Time date={value} />

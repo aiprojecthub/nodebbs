@@ -238,7 +238,7 @@ export function PermissionsTab() {
           {
             key: 'module',
             label: '模块',
-            width: 'w-[100px]',
+            width: 'w-25',
             render: (value) => (
               <Badge variant="outline">{getModuleLabel(value)}</Badge>
             ),
@@ -246,7 +246,7 @@ export function PermissionsTab() {
           {
             key: 'action',
             label: '操作',
-            width: 'w-[100px]',
+            width: 'w-25',
             render: (value) => (
               <span className="text-sm text-muted-foreground">{getActionLabel(value)}</span>
             ),

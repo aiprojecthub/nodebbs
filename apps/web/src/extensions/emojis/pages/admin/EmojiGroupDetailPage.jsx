@@ -142,7 +142,7 @@ export default function EmojiDetailPage() {
             {reordering && <span className="text-sm text-muted-foreground animate-pulse">保存排序中...</span>}
           </div>
 
-          <div className="bg-muted/30 border rounded-lg p-6 min-h-[200px]">
+          <div className="bg-muted/30 border rounded-lg p-6 min-h-50">
             <EmojiListSortable
               emojis={group.emojis || []}
               onReorder={handleReorder}

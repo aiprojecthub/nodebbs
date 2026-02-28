@@ -324,13 +324,13 @@ export function InvitationList() {
           {
             key: 'status',
             label: '状态',
-            width: 'w-[100px]',
+            width: 'w-25',
             render: (value) => getStatusBadge(value),
           },
           {
             key: 'usage',
             label: '使用情况',
-            width: 'w-[100px]',
+            width: 'w-25',
             render: (_, code) => (
               <span className="text-sm text-muted-foreground">
                 {code.usedCount}/{code.maxUses}
@@ -364,7 +364,7 @@ export function InvitationList() {
           {
             key: 'expiresAt',
             label: '过期时间',
-            width: 'w-[120px]',
+            width: 'w-30',
             render: (value) => (
               <span className="text-xs text-muted-foreground flex items-center gap-1">
                 {value ? (
@@ -381,7 +381,7 @@ export function InvitationList() {
           {
             key: 'createdAt',
             label: '创建时间',
-            width: 'w-[120px]',
+            width: 'w-30',
             render: (value) => (
               <span className="text-xs text-muted-foreground">
                 {formatDate(value)}

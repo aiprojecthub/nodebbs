@@ -42,7 +42,7 @@ function LoadingState() {
         {/* 背景光晕 */}
         <div className="absolute inset-0 bg-primary/10 rounded-full blur-3xl scale-150" />
         {/* 图标容器 */}
-        <div className="relative flex items-center justify-center w-24 h-24 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20">
+        <div className="relative flex items-center justify-center w-24 h-24 rounded-2xl bg-linear-to-br from-primary/20 to-primary/5 border border-primary/20">
           <FileText className="w-10 h-10 text-primary" />
         </div>
       </div>
@@ -70,7 +70,7 @@ function ErrorState({ error, onRetry }) {
         {/* 背景光晕 */}
         <div className="absolute inset-0 bg-destructive/10 rounded-full blur-3xl scale-150" />
         {/* 图标容器 */}
-        <div className="relative flex items-center justify-center w-24 h-24 rounded-2xl bg-gradient-to-br from-destructive/20 to-destructive/5 border border-destructive/20">
+        <div className="relative flex items-center justify-center w-24 h-24 rounded-2xl bg-linear-to-br from-destructive/20 to-destructive/5 border border-destructive/20">
           <AlertCircle className="w-10 h-10 text-destructive" />
         </div>
       </div>

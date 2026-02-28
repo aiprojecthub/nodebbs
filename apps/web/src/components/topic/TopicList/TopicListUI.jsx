@@ -47,7 +47,7 @@ export function TopicItem({ topic }) {
       className={`
         p-3 group relative
         ${isPinned
-          ? 'bg-primary/[0.03] dark:bg-primary/[0.06] border-l-[3px] border-l-primary'
+          ? 'bg-primary/3 dark:bg-primary/6 border-l-[3px] border-l-primary'
           : 'hover:bg-accent/50'
         }
       `}
@@ -80,13 +80,13 @@ export function TopicItem({ topic }) {
           <div className='mb-2 leading-snug relative'>
             {/* 置顶标签 */}
             {isPinned && (
-              <span className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary align-middle relative -top-[1px]'>
+              <span className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary align-middle relative -top-px'>
                 <Pin className='w-3 h-3' />
                 置顶
               </span>
             )}
             {topic.isClosed && (
-              <span className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground align-middle relative -top-[1px]'>
+              <span className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground align-middle relative -top-px'>
                 <Lock className='w-3 h-3' />
                 已关闭
               </span>
@@ -107,7 +107,7 @@ export function TopicItem({ topic }) {
             {topic.approvalStatus === 'pending' && (
               <Badge
                 variant='outline'
-                className='text-chart-5 border-chart-5 text-xs h-5 inline-flex align-middle ml-2 relative -top-[1px]'
+                className='text-chart-5 border-chart-5 text-xs h-5 inline-flex align-middle ml-2 relative -top-px'
               >
                 待审核
               </Badge>
@@ -115,7 +115,7 @@ export function TopicItem({ topic }) {
             {topic.approvalStatus === 'rejected' && (
               <Badge
                 variant='outline'
-                className='text-destructive border-destructive text-xs h-5 inline-flex align-middle ml-2 relative -top-[1px]'
+                className='text-destructive border-destructive text-xs h-5 inline-flex align-middle ml-2 relative -top-px'
               >
                 已拒绝
               </Badge>
@@ -124,7 +124,7 @@ export function TopicItem({ topic }) {
 
           {/* 正文摘要 (主要用于搜索结果) */}
           {topic.snippet && (
-            <div className='text-sm text-muted-foreground line-clamp-2 mb-2 break-words opacity-80'>
+            <div className='text-sm text-muted-foreground line-clamp-2 mb-2 wrap-break-word opacity-80'>
               {topic.snippet}
             </div>
           )}
@@ -199,7 +199,7 @@ export function TopicItem({ topic }) {
         </div>
 
         {/* 右侧：统计信息 - 桌面端 */}
-        <div className='hidden sm:flex flex-col items-end gap-2 shrink-0 min-w-[100px]'>
+        <div className='hidden sm:flex flex-col items-end gap-2 shrink-0 min-w-25'>
           <div className='flex items-center gap-4 text-xs text-muted-foreground/60'>
             <div className='flex items-center gap-1.5 hover:text-muted-foreground'>
               <MessageSquare className='h-3.5 w-3.5' />

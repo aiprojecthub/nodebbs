@@ -89,7 +89,7 @@ export function BadgeAssignmentDialog({ open, onOpenChange, badgeList = [] }) {
               <SelectTrigger>
                 <SelectValue placeholder="选择一个勋章" />
               </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
+              <SelectContent className="max-h-75">
                 {badgeList.map((badge) => (
                   <SelectItem key={badge.id} value={String(badge.id)}>
                     <div className="flex items-center gap-2">

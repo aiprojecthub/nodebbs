@@ -58,7 +58,7 @@ function Podium({ top3, rankType }) {
             </div>
          </div>
          
-         <Link href={`/users/${user.username}`} className="text-center group p-2 rounded-lg hover:bg-muted/50 transition-colors w-full max-w-[140px]">
+         <Link href={`/users/${user.username}`} className="text-center group p-2 rounded-lg hover:bg-muted/50 transition-colors w-full max-w-35">
             <div className="font-bold text-sm sm:text-base truncate w-full group-hover:text-primary transition-colors">
                 {user.name}
             </div>
@@ -145,7 +145,7 @@ function RankItem({ user, index, rankType, currentUserId }) {
         </div>
 
         {/* 积分 */}
-        <div className="text-right flex-shrink-0 ml-4">
+        <div className="text-right shrink-0 ml-4">
           <div className="flex items-center justify-end gap-1.5 font-bold text-muted-foreground group-hover:text-foreground transition-colors">
             <Coins className="h-4 w-4 text-yellow-500/70 group-hover:text-yellow-500 transition-colors" />
             <span className="tabular-nums text-base sm:text-lg">
@@ -168,7 +168,7 @@ function RankSkeleton() {
     return (
         <div className="space-y-6 animate-pulse">
              {/* 领奖台骨架屏 */}
-             <div className="flex justify-center items-end gap-8 pb-8 border-b h-[200px]">
+             <div className="flex justify-center items-end gap-8 pb-8 border-b h-50">
                  <div className="w-20 h-32 bg-muted rounded-t-lg mx-2" />
                  <div className="w-24 h-40 bg-muted rounded-t-lg mx-2" />
                  <div className="w-20 h-24 bg-muted rounded-t-lg mx-2" />

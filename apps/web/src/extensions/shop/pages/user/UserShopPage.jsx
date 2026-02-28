@@ -133,8 +133,8 @@ export default function UserShopPage() {
 
           {/* 余额卡片 - Compact */}
           {isAuthenticated && (
-            <div className="flex-shrink-0 w-full md:w-auto">
-               <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl px-5 py-3 shadow-none min-w-[180px]">
+            <div className="shrink-0 w-full md:w-auto">
+               <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl px-5 py-3 shadow-none min-w-45">
                   <div className="flex flex-col md:items-end items-center gap-1">
                      <span className="text-xs font-medium text-muted-foreground">当前余额</span>
                      <div className="text-2xl font-bold text-foreground flex items-baseline gap-1">

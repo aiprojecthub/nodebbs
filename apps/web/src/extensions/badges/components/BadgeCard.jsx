@@ -88,14 +88,14 @@ export default function BadgeCard({
             className={`
               group relative flex flex-col items-center p-4 rounded-2xl border transition duration-500 cursor-default h-full isolate overflow-hidden
               ${isUnlocked 
-                ? 'bg-gradient-to-b from-card to-muted/20 border-primary/10 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1' 
+                ? 'bg-linear-to-b from-card to-muted/20 border-primary/10 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1' 
                 : 'bg-muted/20 border-transparent hover:bg-muted/30 hover:border-border/30'
               }
             `}
           >
             {/* Glossy Effect (Unlocked only) */}
             {isUnlocked && (
-              <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+              <div className="absolute inset-0 bg-linear-to-tr from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
             )}
 
             {/* Top Bar */}

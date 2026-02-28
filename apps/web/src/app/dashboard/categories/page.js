@@ -326,7 +326,7 @@ export default function CategoriesManagement() {
           {
             key: 'slug',
             label: 'Slug',
-            width: 'w-[200px]',
+            width: 'w-50',
             render: (value) => (
               <code className='text-xs text-muted-foreground bg-muted px-2 py-1 rounded'>
                 {value}
@@ -352,7 +352,7 @@ export default function CategoriesManagement() {
           {
             key: 'topicCount',
             label: '话题数',
-            width: 'w-[100px]',
+            width: 'w-25',
             render: (value) => <span className='text-sm'>{value || 0}</span>,
           },
           {

@@ -113,7 +113,7 @@ export function RewardSuccessDialog({ open, onOpenChange, amount }) {
         <div className="relative flex flex-col items-center justify-center p-6 bg-zinc-950/40 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl ring-1 ring-white/5">
           
           {/* 现代感背景流光 */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-rose-500/10 via-transparent to-orange-500/10 pointer-events-none" />
+          <div className="absolute inset-0 bg-linear-to-tr from-rose-500/10 via-transparent to-orange-500/10 pointer-events-none" />
           <div className="absolute -top-20 -right-20 w-60 h-60 bg-rose-500/20 rounded-full blur-[80px] pointer-events-none" />
           <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-orange-500/20 rounded-full blur-[80px] pointer-events-none" />
 
@@ -130,7 +130,7 @@ export function RewardSuccessDialog({ open, onOpenChange, amount }) {
             className="relative w-32 h-32 mb-6 flex items-center justify-center"
           >
              {/* 中心发光 */}
-             <div className="absolute inset-0 bg-gradient-to-br from-rose-500 to-orange-500 blur-2xl opacity-40 rounded-full" />
+             <div className="absolute inset-0 bg-linear-to-br from-rose-500 to-orange-500 blur-2xl opacity-40 rounded-full" />
              <Heart size={80} className="text-white fill-rose-500 drop-shadow-lg z-10" />
           </motion.div>
 
@@ -140,14 +140,14 @@ export function RewardSuccessDialog({ open, onOpenChange, amount }) {
             transition={{ delay: 0.2 }}
             className="text-center space-y-1 z-10"
           >
-            <h2 className="text-3xl font-black bg-gradient-to-br from-white to-white/70 bg-clip-text text-transparent tracking-tight">
+            <h2 className="text-3xl font-black bg-linear-to-br from-white to-white/70 bg-clip-text text-transparent tracking-tight">
               打赏成功
             </h2>
             <div className="h-1" />
             <h3 className="text-lg font-medium text-rose-200/90 flex items-center justify-center gap-2">
               <span className="text-2xl font-bold text-white">{amount}</span> {currencyName}已送达
             </h3>
-            <p className="text-sm text-zinc-400 mt-2 max-w-[200px] mx-auto leading-relaxed">
+            <p className="text-sm text-zinc-400 mt-2 max-w-50 mx-auto leading-relaxed">
               您的支持是创作者最大的动力
             </p>
           </motion.div>
@@ -160,7 +160,7 @@ export function RewardSuccessDialog({ open, onOpenChange, amount }) {
             className="mt-8 z-10"
           >
              <Button 
-               className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-400 hover:to-pink-500 text-white font-semibold border-0 shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:shadow-[0_0_30px_rgba(239,68,68,0.6)]"
+               className="bg-linear-to-r from-red-500 to-pink-600 hover:from-red-400 hover:to-pink-500 text-white font-semibold border-0 shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:shadow-[0_0_30px_rgba(239,68,68,0.6)]"
                onClick={() => onOpenChange(false)}
              >
                关闭

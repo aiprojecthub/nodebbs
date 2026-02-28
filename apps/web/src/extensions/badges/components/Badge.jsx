@@ -128,7 +128,7 @@ export default function Badge({
                 <img 
                   src={badgeData.iconUrl || metadata.iconUrl} 
                   alt={badgeData.name || badgeData.itemName}
-                  className="w-[200px] h-[200px] object-contain drop-shadow-lg transition-transform hover:scale-110 duration-500 ease-in-out"
+                  className="w-50 h-50 object-contain drop-shadow-lg transition-transform hover:scale-110 duration-500 ease-in-out"
                 />
               ) : (
                 <Award className="w-32 h-32 text-primary/20" />

@@ -54,7 +54,7 @@ export default async function TagTopicListPage({ params, searchParams }) {
 
   if (!tag) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-muted-foreground">
+      <div className="flex flex-col items-center justify-center min-h-100 text-muted-foreground">
         <Tag className="h-12 w-12 mb-4 opacity-20" />
         <h2 className="text-xl font-semibold mb-2">标签不存在</h2>
         <p>该标签可能已被删除或从未存在</p>

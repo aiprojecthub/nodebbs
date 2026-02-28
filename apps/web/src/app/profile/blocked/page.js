@@ -77,7 +77,7 @@ export default function BlockedUsersPage() {
 
       {/* 初始加载状态 */}
       {isInitialLoading ? (
-        <Loading text="加载中..." className="min-h-[300px]" />
+        <Loading text="加载中..." className="min-h-75" />
       ) : error ? (
         /* 错误状态 */
         <Card className="border-destructive/20 shadow-none">
@@ -138,7 +138,7 @@ export default function BlockedUsersPage() {
                             <Time date={blockedUser.createdAt} fromNow />
                           </span>
                           {blockedUser.reason && (
-                            <span className="truncate max-w-[200px]" title={blockedUser.reason}>
+                            <span className="truncate max-w-50" title={blockedUser.reason}>
                               原因: {blockedUser.reason}
                             </span>
                           )}

@@ -89,7 +89,7 @@ export default function Header() {
               <img
                 src={settings?.site_logo?.value || '/logo.svg'}
                 alt='logo'
-                className='h-7 w-auto max-w-[120px] transition-transform group-hover:scale-105'
+                className='h-7 w-auto max-w-30 transition-transform group-hover:scale-105'
               />
               {settings?.show_logo_text?.value !== false && (
                 <span className='text-base font-semibold text-foreground hidden sm:inline'>
@@ -291,7 +291,7 @@ export default function Header() {
                   {isMobileMenuOpen ? <X /> : <Menu />}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="end" sideOffset={0} className="w-screen mt-[1px] rounded-none shadow-none border-x-0 border-b lg:hidden p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+              <PopoverContent align="end" sideOffset={0} className="w-screen mt-px rounded-none shadow-none border-x-0 border-b lg:hidden p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
                 {/* 移动端搜索 */}
                 <div className='p-4'>
                   <form onSubmit={handleSearch} className='relative'>

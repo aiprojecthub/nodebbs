@@ -143,7 +143,7 @@ export default function NotificationPopover() {
         </div>
 
         {/* 通知列表 */}
-        <div className='max-h-[400px] overflow-y-auto'>
+        <div className='max-h-100 overflow-y-auto'>
           {isLoading ? (
             <Loading className='py-8' />
           ) : notifications.length > 0 ? (

@@ -69,13 +69,13 @@ export function LedgerTransactions() {
     return (
         <div className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-4 mb-4 items-end">
-                <div className="w-full sm:w-[300px]">
+                <div className="w-full sm:w-75">
                     <UserSearchInput 
                         selectedUser={filterUser}
                         onSelectUser={setFilterUser}
                     />
                 </div>
-                <div className="w-full sm:w-[200px] space-y-2">
+                <div className="w-full sm:w-50 space-y-2">
                      <Label>筛选货币</Label>
                      <Select value={filterCurrency} onValueChange={setFilterCurrency}>
                         <SelectTrigger>

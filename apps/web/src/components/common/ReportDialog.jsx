@@ -86,7 +86,7 @@ export default function ReportDialog({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               disabled={submitting}
-              className='min-h-[120px]'
+              className='min-h-30'
               maxLength={500}
             />
             <div className='text-xs text-muted-foreground text-right'>

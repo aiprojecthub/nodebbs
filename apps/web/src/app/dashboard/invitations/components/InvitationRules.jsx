@@ -170,7 +170,7 @@ export function InvitationRules() {
   };
 
   if (loading) {
-    return <Loading text='加载中...' className='min-h-[400px]' />;
+    return <Loading text='加载中...' className='min-h-100' />;
   }
 
   // 计算可添加规则的角色（排除 guest 和已有规则的角色）

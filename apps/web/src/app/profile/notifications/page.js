@@ -126,7 +126,7 @@ export default function NotificationsPage() {
 
       {/* 初始加载状态 */}
       {isInitialLoading ? (
-        <Loading text="加载中..." className="min-h-[200px]" />
+        <Loading text="加载中..." className="min-h-50" />
       ) : error ? (
         /* 错误状态 */
         <Card className="border-destructive/20 shadow-none">
@@ -149,7 +149,7 @@ export default function NotificationsPage() {
                   key={notification.id}
                   className={`group shadow-none transition-colors ${
                     !notification.isRead
-                      ? 'border-primary/30 bg-primary/[0.02]'
+                      ? 'border-primary/30 bg-primary/2'
                       : 'hover:border-border/80'
                   }`}
                 >

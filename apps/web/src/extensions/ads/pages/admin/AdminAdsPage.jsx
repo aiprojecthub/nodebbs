@@ -415,7 +415,7 @@ export default function AdminAdsPage() {
               {
                 key: 'type',
                 label: '类型',
-                width: 'w-[100px]',
+                width: 'w-25',
                 render: (type) => {
                   const config = AD_TYPES[type];
                   const Icon = config?.icon || Image;
@@ -543,7 +543,7 @@ export default function AdminAdsPage() {
               {
                 key: 'size',
                 label: '建议尺寸',
-                width: 'w-[120px]',
+                width: 'w-30',
                 render: (_, slot) => (
                   <span className="text-sm text-muted-foreground">
                     {slot.width && slot.height ? `${slot.width} × ${slot.height}` : '-'}
@@ -553,7 +553,7 @@ export default function AdminAdsPage() {
               {
                 key: 'maxAds',
                 label: '最大广告数',
-                width: 'w-[100px]',
+                width: 'w-25',
                 render: (value) => value || 1,
               },
               {
@@ -577,7 +577,7 @@ export default function AdminAdsPage() {
                 key: 'description',
                 label: '描述',
                 render: (value) => (
-                  <span className="text-sm text-muted-foreground truncate max-w-[200px] block">
+                  <span className="text-sm text-muted-foreground truncate max-w-50 block">
                     {value || '-'}
                   </span>
                 ),

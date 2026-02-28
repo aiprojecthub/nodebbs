@@ -44,7 +44,7 @@ function SortableEmojiItem({ emoji, onDelete }) {
       ref={setNodeRef}
       style={style}
       className={cn(
-        'relative group flex flex-col items-center justify-between p-2 bg-card border border-border rounded-lg min-h-[100px]',
+        'relative group flex flex-col items-center justify-between p-2 bg-card border border-border rounded-lg min-h-25',
         'hover:border-primary/50 hover:shadow-sm',
         isDragging && 'shadow-lg opacity-50 z-50 scale-105'
       )}

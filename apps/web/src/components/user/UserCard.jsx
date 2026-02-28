@@ -37,7 +37,7 @@ export default function UserCard({
           )}
         >
           {/* 背景装饰条 */}
-          <div className='h-16 bg-gradient-to-r from-primary/10 to-primary/5' />
+          <div className='h-16 bg-linear-to-r from-primary/10 to-primary/5' />
           <div className='px-4 pb-4'>{children}</div>
         </div>
       );

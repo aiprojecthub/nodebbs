@@ -300,7 +300,7 @@ export default function MessageDetailPage() {
                     >
                       {/* 左侧头像 - 对方消息 */}
                       {!isSentByMe && (
-                         <div className={`flex-shrink-0 w-8 ${isSequence ? 'invisible' : ''}`}>
+                         <div className={`shrink-0 w-8 ${isSequence ? 'invisible' : ''}`}>
                             <UserAvatar
                               url={msg.senderAvatar}
                               name={msg.senderUsername}
@@ -324,7 +324,7 @@ export default function MessageDetailPage() {
                         <div
                           className={`relative px-4 py-2.5 shadow-sm text-sm break-all ${
                             isSentByMe
-                              ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-2xl rounded-br-sm'
+                              ? 'bg-linear-to-br from-primary to-primary/90 text-primary-foreground rounded-2xl rounded-br-sm'
                               : 'bg-card border border-border/50 text-card-foreground rounded-2xl rounded-bl-sm'
                           }`}
                         >
@@ -376,7 +376,7 @@ export default function MessageDetailPage() {
             <div className="bg-muted/30 backdrop-blur-md rounded-xl p-1.5 border border-border/50 flex items-end gap-2 focus-within:ring-1 focus-within:ring-primary/30">
                 <Textarea
                   ref={textareaRef}
-                  className='flex-1 min-h-[40px] max-h-[120px] resize-none text-sm shadow-none p-3 placeholder:text-muted-foreground/50'
+                  className='flex-1 min-h-10 max-h-30 resize-none text-sm shadow-none p-3 placeholder:text-muted-foreground/50'
                   placeholder="输入消息..."
                   value={replyContent}
                   onChange={(e) => setReplyContent(e.target.value)}

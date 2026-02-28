@@ -183,7 +183,7 @@ export default function TagsManagement() {
           {
             key: 'name',
             label: '标签',
-            width: 'w-[200px]',
+            width: 'w-50',
             render: (_, tag) => (
               <Badge
                 style={{
@@ -200,7 +200,7 @@ export default function TagsManagement() {
           {
             key: 'slug',
             label: 'Slug',
-            width: 'w-[200px]',
+            width: 'w-50',
             render: (value) => (
               <code className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
                 {value}
@@ -217,7 +217,7 @@ export default function TagsManagement() {
           {
             key: 'topicCount',
             label: '使用次数',
-            width: 'w-[100px]',
+            width: 'w-25',
             render: (value) => <span className="text-sm">{value || 0}</span>,
           },
           {

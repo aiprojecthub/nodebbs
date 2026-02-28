@@ -231,7 +231,7 @@ export default function UsersManagement() {
     {
       key: 'email',
       label: '邮箱',
-      width: 'w-[200px]',
+      width: 'w-50',
       render: (value, user) => (
         <div className="flex items-center gap-1.5">
           <span className="text-sm text-muted-foreground">{value}</span>
@@ -263,13 +263,13 @@ export default function UsersManagement() {
     {
       key: 'role',
       label: '角色',
-      width: 'w-[180px]',
+      width: 'w-45',
       render: (_, user) => <UserRoleBadges user={user} />,
     },
     {
       key: 'status',
       label: '状态',
-      width: 'w-[100px]',
+      width: 'w-25',
       render: (_, user) => {
         if (user.isDeleted) return <Badge variant="destructive" className="text-xs">已删除</Badge>;
         if (user.isBanned) return <Badge variant="destructive" className="text-xs">已封禁</Badge>;
@@ -279,7 +279,7 @@ export default function UsersManagement() {
     {
       key: 'createdAt',
       label: '注册时间',
-      width: 'w-[120px]',
+      width: 'w-30',
       render: (value) => (
         <span className="text-xs text-muted-foreground">
           <Time date={value} />

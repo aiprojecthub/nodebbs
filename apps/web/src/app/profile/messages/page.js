@@ -116,7 +116,7 @@ export default function MessagesPage() {
 
       {/* 初始加载状态 */}
       {isInitialLoading ? (
-        <Loading text="加载中..." className="min-h-[300px]" />
+        <Loading text="加载中..." className="min-h-75" />
       ) : error ? (
         /* 错误状态 */
         <div className="bg-card border border-destructive/20 rounded-lg p-12 text-center">
@@ -155,7 +155,7 @@ export default function MessagesPage() {
                 <div className='p-4 pl-5'>
                   <div className='flex items-start space-x-4'>
                     {/* 用户头像 */}
-                    <Link href={`/profile/messages/${otherUser.id}`} className="flex-shrink-0">
+                    <Link href={`/profile/messages/${otherUser.id}`} className="shrink-0">
                       <UserAvatar
                         url={otherUser.avatar}
                         name={otherUser.username}
@@ -176,7 +176,7 @@ export default function MessagesPage() {
                             {otherUser.name || otherUser.username}
                           </span>
                         </div>
-                        <span className='text-xs text-muted-foreground flex-shrink-0'>
+                        <span className='text-xs text-muted-foreground shrink-0'>
                            <Time date={latestMessage.createdAt} fromNow />
                         </span>
                       </div>
@@ -195,7 +195,7 @@ export default function MessagesPage() {
                           
                           {/* 未读气泡 */}
                           {hasUnread && (
-                             <Badge variant="default" className="h-5 w-auto min-w-[1.25rem] px-1 flex items-center justify-center rounded-full text-[10px] shrink-0">
+                             <Badge variant="default" className="h-5 w-auto min-w-5 px-1 flex items-center justify-center rounded-full text-[10px] shrink-0">
                                 {unreadCount}
                              </Badge>
                           )}

@@ -132,7 +132,7 @@ export default function AdminPostsPage() {
     {
       key: 'id',
       label: 'ID',
-      width: 'w-[60px]',
+      width: 'w-15',
       render: (value) => <span className='font-mono text-xs'>#{value}</span>,
     },
     {
@@ -158,7 +158,7 @@ export default function AdminPostsPage() {
     {
       key: 'username',
       label: '作者',
-      width: 'w-[120px]',
+      width: 'w-30',
       render: (value, row) => (
         <div className='flex flex-col gap-1'>
           <Link
@@ -178,7 +178,7 @@ export default function AdminPostsPage() {
     {
       key: 'status',
       label: '状态',
-      width: 'w-[100px]',
+      width: 'w-25',
       render: (_, row) => {
         // 优先显示审核状态
         if (row.approvalStatus === 'pending') {
@@ -222,7 +222,7 @@ export default function AdminPostsPage() {
     {
       key: 'createdAt',
       label: '创建时间',
-      width: 'w-[120px]',
+      width: 'w-30',
       render: (value) => (
         <span className='text-xs text-muted-foreground'>
           <Time date={value} />

@@ -54,7 +54,7 @@ const CodeBlock = ({ code, language = 'bash' }) => {
 
 const FeatureCard = ({ icon: Icon, title, description, link, linkText }) => (
   <div className="group relative p-8 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition duration-300">
-    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+    <div className="absolute inset-0 bg-linear-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
     <div className="relative">
       <div className="inline-flex p-3 rounded-xl bg-primary/10 text-primary mb-5">
         <Icon className="h-7 w-7" />
@@ -102,7 +102,7 @@ const AboutContent = () => {
     <div className="bg-background text-foreground">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5" />
+        <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-primary/5" />
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
 
@@ -113,7 +113,7 @@ const AboutContent = () => {
               <span>开源免费 · 一键部署</span>
             </div>
 
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight bg-linear-to-r from-foreground to-foreground/70 bg-clip-text">
               关于 NodeBBS
             </h1>
 
@@ -202,8 +202,8 @@ const AboutContent = () => {
 
             <div className="order-1 lg:order-2 flex justify-center">
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5 rounded-3xl blur-2xl" />
-                <div className="relative p-12 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-border/50">
+                <div className="absolute inset-0 bg-linear-to-br from-primary/20 to-primary/5 rounded-3xl blur-2xl" />
+                <div className="relative p-12 rounded-3xl bg-linear-to-br from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-border/50">
                   <Github className="h-32 w-32 md:h-40 md:w-40 text-foreground/80" />
                   <div className="flex items-center justify-center gap-6 mt-6">
                     <a
@@ -320,8 +320,8 @@ const AboutContent = () => {
 
       {/* Join & Contribute Section */}
       <div className="relative py-20 md:py-28 px-4 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute inset-0 bg-linear-to-br from-primary/10 via-primary/5 to-transparent" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-200 h-200 bg-primary/5 rounded-full blur-3xl" />
 
         <div className="relative max-w-3xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">

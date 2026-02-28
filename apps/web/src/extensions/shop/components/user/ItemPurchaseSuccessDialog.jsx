@@ -68,10 +68,10 @@ export function ItemPurchaseSuccessDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md border-0 bg-transparent shadow-none" showCloseButton={false}>
-        <div className="relative flex flex-col items-center justify-center p-6 bg-gradient-to-br from-emerald-500/80 to-teal-600/80 backdrop-blur-xl border border-emerald-400/30 rounded-xl overflow-hidden shadow-2xl">
+        <div className="relative flex flex-col items-center justify-center p-6 bg-linear-to-br from-emerald-500/80 to-teal-600/80 backdrop-blur-xl border border-emerald-400/30 rounded-xl overflow-hidden shadow-2xl">
           
           {/* 光效 */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent animate-pulse pointer-events-none" />
+          <div className="absolute inset-0 bg-linear-to-tr from-transparent via-white/10 to-transparent animate-pulse pointer-events-none" />
 
           {/* 道具动画 */}
           <motion.div
