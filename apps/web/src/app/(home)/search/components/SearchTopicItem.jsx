@@ -46,7 +46,7 @@ export function SearchTopicItem({ topic, keyword }) {
 
           {/* 正文摘要（关键词高亮） */}
           {topic.snippet && (
-            <div className='text-sm text-muted-foreground line-clamp-2 mb-2 break-words'>
+            <div className='text-sm text-muted-foreground line-clamp-2 mb-2 wrap-break-word'>
               <HighlightText text={topic.snippet} keyword={keyword} />
             </div>
           )}
