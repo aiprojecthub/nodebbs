@@ -12,6 +12,7 @@ export function Toaster({ ...props }) {
       theme={resolvedTheme}
       position='top-center'
       offset={60}
+      mobileOffset="calc(env(safe-area-inset-top, 0px) + 8px)"
       className='toaster'
       toastOptions={{
         classNames: {
