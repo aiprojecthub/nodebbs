@@ -81,14 +81,14 @@ export default async function TagTopicListPage({ params, searchParams }) {
             {tag.description && (
               <p className="mt-2 text-muted-foreground">{tag.description}</p>
             )}
-            <div className="mt-4 flex gap-2">
+            {/* <div className="mt-4 flex gap-2">
                  <Badge 
                     style={{backgroundColor: tag.color, color: '#fff'}}
                     className="hover:opacity-90"
                  >
                     #{tag.slug}
                  </Badge>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

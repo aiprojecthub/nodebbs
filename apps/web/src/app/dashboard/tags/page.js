@@ -186,10 +186,6 @@ export default function TagsManagement() {
             width: 'w-50',
             render: (_, tag) => (
               <Badge
-                style={{
-                  backgroundColor: tag.color,
-                  color: '#fff',
-                }}
                 className="text-xs"
               >
                 <TagIcon className="h-3 w-3 mr-1" />

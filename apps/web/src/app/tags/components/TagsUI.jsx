@@ -74,10 +74,10 @@ function TagCard({ tag }) {
   return (
     <Link
       href={`/tags/${tag.slug}`}
-      className='group flex flex-col h-full bg-card border-b border-x-0 sm:border border-border sm:rounded-lg px-3 py-4 sm:p-5 hover:bg-accent/50 sm:hover:border-primary/50 transition-colors duration-200'
+      className='group flex flex-col h-full space-y-3 bg-card border-b border-x-0 sm:border border-border sm:rounded-lg px-3 py-4 sm:p-5 hover:bg-accent/50 sm:hover:border-primary/50 transition-colors duration-200'
      
     >
-      <div className='flex items-start justify-between mb-3'>
+      <div className='flex items-start justify-between'>
         <div className='flex items-center gap-2'>
           <div className='p-1.5 rounded-md bg-muted/50 text-muted-foreground group-hover:text-primary group-hover:bg-primary/10 transition-colors'>
             <Hash className='h-4 w-4' />
@@ -91,18 +91,17 @@ function TagCard({ tag }) {
         </Badge>
       </div>
       
-      {tag.description && (
+      {/* {tag.description && (
         <p className='text-sm text-muted-foreground line-clamp-2 leading-relaxed'>
           {tag.description}
         </p>
-      )}
+      )} */}
       
-      <div className='mt-auto pt-4 flex gap-2 overflow-hidden'>
-         {/* 这里可以放一些相关的子标签或者补充信息，暂时留空保持简洁 */}
+      {/* <div className='mt-auto flex gap-2 overflow-hidden'>
          <span className="text-xs text-muted-foreground/50 font-mono">
             #{tag.slug}
          </span>
-      </div>
+      </div> */}
     </Link>
   );
 }
