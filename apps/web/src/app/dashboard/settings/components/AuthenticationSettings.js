@@ -46,6 +46,22 @@ export function AuthenticationSettings({ settings, handleBooleanChange, handleNu
             )}
           </>
         )}
+
+        {settings.phone_login_enabled && (
+          <SettingItem
+            title="手机号登录功能"
+            description="允许用户使用手机号+验证码或密码登录（需先配置短信服务）"
+          >
+            <Switch
+              id='phone_login_enabled'
+              checked={settings.phone_login_enabled.value}
+              onCheckedChange={(checked) =>
+                handleBooleanChange('phone_login_enabled', checked)
+              }
+              disabled={saving}
+            />
+          </SettingItem>
+        )}
       </SettingSection>
     </div>
   );

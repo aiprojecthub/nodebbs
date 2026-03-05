@@ -41,7 +41,7 @@ export default async function verificationRoute(fastify, options) {
                 properties: {
                   id: { type: 'number' },
                   username: { type: 'string' },
-                  email: { type: 'string' },
+                  email: { type: ['string', 'null'] },
                   isEmailVerified: { type: 'boolean' },
                 },
               },

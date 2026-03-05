@@ -17,8 +17,10 @@ export const users = pgTable(
   {
     ...$defaults,
     username: varchar('username', { length: 50 }).notNull().unique(),
-    email: varchar('email', { length: 255 }).notNull().unique(),
+    email: varchar('email', { length: 255 }).unique(),
     passwordHash: varchar('password_hash', { length: 255 }), // 可选，OAuth 用户可能没有密码
+    phone: varchar('phone', { length: 20 }).unique(),
+    isPhoneVerified: boolean('is_phone_verified').notNull().default(false),
     name: varchar('name', { length: 255 }),
     bio: text('bio'),
     avatar: varchar('avatar', { length: 500 }),
@@ -44,6 +46,7 @@ export const users = pgTable(
   (table) => [
     index('users_email_idx').on(table.email),
     index('users_username_idx').on(table.username),
+    index('users_phone_idx').on(table.phone),
   ]
 );
 

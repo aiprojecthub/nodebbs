@@ -46,9 +46,6 @@ export const VerificationCodeType = {
   EMAIL_CHANGE_NEW: 'email_change_new',
 
   // ========== 短信渠道 ==========
-  // 手机号注册验证
-  PHONE_REGISTER: 'phone_register',
-
   // 手机号登录
   PHONE_LOGIN: 'phone_login',
 
@@ -58,8 +55,11 @@ export const VerificationCodeType = {
   // 绑定手机号（需要登录）
   PHONE_BIND: 'phone_bind',
 
-  // 更换手机号（需要登录）
-  PHONE_CHANGE: 'phone_change',
+  // 更换手机号 - 验证旧手机号（需要登录）
+  PHONE_CHANGE_OLD: 'phone_change_old',
+
+  // 更换手机号 - 验证新手机号（需要登录）
+  PHONE_CHANGE_NEW: 'phone_change_new',
 
   // ========== 通用 ==========
   // 敏感操作验证（默认邮件，可配置）
@@ -167,18 +167,6 @@ export const VerificationCodeConfig = {
   },
 
   // ========== 短信渠道配置 ==========
-  [VerificationCodeType.PHONE_REGISTER]: {
-    channel: VerificationChannel.SMS,
-    digits: 6,
-    expiryMinutes: 10,
-    requireAuth: false,
-    userValidation: UserValidation.MUST_NOT_EXIST, // 保留，降级使用：支持手机号+密码注册
-    maxRetries: 5,
-    rateLimitSeconds: 60,
-    description: '注册验证',
-    template: 'SMS_REGISTER',
-  },
-
   [VerificationCodeType.PHONE_LOGIN]: {
     channel: VerificationChannel.SMS,
     digits: 6,
@@ -215,27 +203,29 @@ export const VerificationCodeConfig = {
     template: 'SMS_BIND',
   },
 
-  /**
-   * TODO: 更换手机号逻辑：如果用户能接收旧手机号的验证码，则必须验证旧号。
-   * 步骤：
-    - 用户发起换手机号
-    - 向用户旧手机号发送 旧号验证验证码（OTP1）
-    - 旧号验证通过 → 进入下一步
-    - 用户输入新手机号
-    - 向新手机号发送 新号验证验证码（OTP2）
-    - 新号验证通过 → 完成更换
-    需要两个验证码: PHONE_CHANGE_OLD PHONE_CHANGE_NEW
-    如果用户旧手机号不可用，则采用：登录密码 + 邮箱验证码。
-   */
-  [VerificationCodeType.PHONE_CHANGE]: {
+  // 更换手机号 - 步骤1：验证旧手机号
+  [VerificationCodeType.PHONE_CHANGE_OLD]: {
     channel: VerificationChannel.SMS,
     digits: 6,
     expiryMinutes: 10,
     requireAuth: true,
-    userValidation: UserValidation.MUST_EXIST, // 在业务逻辑中额外检查所有权
+    userValidation: UserValidation.MUST_EXIST,
     maxRetries: 5,
     rateLimitSeconds: 60,
-    description: '更换手机号',
+    description: '更换手机号（验证旧手机号）',
+    template: 'SMS_CHANGE',
+  },
+
+  // 更换手机号 - 步骤2：验证新手机号
+  [VerificationCodeType.PHONE_CHANGE_NEW]: {
+    channel: VerificationChannel.SMS,
+    digits: 6,
+    expiryMinutes: 10,
+    requireAuth: true,
+    // userValidation: 不设置，在业务逻辑中检查是否被其他用户占用
+    maxRetries: 5,
+    rateLimitSeconds: 60,
+    description: '更换手机号（验证新手机号）',
     template: 'SMS_CHANGE',
   },
 

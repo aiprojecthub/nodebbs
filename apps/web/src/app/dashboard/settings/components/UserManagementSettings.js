@@ -136,6 +136,40 @@ export function UserManagementSettings({ settings, handleBooleanChange, handleNu
           </SettingItem>
         )}
       </SettingSection>
+
+      <SettingSection title="手机号修改" description="控制用户换绑手机号的行为">
+        {settings.allow_phone_change && (
+          <SettingItem
+            title="允许修改手机号"
+            description={settings.allow_phone_change.description}
+          >
+            <Switch
+              id='allow_phone_change'
+              checked={settings.allow_phone_change.value}
+              onCheckedChange={(checked) =>
+                handleBooleanChange('allow_phone_change', checked)
+              }
+              disabled={saving}
+            />
+          </SettingItem>
+        )}
+
+        {settings.phone_change_requires_password && (
+          <SettingItem
+            title="修改手机号需要密码验证"
+            description={settings.phone_change_requires_password.description}
+          >
+            <Switch
+              id='phone_change_requires_password'
+              checked={settings.phone_change_requires_password.value}
+              onCheckedChange={(checked) =>
+                handleBooleanChange('phone_change_requires_password', checked)
+              }
+              disabled={saving}
+            />
+          </SettingItem>
+        )}
+      </SettingSection>
     </div>
   );
 }

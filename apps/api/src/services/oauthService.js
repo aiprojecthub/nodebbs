@@ -108,7 +108,7 @@ export async function handleOAuthLogin(
  * 同步 OAuth 提供商的邮箱验证状态到本地用户
  */
 async function syncEmailVerified(user, profile) {
-  if (profile.isEmailVerified && !user.isEmailVerified && user.email === profile.email) {
+  if (profile.isEmailVerified && !user.isEmailVerified && user.email && user.email === profile.email) {
     const [updatedUser] = await db.update(users)
       .set({ isEmailVerified: true })
       .where(eq(users.id, user.id))

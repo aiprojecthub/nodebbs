@@ -7,10 +7,12 @@ import { useOAuthProviders } from '@/hooks/auth/useOAuthProviders';
 import { LoginForm } from '@/components/auth/LoginDialog/LoginForm';
 import { OAuthSection } from '@/components/auth/LoginDialog/OAuthSection';
 import { QRLoginTab } from '@/components/auth/LoginDialog/QRLoginTab';
+import { PhoneLoginForm } from '@/components/auth/LoginDialog/PhoneLoginForm';
 
 export function LoginSection({ onSuccess, onForgotPassword }) {
   const { settings } = useSettings();
   const qrLoginEnabled = settings?.qr_login_enabled?.value === true;
+  const phoneLoginEnabled = settings?.phone_login_enabled?.value === true;
 
   const loginForm = useLoginForm({ onSuccess });
   const { oauthProviders } = useOAuthProviders();
@@ -36,21 +38,42 @@ export function LoginSection({ onSuccess, onForgotPassword }) {
     </>
   );
 
-  if (qrLoginEnabled) {
+  const hasTabs = qrLoginEnabled || phoneLoginEnabled;
+
+  if (hasTabs) {
+    // 计算 tab 数量
+    const tabCount = 1 + (phoneLoginEnabled ? 1 : 0) + (qrLoginEnabled ? 1 : 0);
+
+    // 计算 tab 列样式
+    const gridColsClass = tabCount === 3 ? 'grid-cols-3' : 'grid-cols-2';
+
     return (
       <Tabs defaultValue="password" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className={`grid w-full ${gridColsClass}`}>
           <TabsTrigger value="password">密码登录</TabsTrigger>
-          <TabsTrigger value="qr">扫码登录</TabsTrigger>
+          {phoneLoginEnabled && (
+            <TabsTrigger value="phone">手机登录</TabsTrigger>
+          )}
+          {qrLoginEnabled && (
+            <TabsTrigger value="qr">扫码登录</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="password" className="mt-4">
           {loginContent}
         </TabsContent>
 
-        <TabsContent value="qr" className="mt-4">
-          <QRLoginTab onSuccess={onSuccess} />
-        </TabsContent>
+        {phoneLoginEnabled && (
+          <TabsContent value="phone" className="mt-4">
+            <PhoneLoginForm onSuccess={onSuccess} />
+          </TabsContent>
+        )}
+
+        {qrLoginEnabled && (
+          <TabsContent value="qr" className="mt-4">
+            <QRLoginTab onSuccess={onSuccess} />
+          </TabsContent>
+        )}
       </Tabs>
     );
   }

@@ -2,7 +2,7 @@ import { userEnricher } from '../../services/userEnricher.js';
 import db from '../../db/index.js';
 import { users } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
-import { normalizeIdentifier } from '../../utils/normalization.js';
+import { normalizeIdentifier, isPhoneNumber } from '../../utils/normalization.js';
 
 export default async function loginRoute(fastify, options) {
   fastify.post(
@@ -11,12 +11,12 @@ export default async function loginRoute(fastify, options) {
       preHandler: [fastify.verifyCaptcha('login')],
       schema: {
         tags: ['auth'],
-        description: '用户登录（支持用户名或邮箱）',
+        description: '用户登录（支持用户名、邮箱或手机号）',
         body: {
           type: 'object',
           required: ['identifier', 'password'],
           properties: {
-            identifier: { type: 'string', description: '用户名或邮箱' },
+            identifier: { type: 'string', description: '用户名、邮箱或手机号' },
             password: { type: 'string' },
           },
         },
@@ -29,7 +29,7 @@ export default async function loginRoute(fastify, options) {
                 properties: {
                   id: { type: 'number' },
                   username: { type: 'string' },
-                  email: { type: 'string' },
+                  email: { type: ['string', 'null'] },
                   name: { type: 'string' },
                   bio: { type: 'string' },
                   avatar: { type: 'string' },
@@ -68,17 +68,24 @@ export default async function loginRoute(fastify, options) {
       identifier = normalizeIdentifier(identifier);
 
       if (!identifier) {
-        return reply.code(400).send({ error: '请输入用户名或邮箱' });
+        return reply.code(400).send({ error: '请输入用户名、邮箱或手机号' });
       }
 
-      // 判断 identifier 是邮箱还是用户名
+      // 判断 identifier 是邮箱、手机号还是用户名
       const isEmail = identifier.includes('@');
-      
-      // 使用邮箱或用户名查找用户
+      const isPhone = isPhoneNumber(identifier);
+
+      // 使用邮箱、手机号或用户名查找用户
+      const whereClause = isEmail
+        ? eq(users.email, identifier)
+        : isPhone
+          ? eq(users.phone, identifier)
+          : eq(users.username, identifier);
+
       const [user] = await db
         .select()
         .from(users)
-        .where(isEmail ? eq(users.email, identifier) : eq(users.username, identifier))
+        .where(whereClause)
         .limit(1);
       
       if (!user) {

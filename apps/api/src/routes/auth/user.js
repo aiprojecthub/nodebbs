@@ -19,7 +19,7 @@ export default async function userRoute(fastify, options) {
             properties: {
               id: { type: 'number' },
               username: { type: 'string' },
-              email: { type: 'string' },
+              email: { type: ['string', 'null'] },
               hasPassword: { type: 'boolean' },
               oauthProviders: { 
                 type: 'array',
@@ -30,6 +30,8 @@ export default async function userRoute(fastify, options) {
               avatar: { type: 'string' },
               role: { type: 'string' },
               isEmailVerified: { type: 'boolean' },
+              phone: { type: ['string', 'null'] },
+              isPhoneVerified: { type: 'boolean' },
               isBanned: { type: 'boolean' },
               createdAt: { type: 'string' },
               lastSeenAt: { type: 'string' },

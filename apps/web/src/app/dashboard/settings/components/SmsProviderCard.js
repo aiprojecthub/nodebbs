@@ -288,19 +288,6 @@ function SmsProviderCard({
           
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
             <div className='space-y-2'>
-              <Label htmlFor={`${provider.provider}-tpl-register`} className='text-xs text-muted-foreground'>注册验证码 (SMS_REGISTER)</Label>
-              <Input
-                id={`${provider.provider}-tpl-register`}
-                value={formData.templates?.SMS_REGISTER || ''}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  templates: { ...formData.templates, SMS_REGISTER: e.target.value } 
-                })}
-                placeholder='例如: SMS_123456789'
-              />
-            </div>
-            
-            <div className='space-y-2'>
               <Label htmlFor={`${provider.provider}-tpl-login`} className='text-xs text-muted-foreground'>登录验证码 (SMS_LOGIN)</Label>
               <Input
                 id={`${provider.provider}-tpl-login`}

@@ -151,6 +151,14 @@ export const SETTING_KEYS = {
     category: 'features',
     accessLevel: ACCESS_LEVEL.PUBLIC,
   },
+  PHONE_LOGIN_ENABLED: {
+    key: 'phone_login_enabled',
+    defaultValue: 'false',
+    valueType: 'boolean',
+    description: '是否启用手机号登录功能（需先配置短信服务）',
+    category: 'features',
+    accessLevel: ACCESS_LEVEL.PUBLIC,
+  },
 
   // ============ 用户设置 ============
   ALLOW_USERNAME_CHANGE: {
@@ -198,6 +206,22 @@ export const SETTING_KEYS = {
     defaultValue: 'true',
     valueType: 'boolean',
     description: '修改邮箱是否需要密码验证',
+    category: 'user_settings',
+    accessLevel: ACCESS_LEVEL.PUBLIC,
+  },
+  ALLOW_PHONE_CHANGE: {
+    key: 'allow_phone_change',
+    defaultValue: 'true',
+    valueType: 'boolean',
+    description: '是否允许用户修改手机号',
+    category: 'user_settings',
+    accessLevel: ACCESS_LEVEL.PUBLIC,
+  },
+  PHONE_CHANGE_REQUIRES_PASSWORD: {
+    key: 'phone_change_requires_password',
+    defaultValue: 'true',
+    valueType: 'boolean',
+    description: '修改手机号是否需要密码验证',
     category: 'user_settings',
     accessLevel: ACCESS_LEVEL.PUBLIC,
   },

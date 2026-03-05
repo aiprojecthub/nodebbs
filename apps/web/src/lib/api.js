@@ -173,6 +173,12 @@ export const authApi = {
     return apiClient.post('/auth/qr-login/cancel', { requestId });
   },
 
+  // ============= 手机号登录 API =============
+  // 手机号验证码登录（密码登录复用 /auth/login）
+  async phoneLoginByCode(phone, code) {
+    return apiClient.post('/auth/phone-login', { phone, code });
+  },
+
   // OAuth 相关
   // 获取 GitHub OAuth 授权链接
   async getGithubAuthUrl() {
@@ -290,6 +296,34 @@ export const userApi = {
       oldEmailCode,
       newEmail,
       newEmailCode,
+      password,
+    });
+  },
+
+  // 绑定邮箱（无邮箱用户）
+  async bindEmail(email, code, password) {
+    return apiClient.post('/users/me/bind-email', {
+      email,
+      code,
+      password,
+    });
+  },
+
+  // 修改手机号 - 一次性提交所有验证信息
+  async changePhone(oldPhoneCode, newPhone, newPhoneCode, password) {
+    return apiClient.post('/users/me/change-phone', {
+      oldPhoneCode,
+      newPhone,
+      newPhoneCode,
+      password,
+    });
+  },
+
+  // 绑定手机号（无手机号用户）
+  async bindPhone(phone, code, password) {
+    return apiClient.post('/users/me/bind-phone', {
+      phone,
+      code,
       password,
     });
   },

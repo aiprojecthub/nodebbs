@@ -6,6 +6,7 @@
 import db from '../../../db/index.js';
 import { verifications, users } from '../../../db/schema.js';
 import { eq, and, gt, lt } from 'drizzle-orm';
+import { isPhoneNumber, isEmailAddress } from '../../../utils/normalization.js';
 import {
   VerificationCodeType,
   VerificationChannel,
@@ -48,13 +49,11 @@ export async function validateVerificationRequest(identifier, type, currentUser 
   const isSmsChannel = config.channel === VerificationChannel.SMS;
 
   if (isEmailChannel) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(identifier)) {
+    if (!isEmailAddress(identifier)) {
       return { isValid: false, error: '请输入有效的邮箱地址', statusCode: 400 };
     }
   } else if (isSmsChannel) {
-    const phoneRegex = /^1[3-9]\d{9}$/;
-    if (!phoneRegex.test(identifier)) {
+    if (!isPhoneNumber(identifier)) {
       return { isValid: false, error: '请输入有效的手机号（仅支持中国大陆手机号）', statusCode: 400 };
     }
   }

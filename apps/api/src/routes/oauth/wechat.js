@@ -84,7 +84,7 @@ export default async function wechatRoutes(fastify, options) {
                 properties: {
                   id: { type: 'number' },
                   username: { type: 'string' },
-                  email: { type: 'string' },
+                  email: { type: ['string', 'null'] },
                   name: { type: 'string' },
                   avatar: { type: 'string' },
                   role: { type: 'string' },
@@ -215,7 +215,7 @@ export default async function wechatRoutes(fastify, options) {
                 properties: {
                   id: { type: 'number' },
                   username: { type: 'string' },
-                  email: { type: 'string' },
+                  email: { type: ['string', 'null'] },
                   name: { type: 'string' },
                   avatar: { type: 'string' },
                   role: { type: 'string' },
@@ -302,7 +302,7 @@ export default async function wechatRoutes(fastify, options) {
                 properties: {
                   id: { type: 'number' },
                   username: { type: 'string' },
-                  email: { type: 'string' },
+                  email: { type: ['string', 'null'] },
                   name: { type: 'string' },
                   avatar: { type: 'string' },
                   role: { type: 'string' },

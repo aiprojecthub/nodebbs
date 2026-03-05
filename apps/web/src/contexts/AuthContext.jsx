@@ -144,6 +144,28 @@ export function AuthProvider({ children, initialUser }) {
     setLoginDialogOpen(false);
   }, [refreshSettings]);
 
+  // 手机号验证码登录
+  const loginByPhone = useCallback(async (phone, code) => {
+    try {
+      setError(null);
+      const response = await authApi.phoneLoginByCode(phone, code);
+      // 登录后重新获取用户信息（包含 RBAC 数据）
+      const currentUser = await authApi.getCurrentUser();
+      setUser(enhanceUser(currentUser));
+      refreshSettings();
+      setLoginDialogOpen(false);
+      return {
+        success: true,
+        user: response.user,
+        isNewUser: response.isNewUser,
+        needSetPassword: response.needSetPassword,
+      };
+    } catch (err) {
+      setError(err.message || '登录失败');
+      return { success: false, error: err.message };
+    }
+  }, [refreshSettings]);
+
   // 登录对话框控制
   const openLoginDialog = useCallback(() => setLoginDialogOpen(true), []);
   const closeLoginDialog = useCallback(() => setLoginDialogOpen(false), []);
@@ -155,6 +177,7 @@ export function AuthProvider({ children, initialUser }) {
     error,
     isAuthenticated: !!user,
     login,
+    loginByPhone,
     register,
     logout,
     updateUser,
@@ -164,7 +187,7 @@ export function AuthProvider({ children, initialUser }) {
     // 登录对话框相关
     openLoginDialog,
     closeLoginDialog,
-  }), [user, loading, error, login, register, logout, updateUser, checkAuth, refreshUser, setAuthData, openLoginDialog, closeLoginDialog]);
+  }), [user, loading, error, login, loginByPhone, register, logout, updateUser, checkAuth, refreshUser, setAuthData, openLoginDialog, closeLoginDialog]);
 
   return (
     <AuthContext.Provider value={value}>

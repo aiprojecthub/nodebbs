@@ -134,7 +134,7 @@ async function docsPlugin(fastify, opts) {
             properties: {
               id: { type: 'number', description: '用户ID' },
               username: { type: 'string', description: '用户名' },
-              email: { type: 'string', description: '邮箱地址' },
+              email: { type: ['string', 'null'], description: '邮箱地址' },
               name: { type: 'string', description: '显示名称' },
               bio: { type: 'string', nullable: true, description: '个人简介' },
               avatar: { type: 'string', nullable: true, description: '头像URL' },

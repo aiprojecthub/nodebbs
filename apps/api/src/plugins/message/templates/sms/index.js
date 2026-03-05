@@ -8,20 +8,19 @@
  * ═══════════════════════════════════════════════════════════════
  * 
  * 1. 本文件定义「逻辑模板名」和参数映射：
- *    - 模板名如 SMS_REGISTER、SMS_LOGIN 是系统内部使用的标识符
+ *    - 模板名如 SMS_LOGIN、SMS_PASSWORD_RESET 是系统内部使用的标识符
  *    - params 定义模板需要的参数名称（如 code）
  *    - templateCode/templateId 是占位符，实际值需在数据库中配置
  * 
  * 2. 真实模板 ID 需在数据库 messageProviders.config.templates 中配置：
  *    {
  *      "templates": {
- *        "SMS_REGISTER": "SMS_123456789",  // 阿里云真实模板代码
- *        "SMS_LOGIN": "SMS_987654321"
+ *        "SMS_LOGIN": "SMS_987654321",
  *      }
  *    }
  * 
  * 3. 发送流程：
- *    - 业务代码使用逻辑模板名（如 SMS_REGISTER）
+ *    - 业务代码使用逻辑模板名（如 SMS_LOGIN）
  *    - SmsChannel 根据提供商配置获取真实模板 ID
  *    - 如果未配置映射，将使用本文件中的默认值（会触发警告日志）
  * 
@@ -39,11 +38,6 @@
  * 需要在阿里云控制台申请并获取模板代码
  */
 const aliyunTemplates = {
-  SMS_REGISTER: {
-    templateCode: 'SMS_REGISTER',
-    params: ['code'],
-    description: '注册验证码',
-  },
   SMS_LOGIN: {
     templateCode: 'SMS_LOGIN',
     params: ['code'],
@@ -71,11 +65,6 @@ const aliyunTemplates = {
  * 需要在腾讯云控制台申请并获取模板 ID
  */
 const tencentTemplates = {
-  SMS_REGISTER: {
-    templateId: 'SMS_REGISTER',
-    params: ['code'],
-    description: '注册验证码',
-  },
   SMS_LOGIN: {
     templateId: 'SMS_LOGIN',
     params: ['code'],

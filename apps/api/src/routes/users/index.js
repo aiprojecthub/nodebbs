@@ -3,7 +3,7 @@ import { users, accounts, topics, posts, follows, bookmarks, categories, userRol
 import { eq, sql, desc, and, ne, like, inArray, count } from 'drizzle-orm';
 import { userEnricher } from '../../services/userEnricher.js';
 import { validateUsername } from '../../utils/validateUsername.js';
-import { normalizeEmail, normalizeUsername } from '../../utils/normalization.js';
+import { normalizeEmail, normalizeUsername, normalizePhone, isPhoneNumber, isEmailAddress } from '../../utils/normalization.js';
 import { VerificationCodeType } from '../../plugins/message/config/verificationCode.js';
 import { verifyCode, deleteVerificationCode } from '../../plugins/message/utils/verificationCode.js';
 
@@ -34,11 +34,11 @@ export default async function userRoutes(fastify, options) {
           properties: {
             id: { type: 'number' },
             username: { type: 'string' },
-            email: { type: 'string' },
+            email: { type: ['string', 'null'] },
             name: { type: 'string' },
             role: { type: 'string' },
             isEmailVerified: { type: 'boolean' },
-            oauthProviders: { 
+            oauthProviders: {
               type: 'array',
               items: { type: 'string' }
             },
@@ -434,7 +434,7 @@ export default async function userRoutes(fastify, options) {
           properties: {
             id: { type: 'number' },
             username: { type: 'string' },
-            email: { type: 'string' },
+            email: { type: ['string', 'null'] },
             name: { type: 'string' },
             bio: { type: 'string' },
             avatar: { type: 'string' }
@@ -641,6 +641,248 @@ export default async function userRoutes(fastify, options) {
     };
   });
 
+  // 绑定邮箱（无邮箱用户）
+  fastify.post('/me/bind-email', {
+    preHandler: [fastify.authenticate],
+    schema: {
+      tags: ['users'],
+      description: '绑定邮箱 - 仅限当前无邮箱的用户',
+      security: [{ bearerAuth: [] }],
+      body: {
+        type: 'object',
+        required: ['email', 'code'],
+        properties: {
+          email: { type: 'string', format: 'email', description: '要绑定的邮箱地址' },
+          code: { type: 'string', description: '邮箱验证码' },
+          password: { type: 'string', description: '当前密码（可选，取决于系统设置）' },
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            message: { type: 'string' },
+            email: { type: ['string', 'null'] }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const { email, code, password } = request.body;
+    const userId = request.user.id;
+
+    // 获取当前用户信息
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+
+    if (!user) {
+      return reply.code(404).send({ error: '用户不存在' });
+    }
+
+    // 验证用户当前无邮箱
+    if (user.email) {
+      return reply.code(400).send({ error: '您已绑定邮箱，请使用修改邮箱功能' });
+    }
+
+    // 检查是否需要密码验证（复用 email_change_requires_password 设置，无密码用户跳过）
+    const requiresPassword = await fastify.settings.get('email_change_requires_password', true);
+    if (requiresPassword && user.passwordHash) {
+      if (!password) {
+        return reply.code(400).send({ error: '请提供当前密码' });
+      }
+      const isValidPassword = await fastify.verifyPassword(password, user.passwordHash);
+      if (!isValidPassword) {
+        return reply.code(400).send({ error: '当前密码不正确' });
+      }
+    }
+
+    try {
+      // 验证邮箱格式
+      if (!isEmailAddress(email)) {
+        return reply.code(400).send({ error: '请输入有效的邮箱地址' });
+      }
+
+      const emailLower = normalizeEmail(email);
+
+      // 检查邮箱是否已被其他用户使用
+      const [existingUser] = await db.select().from(users).where(eq(users.email, emailLower)).limit(1);
+      if (existingUser && existingUser.id !== userId) {
+        return reply.code(400).send({ error: '该邮箱已被其他用户使用' });
+      }
+
+      // 验证邮箱验证码
+      const codeResult = await verifyCode(
+        emailLower,
+        code,
+        VerificationCodeType.EMAIL_BIND
+      );
+
+      if (!codeResult.valid) {
+        return reply.code(400).send({
+          error: codeResult.error || '邮箱验证码错误或已过期'
+        });
+      }
+
+      // 更新邮箱
+      await db.update(users).set({
+        email: emailLower,
+        isEmailVerified: true,
+      }).where(eq(users.id, userId));
+
+      // 删除已使用的验证码
+      await deleteVerificationCode(
+        emailLower,
+        VerificationCodeType.EMAIL_BIND
+      );
+
+      // 清除用户缓存
+      await fastify.clearUserCache(userId);
+
+      // 记录操作日志
+      await db.insert(moderationLogs).values({
+        action: 'email_bind',
+        targetType: 'user',
+        targetId: userId,
+        moderatorId: userId,
+        previousStatus: null,
+        newStatus: emailLower,
+        metadata: JSON.stringify({
+          newEmail: emailLower
+        })
+      });
+
+      fastify.log.info(`[邮箱绑定] 用户 ${userId} 绑定邮箱: ${emailLower}`);
+
+      return {
+        message: '邮箱绑定成功',
+        email: emailLower
+      };
+    } catch (error) {
+      fastify.log.error('[邮箱绑定] 验证失败:', error);
+      return reply.code(500).send({ error: '验证失败，请稍后重试' });
+    }
+  });
+
+  // 绑定手机号 - 仅限当前无手机号的用户
+  fastify.post('/me/bind-phone', {
+    preHandler: [fastify.authenticate],
+    schema: {
+      tags: ['users'],
+      description: '绑定手机号 - 仅限当前无手机号的用户',
+      security: [{ bearerAuth: [] }],
+      body: {
+        type: 'object',
+        required: ['phone', 'code'],
+        properties: {
+          phone: { type: 'string', description: '要绑定的手机号' },
+          code: { type: 'string', description: '手机验证码' },
+          password: { type: 'string', description: '当前密码（可选，取决于系统设置）' },
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            message: { type: 'string' },
+            phone: { type: ['string', 'null'] }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const { phone, code, password } = request.body;
+    const userId = request.user.id;
+
+    // 获取当前用户信息
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+
+    if (!user) {
+      return reply.code(404).send({ error: '用户不存在' });
+    }
+
+    // 验证用户当前无手机号
+    if (user.phone) {
+      return reply.code(400).send({ error: '已绑定手机号，请使用修改手机号功能' });
+    }
+
+    // 检查是否需要密码验证（复用 phone_change_requires_password 设置，无密码用户跳过）
+    const requiresPassword = await fastify.settings.get('phone_change_requires_password', true);
+    if (requiresPassword && user.passwordHash) {
+      if (!password) {
+        return reply.code(400).send({ error: '请提供当前密码' });
+      }
+      const isValidPassword = await fastify.verifyPassword(password, user.passwordHash);
+      if (!isValidPassword) {
+        return reply.code(400).send({ error: '当前密码不正确' });
+      }
+    }
+
+    try {
+      // 验证手机号格式
+      if (!isPhoneNumber(phone)) {
+        return reply.code(400).send({ error: '请输入有效的手机号' });
+      }
+
+      const normalizedPhone = normalizePhone(phone);
+
+      // 检查手机号是否已被其他用户使用
+      const [existingUser] = await db.select().from(users).where(eq(users.phone, normalizedPhone)).limit(1);
+      if (existingUser && existingUser.id !== userId) {
+        return reply.code(400).send({ error: '该手机号已被其他用户使用' });
+      }
+
+      // 验证手机验证码
+      const codeResult = await verifyCode(
+        normalizedPhone,
+        code,
+        VerificationCodeType.PHONE_BIND
+      );
+
+      if (!codeResult.valid) {
+        return reply.code(400).send({
+          error: codeResult.error || '手机验证码错误或已过期'
+        });
+      }
+
+      // 更新手机号
+      await db.update(users).set({
+        phone: normalizedPhone,
+        isPhoneVerified: true,
+      }).where(eq(users.id, userId));
+
+      // 删除已使用的验证码
+      await deleteVerificationCode(
+        normalizedPhone,
+        VerificationCodeType.PHONE_BIND
+      );
+
+      // 清除用户缓存
+      await fastify.clearUserCache(userId);
+
+      // 记录操作日志
+      await db.insert(moderationLogs).values({
+        action: 'phone_bind',
+        targetType: 'user',
+        targetId: userId,
+        moderatorId: userId,
+        previousStatus: null,
+        newStatus: normalizedPhone,
+        metadata: JSON.stringify({
+          newPhone: normalizedPhone
+        })
+      });
+
+      fastify.log.info(`[手机绑定] 用户 ${userId} 绑定手机号: ${normalizedPhone}`);
+
+      return {
+        message: '手机号绑定成功',
+        phone: normalizedPhone
+      };
+    } catch (error) {
+      fastify.log.error('[手机绑定] 验证失败:', error);
+      return reply.code(500).send({ error: '验证失败，请稍后重试' });
+    }
+  });
+
   // 修改邮箱 - 统一的邮箱修改入口
   fastify.post('/me/change-email', {
     preHandler: [fastify.authenticate],
@@ -663,7 +905,7 @@ export default async function userRoutes(fastify, options) {
           type: 'object',
           properties: {
             message: { type: 'string' },
-            email: { type: 'string' }
+            email: { type: ['string', 'null'] }
           }
         }
       }
@@ -685,9 +927,9 @@ export default async function userRoutes(fastify, options) {
       return reply.code(404).send({ error: '用户不存在' });
     }
 
-    // 检查是否需要密码验证
+    // 检查是否需要密码验证（无密码用户跳过）
     const requiresPassword = await fastify.settings.get('email_change_requires_password', true);
-    if (requiresPassword) {
+    if (requiresPassword && user.passwordHash) {
       if (!password) {
         return reply.code(400).send({ error: '请提供当前密码' });
       }
@@ -712,8 +954,7 @@ export default async function userRoutes(fastify, options) {
       }
 
       // 步骤 2：验证邮箱格式
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(newEmail)) {
+      if (!isEmailAddress(newEmail)) {
         return reply.code(400).send({ error: '请输入有效的邮箱地址' });
       }
 
@@ -781,6 +1022,154 @@ export default async function userRoutes(fastify, options) {
       };
     } catch (error) {
       fastify.log.error('[邮箱修改] 验证失败:', error);
+      return reply.code(500).send({ error: '验证失败，请稍后重试' });
+    }
+  });
+
+  // 修改手机号 - 统一的手机号修改入口
+  fastify.post('/me/change-phone', {
+    preHandler: [fastify.authenticate],
+    schema: {
+      tags: ['users'],
+      description: '修改手机号 - 一次性验证旧手机号和新手机号',
+      security: [{ bearerAuth: [] }],
+      body: {
+        type: 'object',
+        required: ['oldPhoneCode', 'newPhone', 'newPhoneCode'],
+        properties: {
+          password: { type: 'string', description: '当前密码（可选，取决于系统设置）' },
+          oldPhoneCode: { type: 'string', description: '旧手机号验证码' },
+          newPhone: { type: 'string', description: '新手机号' },
+          newPhoneCode: { type: 'string', description: '新手机号验证码' }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            message: { type: 'string' },
+            phone: { type: ['string', 'null'] }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const { password, oldPhoneCode, newPhone, newPhoneCode } = request.body;
+    const userId = request.user.id;
+
+    // 获取系统设置
+    const allowPhoneChange = await fastify.settings.get('allow_phone_change', true);
+    if (!allowPhoneChange) {
+      return reply.code(403).send({ error: '系统暂不允许修改手机号' });
+    }
+
+    // 获取当前用户信息
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+
+    if (!user) {
+      return reply.code(404).send({ error: '用户不存在' });
+    }
+
+    // 检查用户是否有手机号
+    if (!user.phone) {
+      return reply.code(400).send({ error: '当前账号未绑定手机号' });
+    }
+
+    // 检查是否需要密码验证（无密码用户跳过）
+    const requiresPassword = await fastify.settings.get('phone_change_requires_password', true);
+    if (requiresPassword && user.passwordHash) {
+      if (!password) {
+        return reply.code(400).send({ error: '请提供当前密码' });
+      }
+      const isValidPassword = await fastify.verifyPassword(password, user.passwordHash);
+      if (!isValidPassword) {
+        return reply.code(400).send({ error: '当前密码不正确' });
+      }
+    }
+
+    try {
+      // 步骤 1：验证旧手机号验证码
+      const oldPhoneResult = await verifyCode(
+        user.phone,
+        oldPhoneCode,
+        VerificationCodeType.PHONE_CHANGE_OLD
+      );
+
+      if (!oldPhoneResult.valid) {
+        return reply.code(400).send({
+          error: oldPhoneResult.error || '旧手机号验证码错误或已过期'
+        });
+      }
+
+      // 步骤 2：验证新手机号格式
+      if (!isPhoneNumber(newPhone)) {
+        return reply.code(400).send({ error: '请输入有效的手机号' });
+      }
+
+      const normalizedPhone = normalizePhone(newPhone);
+
+      // 检查新手机号是否已被其他用户使用
+      const [existingUser] = await db.select().from(users).where(eq(users.phone, normalizedPhone)).limit(1);
+      if (existingUser && existingUser.id !== userId) {
+        return reply.code(400).send({ error: '该手机号已被其他用户使用' });
+      }
+
+      // 步骤 3：验证新手机号验证码
+      const newPhoneResult = await verifyCode(
+        normalizedPhone,
+        newPhoneCode,
+        VerificationCodeType.PHONE_CHANGE_NEW
+      );
+
+      if (!newPhoneResult.valid) {
+        return reply.code(400).send({
+          error: newPhoneResult.error || '新手机号验证码错误或已过期'
+        });
+      }
+
+      const oldPhone = user.phone;
+
+      // 步骤 4：更新手机号
+      await db.update(users).set({
+        phone: normalizedPhone,
+        isPhoneVerified: true,
+      }).where(eq(users.id, userId));
+
+      // 删除已使用的验证码
+      await deleteVerificationCode(
+        user.phone,
+        VerificationCodeType.PHONE_CHANGE_OLD
+      );
+      await deleteVerificationCode(
+        normalizedPhone,
+        VerificationCodeType.PHONE_CHANGE_NEW
+      );
+
+      // 清除用户缓存
+      await fastify.clearUserCache(userId);
+
+      // 记录操作日志
+      await db.insert(moderationLogs).values({
+        action: 'phone_change',
+        targetType: 'user',
+        targetId: userId,
+        moderatorId: userId,
+        previousStatus: oldPhone,
+        newStatus: normalizedPhone,
+        metadata: JSON.stringify({
+          oldPhone,
+          newPhone: normalizedPhone
+        })
+      });
+
+      fastify.log.info(`[手机号修改] 完成手机号更换: ${oldPhone} → ${normalizedPhone}`);
+
+      return {
+        message: '手机号修改成功',
+        phone: normalizedPhone
+      };
+    } catch (error) {
+      fastify.log.error('[手机号修改] 验证失败:', error);
       return reply.code(500).send({ error: '验证失败，请稍后重试' });
     }
   });
@@ -1178,7 +1567,7 @@ export default async function userRoutes(fastify, options) {
           properties: {
             id: { type: 'number' },
             username: { type: 'string' },
-            email: { type: 'string' },
+            email: { type: ['string', 'null'] },
             name: { type: 'string' },
             role: { type: 'string' },
             isEmailVerified: { type: 'boolean' }

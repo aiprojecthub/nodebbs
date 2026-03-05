@@ -19,8 +19,8 @@ export default function EmailVerificationBanner() {
 
   const emailVerificationRequired = getSetting('email_verification_required', false);
 
-  // 如果正在加载、用户未登录、已验证邮箱、系统未要求验证或横幅已关闭，不显示
-  if (settingsLoading || !user || user.isEmailVerified || !emailVerificationRequired || !isVisible) {
+  // 如果正在加载、用户未登录、已验证邮箱、没有邮箱、系统未要求验证或横幅已关闭，不显示
+  if (settingsLoading || !user || !user.email || user.isEmailVerified || !emailVerificationRequired || !isVisible) {
     return null;
   }
 

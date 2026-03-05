@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import UserAvatar from '@/components/user/UserAvatar';
@@ -9,9 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
   User,
-  Mail,
   Calendar,
-  Upload,
   Save,
   Loader2,
   Edit,
@@ -20,13 +18,9 @@ import {
 import Time from '@/components/common/Time';
 import { useProfileInfo } from '@/hooks/profile/useProfileInfo';
 import { useUsernameChange } from '@/hooks/profile/useUsernameChange';
-import { useEmailChange } from '@/hooks/profile/useEmailChange';
 import { useSettings } from '@/contexts/SettingsContext';
 import { UsernameChangeDialog } from './UsernameChangeDialog';
-import { EmailChangeDialog } from './EmailChangeDialog';
 import { AvatarUpload } from './AvatarUpload';
-
-import { useMemo } from 'react';
 import { usePermission } from '@/hooks/usePermission';
 
 /**
@@ -49,7 +43,6 @@ export function ProfileTab() {
   } = useProfileInfo();
 
   const usernameChange = useUsernameChange();
-  const emailChange = useEmailChange();
 
   // 检查是否有头像上传权限
   const canUploadAvatar = useMemo(() => {
@@ -133,47 +126,6 @@ export function ProfileTab() {
               )}
             </div>
 
-            {/* 邮箱 */}
-            <div>
-              <Label className='text-sm font-medium text-card-foreground block mb-2'>
-                <Mail className='h-4 w-4 inline mr-1' />
-                邮箱地址
-              </Label>
-              <div className='flex items-center gap-2'>
-                <Input
-                  type='email'
-                  value={user.email}
-                  disabled
-                  className='bg-muted flex-1'
-                />
-                {user.isEmailVerified ? (
-                  <Badge variant='success' className='bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'>
-                    已验证
-                  </Badge>
-                ) : (
-                  <Badge variant='warning' className='bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'>
-                    未验证
-                  </Badge>
-                )}
-                {settings.allow_email_change?.value && (
-                  <Button
-                    type='button'
-                    variant='outline'
-                    size='sm'
-                    onClick={emailChange.openDialog}
-                  >
-                    <Edit className='h-4 w-4' />
-                    修改
-                  </Button>
-                )}
-              </div>
-              <p className='text-xs text-muted-foreground mt-1'>
-                {settings.allow_email_change?.value
-                  ? '可修改邮箱地址'
-                  : '邮箱不可修改'}
-              </p>
-            </div>
-
             {/* 姓名 */}
             <div>
               <Label className='text-sm font-medium text-card-foreground block mb-2'>
@@ -204,59 +156,6 @@ export function ProfileTab() {
           </div>
         </div>
 
-        {/* 账户信息 */}
-        <div className='bg-card border border-border rounded-lg overflow-hidden'>
-          <div className='px-4 py-3 bg-muted border-b border-border'>
-            <h3 className='text-sm font-medium text-card-foreground'>
-              账户信息
-            </h3>
-          </div>
-          <div className='p-6 space-y-4'>
-            <div className='flex items-center justify-between'>
-              <div className='flex items-center space-x-2 text-sm text-muted-foreground'>
-                <Calendar className='h-4 w-4' />
-                <span>加入时间</span>
-              </div>
-              <span className='text-sm text-card-foreground'>
-                <Time date={user.createdAt} />
-              </span>
-            </div>
-            <div className='flex items-center justify-between'>
-              <div className='flex items-center space-x-2 text-sm text-muted-foreground'>
-                <User className='h-4 w-4' />
-                <span>用户ID</span>
-              </div>
-              <Badge variant='secondary'>#{user.id}</Badge>
-            </div>
-            <div className='flex items-center justify-between'>
-              <div className='flex items-center space-x-2 text-sm text-muted-foreground'>
-                <User className='h-4 w-4' />
-                <span>用户角色</span>
-              </div>
-              <Badge variant='outline'>
-                {user.displayRole?.name || (user.isAdmin ? '管理员' : '用户')}
-              </Badge>
-            </div>
-            <div className='flex items-center justify-between'>
-              <div className='flex items-center space-x-2 text-sm text-muted-foreground'>
-                <Share2 className='h-4 w-4' />
-                <span>关联账号</span>
-              </div>
-              <div className='flex gap-2'>
-                {user.oauthProviders && user.oauthProviders.length > 0 ? (
-                  user.oauthProviders.map((provider) => (
-                    <Badge key={provider} variant='secondary' className="capitalize">
-                      {provider}
-                    </Badge>
-                  ))
-                ) : (
-                  <span className='text-sm text-muted-foreground'>未关联</span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* 保存按钮 */}
         <div className='flex items-center justify-end space-x-3'>
           <Button type='button' variant='outline' onClick={resetForm}>
@@ -278,18 +177,64 @@ export function ProfileTab() {
         </div>
       </form>
 
+      {/* 账户信息 */}
+      <div className='bg-card border border-border rounded-lg overflow-hidden mt-6'>
+        <div className='px-4 py-3 bg-muted border-b border-border'>
+          <h3 className='text-sm font-medium text-card-foreground'>
+            账户信息
+          </h3>
+        </div>
+        <div className='p-6 space-y-4'>
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center space-x-2 text-sm text-muted-foreground'>
+              <Calendar className='h-4 w-4' />
+              <span>加入时间</span>
+            </div>
+            <span className='text-sm text-card-foreground'>
+              <Time date={user.createdAt} />
+            </span>
+          </div>
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center space-x-2 text-sm text-muted-foreground'>
+              <User className='h-4 w-4' />
+              <span>用户ID</span>
+            </div>
+            <Badge variant='secondary'>#{user.id}</Badge>
+          </div>
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center space-x-2 text-sm text-muted-foreground'>
+              <User className='h-4 w-4' />
+              <span>用户角色</span>
+            </div>
+            <Badge variant='outline'>
+              {user.displayRole?.name || (user.isAdmin ? '管理员' : '用户')}
+            </Badge>
+          </div>
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center space-x-2 text-sm text-muted-foreground'>
+              <Share2 className='h-4 w-4' />
+              <span>关联账号</span>
+            </div>
+            <div className='flex gap-2'>
+              {user.oauthProviders && user.oauthProviders.length > 0 ? (
+                user.oauthProviders.map((provider) => (
+                  <Badge key={provider} variant='secondary' className="capitalize">
+                    {provider}
+                  </Badge>
+                ))
+              ) : (
+                <span className='text-sm text-muted-foreground'>未关联</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* 用户名修改对话框 */}
       <UsernameChangeDialog
         open={usernameChange.showDialog}
         onOpenChange={usernameChange.setShowDialog}
         usernameChange={usernameChange}
-      />
-
-      {/* 邮箱修改对话框 */}
-      <EmailChangeDialog
-        open={emailChange.showDialog}
-        onOpenChange={emailChange.setShowDialog}
-        emailChange={emailChange}
       />
     </>
   );

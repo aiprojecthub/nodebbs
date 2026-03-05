@@ -87,7 +87,6 @@ export const MESSAGE_PROVIDERS = [
       // 模板映射配置（可选）
       // 如果需要使用自定义模板 ID，请在此配置：
       // templates: {
-      //   SMS_REGISTER: 'SMS_123456789', // 注册验证码模板
       //   SMS_LOGIN: 'SMS_987654321',    // 登录验证码模板
       //   SMS_PASSWORD_RESET: '...',     // 密码重置模板
       //   SMS_BIND: '...',               // 绑定手机模板
@@ -110,7 +109,6 @@ export const MESSAGE_PROVIDERS = [
       // 模板映射配置（可选）
       // 如果需要使用自定义模板 ID，请在此配置：
       // templates: {
-      //   SMS_REGISTER: '123456',    // 注册验证码模板
       //   SMS_LOGIN: '654321',       // 登录验证码模板
       //   SMS_PASSWORD_RESET: '...', // 密码重置模板
       //   SMS_BIND: '...',           // 绑定手机模板

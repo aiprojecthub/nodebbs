@@ -36,7 +36,7 @@ export default async function registerRoute(fastify, options) {
                 properties: {
                   id: { type: 'number' },
                   username: { type: 'string' },
-                  email: { type: 'string' },
+                  email: { type: ['string', 'null'] },
                   name: { type: 'string' },
                   bio: { type: 'string' },
                   avatar: { type: 'string' },
