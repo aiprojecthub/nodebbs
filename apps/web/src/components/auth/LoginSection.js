@@ -59,18 +59,18 @@ export function LoginSection({ onSuccess, onForgotPassword }) {
           )}
         </TabsList>
 
-        <TabsContent value="password" className="mt-4">
+        <TabsContent value="password" className="">
           {loginContent}
         </TabsContent>
 
         {phoneLoginEnabled && (
-          <TabsContent value="phone" className="mt-4">
+          <TabsContent value="phone" className="">
             <PhoneLoginForm onSuccess={onSuccess} />
           </TabsContent>
         )}
 
         {qrLoginEnabled && (
-          <TabsContent value="qr" className="mt-4">
+          <TabsContent value="qr" className="">
             <QRLoginTab onSuccess={onSuccess} />
           </TabsContent>
         )}

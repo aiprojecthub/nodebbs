@@ -12,19 +12,23 @@ export function LoginForm({
   onChange,
   onForgotPassword,
   onCaptchaVerify,
+  phoneLoginEnabled,
 }) {
+  const identifierLabel = phoneLoginEnabled ? '用户名、邮箱或手机号 *' : '用户名或邮箱 *';
+  const identifierPlaceholder = phoneLoginEnabled ? '请输入用户名、邮箱或手机号' : '请输入用户名或邮箱';
+
   return (
     <form onSubmit={onSubmit}>
       <div className="grid gap-4 py-4">
         <FormMessage error={error} />
 
         <div className="grid gap-2">
-          <Label htmlFor="identifier">用户名或邮箱 *</Label>
+          <Label htmlFor="identifier">{identifierLabel}</Label>
           <Input
             id="identifier"
             name="identifier"
             type="text"
-            placeholder="请输入用户名或邮箱"
+            placeholder={identifierPlaceholder}
             value={formData.identifier}
             onChange={onChange}
             disabled={isLoading}
