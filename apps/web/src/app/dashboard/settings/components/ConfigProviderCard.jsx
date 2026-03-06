@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Settings2, X } from 'lucide-react';
+import { Settings2, X, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function ConfigProviderCard({
@@ -27,7 +27,9 @@ export function ConfigProviderCard({
         "overflow-hidden border-border/60 w-full max-w-4xl shadow-none",
         isEditing
           ? "ring-2 ring-primary/10 border-primary/50 bg-card"
-          : "hover:border-primary/30 bg-card/50",
+          : isEnabled
+            ? "ring-2 ring-primary border-transparent bg-card"
+            : "hover:border-primary/30 bg-card/50",
         className
       )}
     >

@@ -294,7 +294,7 @@ function StorageProviderCard({
     try {
       const payload = { isEnabled: checked };
       await storageConfigApi.updateProvider(provider.slug, payload);
-      toast.success(checked ? `${provider.displayName} 已启用` : `${provider.displayName} 已禁用`);
+      toast.success(checked ? `${provider.displayName} 已启用` : `${provider.displayName} 已停用`);
       onUpdate(provider.slug, payload);
     } catch (error) {
       console.error('Failed to toggle storage provider:', error);

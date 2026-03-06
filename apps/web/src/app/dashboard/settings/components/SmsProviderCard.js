@@ -145,7 +145,7 @@ function SmsProviderCard({
     try {
       const payload = { isEnabled: checked };
       await smsConfigApi.updateProvider(provider.provider, payload);
-      toast.success(checked ? `${provider.displayName} 已启用` : `${provider.displayName} 已禁用`);
+      toast.success(checked ? `${provider.displayName} 已启用` : `${provider.displayName} 已停用`);
       onUpdate(provider.provider, payload);
     } catch (error) {
       console.error('Failed to toggle SMS provider:', error);

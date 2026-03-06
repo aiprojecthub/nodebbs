@@ -139,11 +139,11 @@ function CaptchaProviderCard({
   // 切换启用状态
   const handleToggleEnabled = async (checked) => {
     try {
-      const newData = { ...formData, isEnabled: checked };
-      await captchaConfigApi.updateProvider(provider.provider, newData);
-      onUpdate(provider.provider, newData);
-      setFormData(newData);
-      toast.success(checked ? '已启用' : '已禁用');
+      const payload = { isEnabled: checked };
+      await captchaConfigApi.updateProvider(provider.provider, payload);
+      onUpdate(provider.provider, payload);
+      setFormData((prev) => ({ ...prev, isEnabled: checked }));
+      toast.success(checked ? '已启用' : '已停用');
     } catch (error) {
       toast.error('操作失败');
       console.error(error);
