@@ -24,7 +24,7 @@ export function ConfigProviderCard({
   return (
     <Card
       className={cn(
-        "overflow-hidden border-border/60 w-full max-w-4xl shadow-none",
+        "overflow-hidden border-border/60 w-full shadow-none",
         isEditing
           ? "ring-2 ring-primary/10 border-primary/50 bg-card"
           : isEnabled
