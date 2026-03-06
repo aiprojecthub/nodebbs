@@ -33,7 +33,8 @@ export async function handleOAuthLogin(
   provider,
   providerAccountId,
   profile,
-  tokenData
+  tokenData,
+  { ip } = {}
 ) {
   // 1. 查找是否已有关联账号
   let user = await findUserByOAuthAccount(provider, providerAccountId);
@@ -72,7 +73,7 @@ export async function handleOAuthLogin(
         throw new Error('系统当前已关闭用户注册，无法通过 OAuth 创建新账号');
       }
 
-      user = await createOAuthUser(profile, provider);
+      user = await createOAuthUser(profile, provider, { ip });
       await linkOAuthAccount(user.id, provider, {
         providerAccountId,
         ...tokenData,
@@ -89,6 +90,13 @@ export async function handleOAuthLogin(
   const banStatus = await fastify.checkUserBanStatus(user);
   if (banStatus.isBanned) {
     throw new Error(fastify.getBanMessage(banStatus));
+  }
+
+  // 更新最后登录 IP 和时间
+  if (ip) {
+    await db.update(users)
+      .set({ lastLoginIp: ip })
+      .where(eq(users.id, user.id));
   }
 
   return {
@@ -156,7 +164,7 @@ export async function findUserByEmail(email) {
 /**
  * 创建新用户（OAuth 注册）
  */
-export async function createOAuthUser(profile, provider) {
+export async function createOAuthUser(profile, provider, { ip } = {}) {
   const { email, name, avatar } = profile;
   
   // 生成唯一用户名
@@ -177,6 +185,8 @@ export async function createOAuthUser(profile, provider) {
       avatar: avatar || null,
       role: isFirstUser ? 'admin' : 'user',
       isEmailVerified: !!email, // 如果有邮箱，认为已验证
+      registrationIp: ip || null,
+      lastLoginIp: ip || null,
     })
     .returning();
 

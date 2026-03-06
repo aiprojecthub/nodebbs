@@ -121,7 +121,8 @@ export default async function wechatRoutes(fastify, options) {
           'wechat_open',
           providerAccountId,
           profile,
-          tokenData
+          tokenData,
+          { ip: request.ip }
         );
 
         const authToken = reply.generateAuthToken({
@@ -252,7 +253,8 @@ export default async function wechatRoutes(fastify, options) {
           'wechat_mp',
           providerAccountId,
           profile,
-          tokenData
+          tokenData,
+          { ip: request.ip }
         );
 
         const authToken = reply.generateAuthToken({
@@ -336,7 +338,8 @@ export default async function wechatRoutes(fastify, options) {
           'wechat_miniprogram',
           providerAccountId,
           profile,
-          tokenData
+          tokenData,
+          { ip: request.ip }
         );
 
         const authToken = reply.generateAuthToken({

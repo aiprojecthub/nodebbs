@@ -138,7 +138,9 @@ export default async function userRoutes(fastify, options) {
       isDeleted: users.isDeleted,
       isEmailVerified: users.isEmailVerified,
       createdAt: users.createdAt,
-      lastSeenAt: users.lastSeenAt
+      lastSeenAt: users.lastSeenAt,
+      registrationIp: users.registrationIp,
+      lastLoginIp: users.lastLoginIp,
     }).from(users);
 
     // 应用筛选条件

@@ -118,10 +118,10 @@ export default async function loginRoute(fastify, options) {
         return reply.code(401).send({ error: '用户名/邮箱或密码错误' });
       }
 
-      // 更新最后在线时间
+      // 更新登录 IP
       await db
         .update(users)
-        .set({ lastSeenAt: new Date() })
+        .set({ lastLoginIp: request.ip })
         .where(eq(users.id, user.id));
 
       // 生成 Token 并设置 Cookie

@@ -99,6 +99,7 @@ export default async function phoneLoginRoute(fastify) {
             phone,
             isPhoneVerified: true,
             role: 'user',
+            registrationIp: request.ip,
           })
           .returning();
 
@@ -111,10 +112,10 @@ export default async function phoneLoginRoute(fastify) {
       // 删除验证码
       await deleteVerificationCode(phone, 'phone_login');
 
-      // 更新最后在线时间 & 确保手机已验证
+      // 更新登录 IP & 确保手机已验证
       await db
         .update(users)
-        .set({ lastSeenAt: new Date(), isPhoneVerified: true })
+        .set({ isPhoneVerified: true, lastLoginIp: request.ip })
         .where(eq(users.id, user.id));
 
       // 生成 Token

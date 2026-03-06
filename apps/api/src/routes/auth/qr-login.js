@@ -243,10 +243,10 @@ export default async function qrLoginRoutes(fastify, options) {
         })
         .where(eq(qrLoginRequests.requestId, requestId));
 
-      // 更新用户最后登录时间
+      // 更新登录 IP
       await db
         .update(users)
-        .set({ lastSeenAt: new Date() })
+        .set({ lastLoginIp: request.ip })
         .where(eq(users.id, userId));
 
       return { message: '登录确认成功' };

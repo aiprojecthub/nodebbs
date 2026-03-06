@@ -39,6 +39,9 @@ export const users = pgTable(
     contentVisibility: varchar('content_visibility', { length: 20 })
       .notNull()
       .default('everyone'), // 'everyone' (所有人), 'authenticated' (登录用户), 'private' (仅自己)
+    // IP 记录
+    registrationIp: varchar('registration_ip', { length: 45 }),
+    lastLoginIp: varchar('last_login_ip', { length: 45 }),
     // 用户名修改相关字段
     usernameChangedAt: timestamp('username_changed_at'),
     usernameChangeCount: integer('username_change_count').notNull().default(0),

@@ -121,7 +121,8 @@ export default async function githubRoutes(fastify, options) {
           PROVIDER_NAME,
           providerAccountId,
           profile,
-          tokenData
+          tokenData,
+          { ip: request.ip }
         );
 
         const authToken = reply.generateAuthToken({

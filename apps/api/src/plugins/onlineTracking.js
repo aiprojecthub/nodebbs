@@ -1,5 +1,8 @@
 import fp from 'fastify-plugin';
 import crypto from 'crypto';
+import db from '../db/index.js';
+import { users } from '../db/schema.js';
+import { eq } from 'drizzle-orm';
 
 /**
  * 在线用户追踪插件（已重构）
@@ -9,6 +12,7 @@ import crypto from 'crypto';
  * - onlineThreshold: 在线判定阈值，单位毫秒 (默认: 15分钟)
  * - cleanupInterval: 清理间隔，单位毫秒 (默认: 1分钟)
  * - keyPrefix: Redis key 前缀 (默认: 'online:')
+ * - lastSeenSyncInterval: lastSeenAt 数据库同步间隔，单位毫秒 (默认: 5分钟)
  */
 
 class OnlineTracker {
@@ -21,6 +25,7 @@ class OnlineTracker {
     this.onlineThreshold = options.onlineThreshold || 15 * 60 * 1000; // 15分钟
     this.cleanupInterval = options.cleanupInterval || 60 * 1000; // 1分钟
     this.keyPrefix = options.keyPrefix || 'online:';
+    this.lastSeenSyncInterval = options.lastSeenSyncInterval || 5 * 60 * 1000; // 5分钟
 
     // Redis ZSET 键名
     this.usersKey = `${this.keyPrefix}users`;
@@ -70,6 +75,20 @@ class OnlineTracker {
     // 只需要定期清理移除旧成员即可。
 
     await pipeline.exec();
+  }
+
+  // 低频同步 lastSeenAt 到数据库（每用户每 syncInterval 最多写一次）
+  async syncLastSeen(userId) {
+    if (!userId) return;
+
+    const key = `${this.keyPrefix}lastseen_sync:${userId}`;
+    // SET NX + EX: 只有 key 不存在时才设置，设置后 syncInterval 内不会再写
+    const set = await this.redis.set(key, '1', 'PX', this.lastSeenSyncInterval, 'NX');
+    if (!set) return; // key 已存在，跳过本次同步
+
+    await db.update(users)
+      .set({ lastSeenAt: new Date() })
+      .where(eq(users.id, userId));
   }
 
   // 清理过期数据
@@ -205,6 +224,13 @@ async function onlineTrackingPlugin(fastify, options) {
       tracker.track(userId, guestId).catch(err => {
         request.log.warn({ err }, '[在线追踪] 记录在线用户失败');
       });
+
+      // 低频同步 lastSeenAt 到数据库
+      if (userId) {
+        tracker.syncLastSeen(userId).catch(err => {
+          request.log.warn({ err }, '[在线追踪] 同步 lastSeenAt 失败');
+        });
+      }
 
     } catch (error) {
       request.log.warn({ error }, '[在线追踪] 追踪钩子执行出错');

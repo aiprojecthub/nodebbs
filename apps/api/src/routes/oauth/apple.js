@@ -127,7 +127,8 @@ export default async function appleRoutes(fastify, options) {
           PROVIDER_NAME,
           providerAccountId,
           profile,
-          tokenData
+          tokenData,
+          { ip: request.ip }
         );
 
         const authToken = reply.generateAuthToken({

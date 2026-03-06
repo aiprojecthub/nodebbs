@@ -287,6 +287,32 @@ export default function UsersManagement() {
       ),
     },
     {
+      key: 'lastSeenAt',
+      label: '最后活跃',
+      width: 'w-30',
+      render: (value) => value ? (
+        <span className="text-xs text-muted-foreground">
+          <Time date={value} fromNow />
+        </span>
+      ) : (
+        <span className="text-xs text-muted-foreground">-</span>
+      ),
+    },
+    {
+      key: 'ip',
+      label: 'IP',
+      width: 'w-30',
+      render: (_, user) => (
+        <div className="text-xs text-muted-foreground space-y-0.5">
+          {user.lastLoginIp && <div title="最近登录 IP">{user.lastLoginIp}</div>}
+          {user.registrationIp && user.registrationIp !== user.lastLoginIp && (
+            <div className="text-muted-foreground/50" title="注册 IP">{user.registrationIp}</div>
+          )}
+          {!user.lastLoginIp && !user.registrationIp && <span>-</span>}
+        </div>
+      ),
+    },
+    {
       key: 'actions',
       label: '操作',
       align: 'right',

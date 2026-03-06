@@ -208,6 +208,8 @@ export default async function registerRoute(fastify, options) {
           name: name || normalizedUsername,
           role: isFirstUser ? 'admin' : 'user', // 第一个用户设为管理员
           isEmailVerified: false,
+          registrationIp: request.ip,
+          lastLoginIp: request.ip,
         })
         .returning();
 
