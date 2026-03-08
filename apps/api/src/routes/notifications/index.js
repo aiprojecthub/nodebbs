@@ -1,6 +1,7 @@
 import db from '../../db/index.js';
 import { notifications, users, topics, posts } from '../../db/schema.js';
-import { eq, sql, desc, and, like, count } from 'drizzle-orm';
+import { eq, sql, desc, and, or, like, count, lt } from 'drizzle-orm';
+import { createPaginator } from '../../utils/pagination.js';
 
 export default async function notificationRoutes(fastify, options) {
   // 获取用户通知
@@ -16,13 +17,14 @@ export default async function notificationRoutes(fastify, options) {
           page: { type: 'number', default: 1 },
           limit: { type: 'number', default: 20, maximum: 100 },
           unreadOnly: { type: 'boolean', default: false },
-          search: { type: 'string' }
+          search: { type: 'string' },
+          cursor: { type: 'string' }
         }
       }
     }
   }, async (request, reply) => {
-    const { page = 1, limit = 20, unreadOnly = false, search } = request.query;
-    const offset = (page - 1) * limit;
+    const { unreadOnly = false, search } = request.query;
+    const paginator = createPaginator(request.query, { cursorKeys: ['createdAt', 'id'] });
 
     // 构建查询条件
     const conditions = [eq(notifications.userId, request.user.id)];
@@ -37,7 +39,26 @@ export default async function notificationRoutes(fastify, options) {
       conditions.push(eq(notifications.isRead, false));
     }
 
-    let query = db
+    // 处理 Cursor 模式下的分页 WHERE 条件
+    let cursorCondition = null;
+    if (paginator.hasCursor && paginator.cursorData) {
+      const cData = paginator.cursorData;
+      if (cData.id !== undefined && cData.createdAt) {
+        cursorCondition = or(
+          lt(notifications.createdAt, new Date(cData.createdAt)),
+          and(
+            eq(notifications.createdAt, new Date(cData.createdAt)),
+            lt(notifications.id, cData.id)
+          )
+        );
+      }
+    }
+
+    const allConditions = cursorCondition
+      ? [...conditions, cursorCondition]
+      : conditions;
+
+    const notificationsList = await db
       .select({
         id: notifications.id,
         type: notifications.type,
@@ -56,28 +77,22 @@ export default async function notificationRoutes(fastify, options) {
       .from(notifications)
       .leftJoin(users, eq(notifications.triggeredByUserId, users.id))
       .leftJoin(topics, eq(notifications.topicId, topics.id))
-      .where(and(...conditions));
+      .where(and(...allConditions))
+      .orderBy(desc(notifications.createdAt), desc(notifications.id))
+      .limit(paginator.fetchSize)
+      .offset(paginator.offset);
 
-    const notificationsList = await query
-      .orderBy(desc(notifications.createdAt))
-      .limit(limit)
-      .offset(offset);
+    const { items, nextCursor } = paginator.paginate(notificationsList);
 
-    // 按相同条件获取总数
-    const totalCountConditions = [eq(notifications.userId, request.user.id)];
-
-    if (search && search.trim()) {
-      totalCountConditions.push(like(notifications.message, `%${search.trim()}%`));
+    // 非游标模式下查询总数
+    let totalCount = 0;
+    if (!paginator.hasCursor) {
+      const [{ count: tc }] = await db
+        .select({ count: count() })
+        .from(notifications)
+        .where(and(...conditions));
+      totalCount = Number(tc);
     }
-
-    if (unreadOnly) {
-      totalCountConditions.push(eq(notifications.isRead, false));
-    }
-
-    const [{ count: totalCount }] = await db
-      .select({ count: count() })
-      .from(notifications)
-      .where(and(...totalCountConditions));
 
     // 获取未读数量
     const [{ count: unreadCount }] = await db
@@ -89,11 +104,12 @@ export default async function notificationRoutes(fastify, options) {
       ));
 
     return {
-      items: notificationsList,
-      page,
-      limit,
+      items,
+      page: paginator.page,
+      limit: paginator.limit,
       total: totalCount,
-      unreadCount: unreadCount
+      unreadCount,
+      nextCursor: nextCursor || undefined,
     };
   });
 

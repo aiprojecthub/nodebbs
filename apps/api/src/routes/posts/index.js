@@ -1,6 +1,7 @@
 import db from '../../db/index.js';
 import { posts, topics, users, likes, subscriptions, moderationLogs, blockedUsers, userItems, shopItems } from '../../db/schema.js';
-import { eq, sql, desc, and, inArray, ne, like, or, not, count } from 'drizzle-orm';
+import { eq, sql, desc, and, inArray, ne, like, or, not, count, lt, gt } from 'drizzle-orm';
+import { createPaginator } from '../../utils/pagination.js';
 import { userEnricher } from '../../services/userEnricher.js';
 import { sysCurrencies, sysAccounts } from '../../extensions/ledger/schema.js';
 import { DEFAULT_CURRENCY_CODE } from '../../extensions/ledger/constants.js';
@@ -49,7 +50,8 @@ export default async function postRoutes(fastify, options) {
           dashboard: { type: 'boolean', default: false },
           // 管理员专用参数
           approvalStatus: { type: 'string', enum: ['all', 'pending', 'approved', 'rejected'] },
-          isDeleted: { type: 'boolean' }
+          isDeleted: { type: 'boolean' },
+          cursor: { type: 'string' }
         }
       }
     }
@@ -57,19 +59,21 @@ export default async function postRoutes(fastify, options) {
     const {
       topicId,
       userId,
-      page = 1,
-      limit = 20,
       search,
       dashboard = false,
       approvalStatus = 'all',
       isDeleted
     } = request.query;
-    const offset = (page - 1) * limit;
+
+    // 根据是否查看话题详情决定游标字段
+    // topicId → postNumber 升序；其他 → createdAt 降序
+    const cursorKeys = topicId ? ['postNumber'] : ['createdAt', 'id'];
+    const paginator = createPaginator(request.query, { cursorKeys });
 
     // 检查查看权限 (post.read)
     const canRead = await fastify.permission.hasPermission(request.user?.id, 'post.read');
     if (!canRead) {
-      return { items: [], page, limit, total: 0 };
+      return { items: [], page: paginator.page, limit: paginator.limit, total: 0 };
     }
 
     let topic = null;
@@ -126,7 +130,7 @@ export default async function postRoutes(fastify, options) {
       const manageCategoryIds = await fastify.permission.getAllowedCategories(request, 'dashboard.posts');
       if (manageCategoryIds !== null) {
         if (manageCategoryIds.length === 0) {
-          return { items: [], page, limit, total: 0 };
+          return { items: [], page: paginator.page, limit: paginator.limit, total: 0 };
         }
         whereConditions.push(inArray(topics.categoryId, manageCategoryIds));
       }
@@ -205,10 +209,10 @@ export default async function postRoutes(fastify, options) {
           if (!isViewingSelf) {
             if (targetUser.contentVisibility === 'private') {
               // 仅自己可见，返回空结果
-              return { items: [], page, limit, total: 0 };
+              return { items: [], page: paginator.page, limit: paginator.limit, total: 0 };
             } else if (targetUser.contentVisibility === 'authenticated' && !request.user) {
               // 需要登录才能查看，但用户未登录
-              return { items: [], page, limit, total: 0 };
+              return { items: [], page: paginator.page, limit: paginator.limit, total: 0 };
             }
           }
         }
@@ -247,7 +251,7 @@ export default async function postRoutes(fastify, options) {
 
         if (allowedCategoryIds !== null) {
           if (allowedCategoryIds.length === 0) {
-            return { items: [], page, limit, total: 0 };
+            return { items: [], page: paginator.page, limit: paginator.limit, total: 0 };
           }
           whereConditions.push(inArray(topics.categoryId, allowedCategoryIds));
         }
@@ -288,15 +292,45 @@ export default async function postRoutes(fastify, options) {
       selectFields.deletedAt = posts.deletedAt;
     }
 
+    // 处理 Cursor 模式下的分页 WHERE 条件
+    // 游标条件独立存放，避免污染 whereConditions（whereConditions 还用于 count 查询）
+    let cursorCondition = null;
+    if (paginator.hasCursor && paginator.cursorData) {
+      const cData = paginator.cursorData;
+      if (topicId) {
+        // 话题详情：postNumber 升序
+        if (cData.postNumber !== undefined) {
+          cursorCondition = gt(posts.postNumber, cData.postNumber);
+        }
+      } else {
+        // 管理/用户主页：createdAt 降序
+        if (cData.id !== undefined && cData.createdAt) {
+          cursorCondition = or(
+            lt(posts.createdAt, new Date(cData.createdAt)),
+            and(
+              eq(posts.createdAt, new Date(cData.createdAt)),
+              lt(posts.id, cData.id)
+            )
+          );
+        }
+      }
+    }
+
+    const allConditions = cursorCondition
+      ? [...whereConditions, cursorCondition]
+      : whereConditions;
+
     const postsList = await db
       .select(selectFields)
       .from(posts)
       .innerJoin(users, eq(posts.userId, users.id))
       .innerJoin(topics, eq(posts.topicId, topics.id))
-      .where(and(...whereConditions))
-      .orderBy(isAdminMode ? desc(posts.createdAt) : (topicId ? posts.postNumber : desc(posts.createdAt)))
-      .limit(limit)
-      .offset(offset);
+      .where(and(...allConditions))
+      .orderBy(...(topicId && !isAdminMode
+        ? [posts.postNumber]
+        : [desc(posts.createdAt), desc(posts.id)]))
+      .limit(paginator.fetchSize)
+      .offset(paginator.offset);
 
     // 处理用户头像和拉黑标记
     if (!isAdminMode) {
@@ -413,19 +447,27 @@ export default async function postRoutes(fastify, options) {
         }
       });
     }
-    // 使用相同条件构建计数查询
-    const [{ count: total }] = await db
-      .select({ count: count() })
-      .from(posts)
-      .innerJoin(users, eq(posts.userId, users.id))
-      .innerJoin(topics, eq(posts.topicId, topics.id))
-      .where(and(...whereConditions));
+    // 分页处理：提取游标并裁剪探测数据
+    const { items, nextCursor } = paginator.paginate(postsList);
+
+    // 非游标模式下查询总数
+    let total = 0;
+    if (!paginator.hasCursor) {
+      const [{ count: totalCount }] = await db
+        .select({ count: count() })
+        .from(posts)
+        .innerJoin(users, eq(posts.userId, users.id))
+        .innerJoin(topics, eq(posts.topicId, topics.id))
+        .where(and(...whereConditions));
+      total = Number(totalCount);
+    }
 
     return {
-      items: postsList,
-      page,
-      limit,
+      items,
+      page: paginator.page,
+      limit: paginator.limit,
       total,
+      nextCursor: nextCursor || undefined,
     };
   });
 

@@ -1,3 +1,6 @@
+import { eq, sql, desc, and, or, like, inArray, not, count, lt } from 'drizzle-orm';
+import slugify from 'slug';
+
 import db from '../../db/index.js';
 import {
   topics,
@@ -15,8 +18,7 @@ import {
   userItems,
   shopItems,
 } from '../../db/schema.js';
-import { eq, sql, desc, and, or, like, inArray, not, count } from 'drizzle-orm';
-import slugify from 'slug';
+import { createPaginator } from '../../utils/pagination.js';
 import { userEnricher } from '../../services/userEnricher.js';
 import { shouldHideUserInfo } from '../../utils/visibility.js';
 
@@ -140,14 +142,13 @@ export default async function topicRoutes(fastify, options) {
               enum: ['latest', 'popular', 'trending', 'newest'],
               default: 'latest',
             },
+            cursor: { type: 'string' },
           },
         },
       },
     },
     async (request, reply) => {
       const {
-        page = 1,
-        limit = 20,
         categoryId,
         userId,
         tag,
@@ -159,7 +160,20 @@ export default async function topicRoutes(fastify, options) {
         approvalStatus,
         sort = 'latest',
       } = request.query;
-      const offset = (page - 1) * limit;
+
+      // 根据排序模式动态决定游标字段
+      let cursorKeys;
+      if (sort === 'latest') {
+        cursorKeys = ['isPinned', 'lastPostAt', 'id'];
+      } else if (sort === 'newest') {
+        cursorKeys = ['isPinned', 'createdAt', 'id'];
+      } else {
+        // popular / trending 等计算型排序不适合用游标，降级为纯 page 模式
+        cursorKeys = false;
+      }
+
+      // 引入统一分页工具
+      const paginator = createPaginator(request.query, { cursorKeys });
 
       // 构建基础查询条件
       const conditions = [];
@@ -214,7 +228,7 @@ export default async function topicRoutes(fastify, options) {
         const manageCategoryIds = await fastify.permission.getAllowedCategories(request, 'dashboard.topics');
         if (manageCategoryIds !== null) {
           if (manageCategoryIds.length === 0) {
-            return { items: [], page, limit, total: 0 };
+            return { items: [], page: paginator.page, limit: paginator.limit, total: 0 };
           }
           conditions.push(inArray(topics.categoryId, manageCategoryIds));
         }
@@ -267,10 +281,10 @@ export default async function topicRoutes(fastify, options) {
           if (!isViewingSelf) {
             if (targetUser.contentVisibility === 'private') {
               // 仅自己可见，返回空结果
-              return { items: [], page, limit, total: 0 };
+              return { items: [], page: paginator.page, limit: paginator.limit, total: 0 };
             } else if (targetUser.contentVisibility === 'authenticated' && !request.user) {
               // 需要登录才能查看，但用户未登录
-              return { items: [], page, limit, total: 0 };
+              return { items: [], page: paginator.page, limit: paginator.limit, total: 0 };
             }
           }
         }
@@ -297,7 +311,7 @@ export default async function topicRoutes(fastify, options) {
       if (allowedCategoryIds !== null) {
         if (allowedCategoryIds.length === 0) {
           // 无权访问任何分类
-          return { items: [], page, limit, total: 0 };
+          return { items: [], page: paginator.page, limit: paginator.limit, total: 0 };
         }
         conditions.push(inArray(topics.categoryId, allowedCategoryIds));
       }
@@ -313,7 +327,7 @@ export default async function topicRoutes(fastify, options) {
 
         if (!tagRecord) {
           // 标签不存在，返回空结果
-          return { items: [], page, limit, total: 0 };
+          return { items: [], page: paginator.page, limit: paginator.limit, total: 0 };
         }
       }
 
@@ -351,14 +365,51 @@ export default async function topicRoutes(fastify, options) {
         conditions.push(eq(topicTags.tagId, tagRecord.id));
       }
 
-      // 统一应用所有条件
-      query = query.where(and(...conditions));
+      // 处理 Cursor 模式下的分页 WHERE 条件
+      // 游标条件独立存放，避免污染 conditions（conditions 还用于 count 查询）
+      let cursorCondition = null;
+      if (paginator.hasCursor && paginator.cursorData) {
+        const cData = paginator.cursorData;
+        if (sort === 'latest' && cData.id !== undefined && cData.isPinned !== undefined && cData.lastPostAt) {
+           cursorCondition = or(
+              lt(topics.isPinned, cData.isPinned),
+              and(
+                 eq(topics.isPinned, cData.isPinned),
+                 lt(topics.lastPostAt, new Date(cData.lastPostAt))
+              ),
+              and(
+                 eq(topics.isPinned, cData.isPinned),
+                 eq(topics.lastPostAt, new Date(cData.lastPostAt)),
+                 lt(topics.id, cData.id)
+              )
+           );
+        } else if (sort === 'newest' && cData.id !== undefined && cData.isPinned !== undefined && cData.createdAt) {
+           cursorCondition = or(
+              lt(topics.isPinned, cData.isPinned),
+              and(
+                 eq(topics.isPinned, cData.isPinned),
+                 lt(topics.createdAt, new Date(cData.createdAt))
+              ),
+              and(
+                 eq(topics.isPinned, cData.isPinned),
+                 eq(topics.createdAt, new Date(cData.createdAt)),
+                 lt(topics.id, cData.id)
+              )
+           );
+        }
+      }
+
+      // 统一应用所有条件（游标条件单独追加，不污染 conditions）
+      const allConditions = cursorCondition
+        ? [...conditions, cursorCondition]
+        : conditions;
+      query = query.where(and(...allConditions));
 
       // 应用排序
       if (sort === 'latest') {
-        query = query.orderBy(desc(topics.isPinned), desc(topics.lastPostAt));
+        query = query.orderBy(desc(topics.isPinned), desc(topics.lastPostAt), desc(topics.id));
       } else if (sort === 'newest') {
-        query = query.orderBy(desc(topics.isPinned), desc(topics.createdAt));
+        query = query.orderBy(desc(topics.isPinned), desc(topics.createdAt), desc(topics.id));
       } else if (sort === 'popular') {
         // 受欢迎排序：综合浏览量和回复数，不考虑时间衰减
         // 人气分数 = 浏览量 * 0.3 + 回复数 * 5
@@ -380,7 +431,7 @@ export default async function topicRoutes(fastify, options) {
         );
       }
 
-      const results = await query.limit(limit).offset(offset);
+      const results = await query.limit(paginator.fetchSize).offset(paginator.offset);
 
       // 获取所有用户ID以检查封禁状态
       const userIds = [...new Set(results.map(r => r.userId))];
@@ -445,15 +496,23 @@ export default async function topicRoutes(fastify, options) {
         countQuery = countQuery.innerJoin(topicTags, eq(topics.id, topicTags.topicId));
       }
 
-      countQuery = countQuery.where(and(...conditions));
+      // 分页处理：提取游标并裁剪探测数据
+      const { items, nextCursor } = paginator.paginate(finalResults);
 
-      const [{ count: total }] = await countQuery;
+      // 非游标模式下查询总数
+      let total = 0;
+      if (!paginator.hasCursor) {
+        countQuery = countQuery.where(and(...conditions));
+        const [{ count: totalCount }] = await countQuery;
+        total = Number(totalCount);
+      }
 
       return {
-        items: finalResults,
-        page,
-        limit,
+        items,
+        page: paginator.page,
+        limit: paginator.limit,
         total,
+        nextCursor: nextCursor || undefined,
       };
     }
   );

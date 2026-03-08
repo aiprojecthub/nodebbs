@@ -1,6 +1,7 @@
 import db from '../../db/index.js';
 import { messages, users, blockedUsers, follows } from '../../db/schema.js';
-import { eq, sql, desc, and, or, like, count } from 'drizzle-orm';
+import { eq, sql, desc, and, or, like, count, lt } from 'drizzle-orm';
+import { createPaginator } from '../../utils/pagination.js';
 
 export default async function messageRoutes(fastify) {
   // 获取会话列表（按用户分组）
@@ -651,14 +652,14 @@ export default async function messageRoutes(fastify) {
           properties: {
             page: { type: 'number', default: 1 },
             limit: { type: 'number', default: 20, maximum: 100 },
+            cursor: { type: 'string' },
           },
         },
       },
     },
     async (request, reply) => {
       const { userId } = request.params;
-      const { page = 1, limit = 20 } = request.query;
-      const offset = (page - 1) * limit;
+      const paginator = createPaginator(request.query, { cursorKeys: ['createdAt', 'id'] });
 
       // 检查对方用户是否存在
       const [otherUser] = await db
@@ -676,7 +677,39 @@ export default async function messageRoutes(fastify) {
         return reply.code(404).send({ error: '用户不存在' });
       }
 
-      // 获取当前用户与指定用户之间的所有消息
+      // 构建基础会话条件
+      const conversationCondition = or(
+        and(
+          eq(messages.senderId, request.user.id),
+          eq(messages.recipientId, userId),
+          eq(messages.isDeletedBySender, false)
+        ),
+        and(
+          eq(messages.senderId, userId),
+          eq(messages.recipientId, request.user.id),
+          eq(messages.isDeletedByRecipient, false)
+        )
+      );
+
+      // 处理 Cursor 模式下的分页 WHERE 条件
+      let cursorCondition = null;
+      if (paginator.hasCursor && paginator.cursorData) {
+        const cData = paginator.cursorData;
+        if (cData.id !== undefined && cData.createdAt) {
+          cursorCondition = or(
+            lt(messages.createdAt, new Date(cData.createdAt)),
+            and(
+              eq(messages.createdAt, new Date(cData.createdAt)),
+              lt(messages.id, cData.id)
+            )
+          );
+        }
+      }
+
+      const whereCondition = cursorCondition
+        ? and(conversationCondition, cursorCondition)
+        : conversationCondition;
+
       const conversation = await db
         .select({
           id: messages.id,
@@ -693,42 +726,22 @@ export default async function messageRoutes(fastify) {
         })
         .from(messages)
         .innerJoin(users, eq(messages.senderId, users.id))
-        .where(
-          or(
-            and(
-              eq(messages.senderId, request.user.id),
-              eq(messages.recipientId, userId),
-              eq(messages.isDeletedBySender, false)
-            ),
-            and(
-              eq(messages.senderId, userId),
-              eq(messages.recipientId, request.user.id),
-              eq(messages.isDeletedByRecipient, false)
-            )
-          )
-        )
-        .orderBy(desc(messages.createdAt))
-        .limit(limit)
-        .offset(offset);
+        .where(whereCondition)
+        .orderBy(desc(messages.createdAt), desc(messages.id))
+        .limit(paginator.fetchSize)
+        .offset(paginator.offset);
 
-      // 获取总数量
-      const [{ count: total }] = await db
-        .select({ count: count() })
-        .from(messages)
-        .where(
-          or(
-            and(
-              eq(messages.senderId, request.user.id),
-              eq(messages.recipientId, userId),
-              eq(messages.isDeletedBySender, false)
-            ),
-            and(
-              eq(messages.senderId, userId),
-              eq(messages.recipientId, request.user.id),
-              eq(messages.isDeletedByRecipient, false)
-            )
-          )
-        );
+      const { items, nextCursor } = paginator.paginate(conversation);
+
+      // 非游标模式下查询总数
+      let total = 0;
+      if (!paginator.hasCursor) {
+        const [{ count: totalCount }] = await db
+          .select({ count: count() })
+          .from(messages)
+          .where(conversationCondition);
+        total = Number(totalCount);
+      }
 
       // 将该用户的未读消息全部标记为已读
       await db
@@ -744,10 +757,11 @@ export default async function messageRoutes(fastify) {
 
       return {
         otherUser,
-        items: conversation,
-        page,
-        limit,
+        items,
+        page: paginator.page,
+        limit: paginator.limit,
         total,
+        nextCursor: nextCursor || undefined,
       };
     }
   );
