@@ -97,8 +97,8 @@ export function ContentImage({ src, alt, ...props }) {
       />
       {/* 放大图标提示 */}
       {isZoomable && (
-        <span className="absolute inset-0 flex items-center justify-center bg-transparent group-hover/image:bg-background/30 group-hover/image:backdrop-blur-[2px] transition-all duration-300 rounded">
-          <ZoomIn className="w-8 h-8 text-foreground/60 opacity-0 group-hover/image:opacity-100 transition-all duration-300 transform scale-75 group-hover/image:scale-100 drop-shadow-md" />
+        <span className="absolute bottom-2 right-2 flex items-center justify-center w-7 h-7 rounded-full bg-black/40 opacity-0 group-hover/image:opacity-100 transition-opacity duration-200">
+          <ZoomIn className="w-3.5 h-3.5 text-white" />
         </span>
       )}
     </span>
