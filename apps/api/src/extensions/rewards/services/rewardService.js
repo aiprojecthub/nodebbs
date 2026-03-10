@@ -184,6 +184,7 @@ export async function getPostRewards(postId, options = {}) {
         createdAt: postRewards.createdAt,
         fromUserId: postRewards.fromUserId,
         fromUsername: users.username,
+        fromUserName: users.name,
         fromUserAvatar: users.avatar,
       })
       .from(postRewards)

@@ -214,7 +214,7 @@ export default function FilesManagement() {
       width: 'w-[150px]',
       render: (user) => user ? (
         <div className="flex items-center gap-2">
-          <UserAvatar url={user.avatar} name={user.username} size="xs" />
+          <UserAvatar url={user.avatar} name={user.name || user.username} size="xs" />
           <span className="text-sm">{user.username}</span>
         </div>
       ) : (

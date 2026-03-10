@@ -65,7 +65,7 @@ export function ProfileTab() {
           <div className='p-6 space-y-6'>
             {/* 头像 */}
             <div className={`flex space-x-4`}>
-              <UserAvatar url={formData.avatar} name={user.username} size="xl" />
+              <UserAvatar url={formData.avatar} name={user.name || user.username} size="xl" />
               {canUploadAvatar ? (
                 <div className='flex-1'>
                   <Label className='text-sm font-medium text-card-foreground block mb-2'>

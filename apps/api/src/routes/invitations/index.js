@@ -182,6 +182,7 @@ export default async function invitationsRoutes(fastify) {
             usedAt: invitationCodes.usedAt,
             usedBy: invitationCodes.usedBy,
             usedByUsername: users.username,
+            usedByName: users.name,
             usedByAvatar: users.avatar,
           })
           .from(invitationCodes)
@@ -212,6 +213,7 @@ export default async function invitationsRoutes(fastify) {
             ? {
                 id: code.usedBy,
                 username: code.usedByUsername,
+                name: code.usedByName,
                 avatar: code.usedByAvatar,
               }
             : null,
@@ -437,9 +439,11 @@ export default async function invitationsRoutes(fastify) {
             usedAt: invitationCodes.usedAt,
             createdBy: invitationCodes.createdBy,
             creatorUsername: sql`creator.username`,
+            creatorName: sql`creator.name`,
             creatorAvatar: sql`creator.avatar`,
             usedBy: invitationCodes.usedBy,
             usedByUsername: sql`used_user.username`,
+            usedByName: sql`used_user.name`,
             usedByAvatar: sql`used_user.avatar`,
           })
           .from(invitationCodes)
@@ -476,12 +480,14 @@ export default async function invitationsRoutes(fastify) {
           creator: {
             id: code.createdBy,
             username: code.creatorUsername,
+            name: code.creatorName,
             avatar: code.creatorAvatar,
           },
           usedBy: code.usedBy
             ? {
                 id: code.usedBy,
                 username: code.usedByUsername,
+                name: code.usedByName,
                 avatar: code.usedByAvatar,
               }
             : null,

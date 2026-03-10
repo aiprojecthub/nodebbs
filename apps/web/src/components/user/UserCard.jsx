@@ -59,7 +59,7 @@ export default function UserCard({
       >
         <UserAvatar
           url={user.avatar}
-          name={user.username}
+          name={user.name || user.username}
           size={avatarSize}
           className={cn(avatarClassName)}
           frameMetadata={user.avatarFrame?.itemMetadata}

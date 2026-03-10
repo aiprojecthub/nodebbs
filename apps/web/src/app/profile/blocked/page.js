@@ -111,7 +111,7 @@ export default function BlockedUsersPage() {
                       >
                         <UserAvatar
                           url={blockedUser.blockedAvatar}
-                          name={blockedUser.blockedUsername}
+                          name={blockedUser.blockedName || blockedUser.blockedUsername}
                           size="lg"
                         />
                       </Link>

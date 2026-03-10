@@ -160,7 +160,7 @@ export default function Header() {
                       <Button variant='ghost'>
                         <UserAvatar
                           url={user?.avatar}
-                          name={user?.username || user?.name}
+                          name={user?.name || user?.username}
                           size='xs'
                           frameMetadata={user?.avatarFrame?.itemMetadata}
                         />
@@ -172,7 +172,7 @@ export default function Header() {
                         <div className='flex items-center space-x-2'>
                           <UserAvatar
                             url={user?.avatar}
-                            name={user?.username}
+                            name={user?.name || user?.username}
                             size='sm'
                             frameMetadata={user?.avatarFrame?.itemMetadata}
                           />

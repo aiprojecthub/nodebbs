@@ -42,7 +42,7 @@ function Podium({ top3, rankType }) {
             )}>
                  <UserAvatar 
                     url={user.avatar} 
-                    name={user.name} 
+                    name={user.name || user.username}
                     size={isFirst ? "xl" : "lg"} 
                     className="border-2 border-white dark:border-gray-900"
                     modifiers='embed,s_200x200'
@@ -121,7 +121,7 @@ function RankItem({ user, index, rankType, currentUserId }) {
 
         {/* 用户信息 */}
         <div className="flex-1 min-w-0 flex items-center gap-3">
-             <UserAvatar url={user.avatar} name={user.name} size="md" modifiers='embed,s_200x200' />
+             <UserAvatar url={user.avatar} name={user.name || user.username} size="md" modifiers='embed,s_200x200' />
              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                     <span className={cn(

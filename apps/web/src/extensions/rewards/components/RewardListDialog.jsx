@@ -92,7 +92,7 @@ export function RewardListDialog({ open, onOpenChange, postId }) {
                   <Link href={`/users/${reward.fromUsername}`} className="shrink-0">
                     <UserAvatar 
                       url={reward.fromUserAvatar} 
-                      name={reward.fromUsername} 
+                      name={reward.fromUserName || reward.fromUsername} 
                       size="sm"
                       frameMetadata={reward.userAvatarFrame?.itemMetadata}
                     />

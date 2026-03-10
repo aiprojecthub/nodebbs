@@ -316,7 +316,7 @@ export function InvitationList() {
             width: 'w-[150px]',
             render: (value) => (
               <div className="flex items-center gap-2">
-                <UserAvatar url={value.avatar} name={value.username} size="xs" />
+                <UserAvatar url={value.avatar} name={value.name || value.username} size="xs" />
                 <span className="text-sm">{value.username}</span>
               </div>
             ),
@@ -344,7 +344,7 @@ export function InvitationList() {
             render: (value) =>
               value ? (
                 <div className="flex items-center gap-2">
-                  <UserAvatar url={value.avatar} name={value.username} size="xs" />
+                  <UserAvatar url={value.avatar} name={value.name || value.username} size="xs" />
                   <span className="text-sm">{value.username}</span>
                 </div>
               ) : (

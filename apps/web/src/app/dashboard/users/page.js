@@ -220,7 +220,7 @@ export default function UsersManagement() {
       label: '用户',
       render: (_, user) => (
         <div className="flex items-center gap-3">
-          <UserAvatar url={user.avatar} name={user.username} size="sm" />
+          <UserAvatar url={user.avatar} name={user.name || user.username} size="sm" />
           <div>
             <div className="font-medium text-sm">{user.username}</div>
             {user.name && <div className="text-xs text-muted-foreground">{user.name}</div>}

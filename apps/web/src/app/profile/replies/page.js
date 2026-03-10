@@ -47,7 +47,7 @@ function ReplyCard({ reply }) {
         <div className='flex gap-3'>
           <UserAvatar
             url={reply.userAvatar}
-            name={reply.username}
+            name={reply.userName || reply.username}
             size='sm'
             className='shrink-0'
           />

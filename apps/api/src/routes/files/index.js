@@ -114,6 +114,7 @@ export default async function filesRoutes(fastify) {
         user: {
           id: users.id,
           username: users.username,
+          name: users.name,
           avatar: users.avatar,
         }
       })

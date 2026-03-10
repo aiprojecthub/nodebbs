@@ -228,7 +228,7 @@ export default function MessageDetailPage() {
               </Link>
               <UserAvatar
                 url={otherUser.avatar}
-                name={otherUser.username}
+                name={otherUser.name || otherUser.username}
                 size='md'
                 className="ring-2 ring-background"
               />
@@ -303,7 +303,7 @@ export default function MessageDetailPage() {
                          <div className={`shrink-0 w-8 ${isSequence ? 'invisible' : ''}`}>
                             <UserAvatar
                               url={msg.senderAvatar}
-                              name={msg.senderUsername}
+                              name={msg.senderName || msg.senderUsername}
                               size='sm'
                             />
                          </div>

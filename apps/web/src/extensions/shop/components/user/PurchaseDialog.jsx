@@ -50,7 +50,7 @@ export function PurchaseDialog({ open, item, accounts = [], onConfirm, onCancel,
 
   const transformUser = (user) => ({
     id: user.id,
-    label: user.username || user.name,
+    label: user.name || user.username,
     avatar: user.avatar,
   });
 

@@ -94,7 +94,7 @@ export default function FollowersPage() {
                 >
                   <UserAvatar
                     url={follower.avatar}
-                    name={follower.username}
+                    name={follower.name || follower.username}
                     size='lg'
                   />
                   <div className='flex-1 min-w-0'>

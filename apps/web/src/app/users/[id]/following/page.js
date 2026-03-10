@@ -94,7 +94,7 @@ export default function FollowingPage() {
                 >
                   <UserAvatar
                     url={user.avatar}
-                    name={user.username}
+                    name={user.name || user.username}
                     size='lg'
                   />
                   <div className='flex-1 min-w-0'>

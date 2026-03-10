@@ -73,7 +73,7 @@ export default function ReplyForm({
       <div className='bg-card border-y sm:border sm:border-border sm:rounded-lg'>
         {/* 回复框头部 */}
         <div className='flex items-center space-x-3 px-3 py-2 sm:px-4 sm:py-3 bg-muted border-b border-border sm:rounded-t-lg'>
-          <UserAvatar url={user?.avatar} name={user?.username} size='sm' />
+          <UserAvatar url={user?.avatar} name={user?.name || user?.username} size='sm' />
           <span className='text-sm font-medium text-card-foreground'>
             写下你的评论
           </span>

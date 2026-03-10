@@ -158,7 +158,7 @@ export default function MessagesPage() {
                     <Link href={`/profile/messages/${otherUser.id}`} className="shrink-0">
                       <UserAvatar
                         url={otherUser.avatar}
-                        name={otherUser.username}
+                        name={otherUser.name || otherUser.username}
                         size='md'
                         className="border-2 border-background shadow-sm transition-transform group-hover:scale-105"
                       />
