@@ -7,6 +7,7 @@ import { sysCurrencies, sysAccounts } from '../../extensions/ledger/schema.js';
 import { DEFAULT_CURRENCY_CODE } from '../../extensions/ledger/constants.js';
 import { getPassiveEffects } from '../../extensions/badges/services/badgeService.js';
 import { applyUserInfoVisibility, shouldHideUserInfo } from '../../utils/visibility.js';
+import { EVENTS } from '../../constants/events.js';
 
 // 辅助函数：检查两个用户之间是否存在拉黑关系（双向检查）
 async function isBlocked(userId1, userId2) {
@@ -912,7 +913,7 @@ export default async function postRoutes(fastify, options) {
 
     // 积分奖励：发布回复后发放积分（仅当不需要审核或已批准时，且不是话题的第一个帖子）
     if (approvalStatus === 'approved' && postNumber > 1 && fastify.eventBus) {
-      fastify.eventBus.emit('post.created', newPost);
+      fastify.eventBus.emit(EVENTS.POST_CREATED, newPost);
     }
 
     const message = contentModerationEnabled
@@ -1240,7 +1241,7 @@ export default async function postRoutes(fastify, options) {
 
       // 积分奖励：给被点赞者发放积分
       if (fastify.eventBus) {
-        fastify.eventBus.emit('post.liked', {
+        fastify.eventBus.emit(EVENTS.POST_LIKED, {
           postId: id,
           postAuthorId: post.userId,
           userId: request.user.id

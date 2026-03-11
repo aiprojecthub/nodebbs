@@ -2,6 +2,7 @@ import { eq, sql, desc, and, or, like, inArray, not, count, lt } from 'drizzle-o
 import slugify from 'slug';
 
 import db from '../../db/index.js';
+import { EVENTS } from '../../constants/events.js';
 import {
   topics,
   posts,
@@ -873,7 +874,7 @@ export default async function topicRoutes(fastify, options) {
 
       // 积分奖励：发布话题后发放积分（仅当不需要审核或已批准时）
       if (approvalStatus === 'approved' && fastify.eventBus) {
-        fastify.eventBus.emit('topic.created', newTopic);
+        fastify.eventBus.emit(EVENTS.TOPIC_CREATED, newTopic);
       }
 
       const message = contentModerationEnabled

@@ -1,5 +1,6 @@
 import { checkBadgeConditions } from './services/badgeService.js';
 import { DEFAULT_CURRENCY_CODE } from '../ledger/constants.js';
+import { EVENTS } from '../../constants/events.js';
 
 /**
  * 注册勋章系统事件监听器
@@ -49,16 +50,15 @@ export function registerBadgeListeners(fastify) {
   };
 
   // 监听可能触发徽章的事件
-  fastify.eventBus.on('post.created', handleActivity);
-  fastify.eventBus.on('topic.created', handleActivity);
-  fastify.eventBus.on('post.liked', (payload) => {
-     // 对于 'like_received_count'，payload 可能包含帖子的 ownerId
-     if (payload.postOwnerId) {
-        handleActivity({ userId: payload.postOwnerId });
+  fastify.eventBus.on(EVENTS.POST_CREATED, handleActivity);
+  fastify.eventBus.on(EVENTS.TOPIC_CREATED, handleActivity);
+  fastify.eventBus.on(EVENTS.POST_LIKED, (payload) => {
+     // 对于 'like_received_count'，给被点赞的帖子作者触发勋章检查
+     if (payload.postAuthorId) {
+        handleActivity({ userId: payload.postAuthorId });
      }
   });
-  fastify.eventBus.on('user.login', handleActivity); // 用于签到连胜或登录天数
-  fastify.eventBus.on('user.checkin', handleActivity); // 监听签到事件
+  fastify.eventBus.on(EVENTS.USER_CHECKIN, handleActivity); // 监听签到事件
 
   fastify.log.info('[勋章] 事件监听器已注册');
 }

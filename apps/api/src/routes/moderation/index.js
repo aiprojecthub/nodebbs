@@ -2,6 +2,7 @@ import db from '../../db/index.js';
 import { reports, posts, topics, users, moderationLogs } from '../../db/schema.js';
 import { eq, sql, desc, and, ne, like, or, inArray, count } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
+import { EVENTS } from '../../constants/events.js';
 
 // 生成举报通知消息
 function getReportNotificationMessage(reportType, action) {
@@ -904,9 +905,9 @@ export default async function moderationRoutes(fastify, options) {
         newStatus: 'approved'
       });
 
-      // 触发话题创建事件（用于勋章、积分等）
+      // 触发话题创建事件（幂等性由 rewards listener 的 referenceId 去重保障）
       if (fastify.eventBus) {
-        fastify.eventBus.emit('topic.created', updated);
+        fastify.eventBus.emit(EVENTS.TOPIC_CREATED, updated);
       }
 
       return { message: '话题已批准（包含话题内容）', topic: updated };
@@ -937,9 +938,9 @@ export default async function moderationRoutes(fastify, options) {
         newStatus: 'approved'
       });
 
-      // 触发回复创建事件（用于勋章、积分等）
+      // 触发回复创建事件（幂等性由 rewards listener 的 referenceId 去重保障）
       if (fastify.eventBus) {
-        fastify.eventBus.emit('post.created', updated);
+        fastify.eventBus.emit(EVENTS.POST_CREATED, updated);
       }
 
       return { message: '回复已批准', post: updated };

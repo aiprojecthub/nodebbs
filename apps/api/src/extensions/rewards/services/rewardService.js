@@ -12,6 +12,7 @@ import { DEFAULT_CURRENCY_CODE } from '../../ledger/constants.js';
 import { users, userItems, shopItems } from '../../../db/schema.js';
 import { eq, sql, desc, ilike, and, inArray, ne, count } from 'drizzle-orm';
 import { getPassiveEffects } from '../../badges/services/badgeService.js';
+import { EVENTS } from '../../../constants/events.js';
 
 
 /**
@@ -148,7 +149,7 @@ export async function checkIn(fastify, userId) {
 
     // 触发签到事件，用于徽章检查等
     if (fastify.eventBus) {
-      fastify.eventBus.emit('user.checkin', { userId, streak: result.newStreak });
+      fastify.eventBus.emit(EVENTS.USER_CHECKIN, { userId, streak: result.newStreak });
     }
 
     const currencyName = await fastify.ledger.getCurrencyName(DEFAULT_CURRENCY_CODE);

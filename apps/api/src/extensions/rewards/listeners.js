@@ -3,6 +3,7 @@ import db from '../../db/index.js';
 import { eq, and } from 'drizzle-orm';
 import { DEFAULT_CURRENCY_CODE } from '../ledger/constants.js';
 import { sysTransactions } from '../ledger/schema.js';
+import { EVENTS } from '../../constants/events.js';
 
 /**
  * Register reward system event listeners
@@ -17,7 +18,7 @@ export async function registerRewardListeners(fastify) {
   }
 
   // 1. 话题创建奖励 (Topic Created)
-  eventBus.on('topic.created', async (topic) => {
+  eventBus.on(EVENTS.TOPIC_CREATED, async (topic) => {
     try {
       fastify.log.debug(`[奖励系统] 处理话题创建奖励: TopicID=${topic.id}, UserID=${topic.userId}`);
       
@@ -27,13 +28,32 @@ export async function registerRewardListeners(fastify) {
       if (amountNum > 0) {
         const isCurrencyActive = await fastify.ledger.isCurrencyActive(DEFAULT_CURRENCY_CODE);
         if (isCurrencyActive) {
+            // 确定性 referenceId，防止重复发放（如编辑后重新审核）
+            const refId = `post_topic_${topic.id}`;
+
+            const [existingTx] = await db
+              .select({ id: sysTransactions.id })
+              .from(sysTransactions)
+              .where(
+                and(
+                  eq(sysTransactions.type, 'post_topic'),
+                  eq(sysTransactions.referenceId, refId)
+                )
+              )
+              .limit(1);
+
+            if (existingTx) {
+              fastify.log.debug(`[奖励系统] 话题 ${topic.id} 已发放过奖励，跳过`);
+              return;
+            }
+
             await fastify.ledger.grant({
               userId: topic.userId,
               amount: amountNum,
               currencyCode: DEFAULT_CURRENCY_CODE,
               type: 'post_topic',
               referenceType: 'reward_event',
-              referenceId: `post_topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              referenceId: refId,
               description: `发布话题：${topic.title}`,
               metadata: {
                   source: 'rewards-extension',
@@ -48,7 +68,7 @@ export async function registerRewardListeners(fastify) {
   });
 
   // 2. 回复创建奖励 (Post Created)
-  eventBus.on('post.created', async (post) => {
+  eventBus.on(EVENTS.POST_CREATED, async (post) => {
     try {
       // 不奖励第一条帖子（即话题内容）
       if (post.postNumber === 1) return;
@@ -62,13 +82,32 @@ export async function registerRewardListeners(fastify) {
       if (amountNum > 0) {
         const isCurrencyActive = await fastify.ledger.isCurrencyActive(DEFAULT_CURRENCY_CODE);
         if (isCurrencyActive) {
+            // 确定性 referenceId，防止重复发放（如编辑后重新审核）
+            const refId = `post_reply_${post.id}`;
+
+            const [existingTx] = await db
+              .select({ id: sysTransactions.id })
+              .from(sysTransactions)
+              .where(
+                and(
+                  eq(sysTransactions.type, 'post_reply'),
+                  eq(sysTransactions.referenceId, refId)
+                )
+              )
+              .limit(1);
+
+            if (existingTx) {
+              fastify.log.debug(`[积分系统] 回复 ${post.id} 已发放过奖励，跳过`);
+              return;
+            }
+
             await fastify.ledger.grant({
               userId: post.userId,
               amount: amountNum,
               currencyCode: DEFAULT_CURRENCY_CODE,
               type: 'post_reply',
               referenceType: 'reward_event',
-              referenceId: `post_reply_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              referenceId: refId,
               description: '发布回复',
               metadata: {
                   source: 'rewards-extension',
@@ -86,7 +125,7 @@ export async function registerRewardListeners(fastify) {
   });
 
   // 3. 点赞奖励 (Post Liked)
-  eventBus.on('post.liked', async ({ postId, postAuthorId, userId }) => {
+  eventBus.on(EVENTS.POST_LIKED, async ({ postId, postAuthorId, userId }) => {
     try {
       // 不奖励自己点赞自己
       if (postAuthorId === userId) {
