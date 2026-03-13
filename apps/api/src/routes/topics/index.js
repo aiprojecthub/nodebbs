@@ -1,4 +1,4 @@
-import { eq, sql, desc, and, or, like, inArray, not, count, lt } from 'drizzle-orm';
+import { eq, sql, desc, and, or, like, inArray, not, count, lt, gt } from 'drizzle-orm';
 import { generateSlug } from '../../utils/slug.js';
 import { nanoid } from 'nanoid';
 
@@ -144,6 +144,7 @@ export default async function topicRoutes(fastify, options) {
               enum: ['latest', 'popular', 'trending', 'newest'],
               default: 'latest',
             },
+            sinceId: { type: 'number', description: '返回 id 大于此值的话题（用于轮询新话题）' },
             cursor: { type: 'string' },
           },
         },
@@ -161,6 +162,7 @@ export default async function topicRoutes(fastify, options) {
         dashboard = false,
         approvalStatus,
         sort = 'latest',
+        sinceId,
       } = request.query;
 
       // 根据排序模式动态决定游标字段
@@ -299,6 +301,9 @@ export default async function topicRoutes(fastify, options) {
       }
       if (approvalStatus) {
         conditions.push(eq(topics.approvalStatus, approvalStatus));
+      }
+      if (sinceId) {
+        conditions.push(gt(topics.id, sinceId));
       }
 
       // 过滤私有分类（只有管理员和版主可以看到）
