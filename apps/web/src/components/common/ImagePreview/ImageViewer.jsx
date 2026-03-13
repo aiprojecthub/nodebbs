@@ -17,8 +17,14 @@ function ImageViewer({ src, alt, onClose, overlayBaseOpacity = 0.5, onOverlayOpa
   const containerRef = useRef(null);
   const hasMoved = useRef(false);
   const scaleRef = useRef(scale);
+  const positionRef = useRef(position);
   const pointersRef = useRef(new Map());
-  const pinchStartRef = useRef({ distance: 0, scale: 1 });
+  const pinchStartRef = useRef({
+    distance: 0,
+    midpoint: { x: 0, y: 0 },
+    scale: 1,
+    position: { x: 0, y: 0 },
+  });
   const closeDragRef = useRef({
     active: false,
     candidate: false,
@@ -35,6 +41,33 @@ function ImageViewer({ src, alt, onClose, overlayBaseOpacity = 0.5, onOverlayOpa
     scaleRef.current = scale;
   }, [scale]);
 
+  // 同步 positionRef，避免在原生事件里拿到过期的 position
+  useEffect(() => {
+    positionRef.current = position;
+  }, [position]);
+
+  const clampScale = (nextScale) => Math.min(Math.max(0.1, nextScale), 20);
+
+  // 以容器中心为坐标原点，计算“交互锚点”（鼠标指针/两指中点）的偏移量
+  const getFocalOffset = (clientX, clientY) => {
+    const container = containerRef.current;
+    if (!container) return { x: 0, y: 0 };
+    const rect = container.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    return { x: clientX - cx, y: clientY - cy };
+  };
+
+  // 让缩放以 focalOffset 为锚点发生（而不是以图片中心），同时反推 position 保持锚点稳定
+  const zoomAroundFocal = ({ prevScale, nextScale, prevPosition, focalOffset }) => {
+    const safePrevScale = prevScale || 1;
+    const ratio = nextScale / safePrevScale;
+    return {
+      x: prevPosition.x + (focalOffset.x - prevPosition.x) * (1 - ratio),
+      y: prevPosition.y + (focalOffset.y - prevPosition.y) * (1 - ratio),
+    };
+  };
+
   // 添加非被动 wheel 事件监听器以解决页面滚动问题
   useEffect(() => {
     const container = containerRef.current;
@@ -46,13 +79,15 @@ function ImageViewer({ src, alt, onClose, overlayBaseOpacity = 0.5, onOverlayOpa
 
       const delta = e.deltaY * -0.002;
       const currentScale = scaleRef.current;
-      const newScale = Math.min(Math.max(0.1, currentScale + delta), 20); // 限制 0.1x 到 20x
+      const nextScale = clampScale(currentScale + delta); // 限制 0.1x 到 20x
 
-      if (newScale < 1) {
+      scaleRef.current = nextScale;
+
+      if (nextScale <= 1) {
+        positionRef.current = { x: 0, y: 0 };
         setPosition({ x: 0, y: 0 });
       }
-
-      setScale(newScale);
+      setScale(nextScale);
     };
 
     // 使用 sensitive: false (默认) 但这里关键是 preventDefault 能生效
@@ -94,6 +129,11 @@ function ImageViewer({ src, alt, onClose, overlayBaseOpacity = 0.5, onOverlayOpa
     const dy = p1.y - p2.y;
     return Math.hypot(dx, dy);
   };
+
+  const getMidpoint = (p1, p2) => ({
+    x: (p1.x + p2.x) / 2,
+    y: (p1.y + p2.y) / 2,
+  });
 
   const CLOSE_SWIPE_THRESHOLD = 90; // 触发关闭的垂直滑动阈值（原始位移 px）
   const CLOSE_SWIPE_DAMPING = 300; // 阻尼强度（值越大阻尼越弱）
@@ -168,9 +208,12 @@ function ImageViewer({ src, alt, onClose, overlayBaseOpacity = 0.5, onOverlayOpa
       }
       setIsPinching(true);
       const points = Array.from(pointersRef.current.values());
+      const midpoint = getMidpoint(points[0], points[1]);
       pinchStartRef.current = {
         distance: getDistance(points[0], points[1]),
+        midpoint,
         scale: scaleRef.current,
+        position: positionRef.current,
       };
     } else if (
       pointersRef.current.size === 1 &&
@@ -205,13 +248,41 @@ function ImageViewer({ src, alt, onClose, overlayBaseOpacity = 0.5, onOverlayOpa
       }
       const points = Array.from(pointersRef.current.values());
       const distance = getDistance(points[0], points[1]);
-      const { distance: startDistance, scale: startScale } = pinchStartRef.current;
-      if (startDistance > 0) {
-        const nextScale = Math.min(Math.max(0.1, startScale * (distance / startDistance)), 20);
-        if (nextScale < 1) {
+      const midpoint = getMidpoint(points[0], points[1]);
+      const {
+        distance: lastDistance,
+        scale: lastScale,
+        position: lastPosition,
+      } = pinchStartRef.current;
+
+      if (lastDistance > 0) {
+        const nextScale = clampScale(lastScale * (distance / lastDistance));
+
+        if (nextScale <= 1) {
+          scaleRef.current = nextScale;
+          positionRef.current = { x: 0, y: 0 };
+          pinchStartRef.current.position = { x: 0, y: 0 };
           setPosition({ x: 0, y: 0 });
+          setScale(nextScale);
+        } else {
+          const focalOffset = getFocalOffset(midpoint.x, midpoint.y);
+          const nextPosition = zoomAroundFocal({
+            prevScale: lastScale,
+            nextScale,
+            prevPosition: lastPosition,
+            focalOffset,
+          });
+          scaleRef.current = nextScale;
+          positionRef.current = nextPosition;
+          setPosition(nextPosition);
+          setScale(nextScale);
+          pinchStartRef.current.position = nextPosition;
         }
-        setScale(nextScale);
+
+        pinchStartRef.current.distance = distance;
+        pinchStartRef.current.scale = nextScale;
+        pinchStartRef.current.midpoint = midpoint;
+
         hasMoved.current = true;
       }
       return;
@@ -303,6 +374,7 @@ function ImageViewer({ src, alt, onClose, overlayBaseOpacity = 0.5, onOverlayOpa
         alt={alt || ''}
         style={{
           transform: `translateY(${closeOffsetY}px) scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
+          transformOrigin: 'center center',
           transition: (isDragging || isPinching || isClosingGesture) ? 'none' : 'transform 0.2s cubic-bezier(0.2, 0, 0.2, 1)',
           cursor: scale > 1 ? 'grab' : 'zoom-in',
           willChange: isDragging || isPinching || isClosingGesture ? 'transform' : undefined,
