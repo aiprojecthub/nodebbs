@@ -8,7 +8,7 @@ export const THEMES = [
   { value: 'sunrise', label: '晨曦', class: 'sunrise', color: 'oklch(0.62 0.24 12)' },
   { value: 'iceblue', label: '冰蓝', class: 'iceblue', color: 'oklch(0.56 0.18 250)' },
   { value: 'nord', label: 'Nord', class: 'nord', color: '#5E81AC' },
-  { value: 'cny', label: '新春', class: 'cny', color: '#DE2910' },
+  // { value: 'cny', label: '新春', class: 'cny', color: '#DE2910' },
 ];
 
 export const FONT_SIZES = [
