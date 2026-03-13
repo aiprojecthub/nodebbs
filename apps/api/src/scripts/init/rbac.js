@@ -319,26 +319,21 @@ export class RBACSeeder extends BaseSeeder {
     let skippedCount = 0;
 
     for (const user of allUsers) {
-      const roleId = roleIdMap[user.role];
-      if (!roleId) {
-        this.logger.warn(`跳过用户 ${user.id}: 角色 ${user.role} 不存在`);
+      // 用户在 user_roles 中已有任意角色时跳过，避免覆盖通过 RBAC 管理界面的配置
+      const [hasAnyRole] = await db
+        .select()
+        .from(userRoles)
+        .where(eq(userRoles.userId, user.id))
+        .limit(1);
+
+      if (hasAnyRole) {
         skippedCount++;
         continue;
       }
 
-      // 检查是否已分配当前角色
-      const [existing] = await db
-        .select()
-        .from(userRoles)
-        .where(
-          and(
-            eq(userRoles.userId, user.id),
-            eq(userRoles.roleId, roleId)
-          )
-        )
-        .limit(1);
-
-      if (existing) {
+      const roleId = roleIdMap[user.role];
+      if (!roleId) {
+        this.logger.warn(`跳过用户 ${user.id}: 角色 ${user.role} 不存在`);
         skippedCount++;
         continue;
       }
