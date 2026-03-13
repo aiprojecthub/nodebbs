@@ -192,8 +192,8 @@ export class RBACSeeder extends BaseSeeder {
         const conditionJson = conditions[permSlug] ? JSON.stringify(conditions[permSlug]) : null;
 
         if (existing) {
-          // Check if condition changed
-          if (existing.conditions !== conditionJson) {
+          if (reset && existing.conditions !== conditionJson) {
+            // 仅在 reset 模式下覆盖条件，保留运行时通过 UI 配置的条件
             await db
               .update(rolePermissions)
               .set({ conditions: conditionJson })
