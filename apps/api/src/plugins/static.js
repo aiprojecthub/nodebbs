@@ -12,6 +12,9 @@ const ipx = createIPX({
   storage: ipxFSStorage({
     dir: uploadsDir,
   }),
+  sharpOptions: {
+    autoOrient: true,
+  },
 });
 
 // IPX 处理函数（基于 Express 风格，但兼容 Fastify）
