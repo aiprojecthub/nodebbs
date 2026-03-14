@@ -7,7 +7,6 @@ import sharp from 'sharp';
 import { dirname } from '../../utils/index.js';
 import { MAX_UPLOAD_SIZE_DEFAULT_KB, DEFAULT_ALLOWED_EXTENSIONS, EXT_MIME_MAP } from '../../constants/upload.js';
 import { files } from '../../db/schema.js';
-import { getSetting } from '../../services/settingsService.js';
 
 export default async function uploadRoutes(fastify) {
   fastify.post('/', {
@@ -139,12 +138,12 @@ export default async function uploadRoutes(fastify) {
     }
 
     // 8. EXIF 处理：自动旋转并剥离元数据（排除 SVG、GIF）
+    const { name: activeSlug, config: activeConfig } = await fastify.storage.getActiveProviderInfo();
     const processableImage = data.mimetype.startsWith('image/')
       && !['image/svg+xml', 'image/gif'].includes(data.mimetype);
     if (processableImage) {
       try {
-        const stripExif = await getSetting('upload_strip_exif', 'true');
-        if (stripExif === 'true' || stripExif === true) {
+        if (activeConfig.stripExif !== false) {
           const processedPath = tmpPath + '.processed';
           await sharp(tmpPath).rotate().toFile(processedPath);
           await fs.promises.rename(processedPath, tmpPath);
@@ -176,6 +175,7 @@ export default async function uploadRoutes(fastify) {
       storageResult = await fastify.storage.uploadFromFile(tmpPath, storageKey, {
         mimetype: data.mimetype,
         size: byteCount,
+        providerSlug: activeSlug,
       });
     } catch (err) {
       fastify.log.error('Storage upload error:', err);
@@ -285,7 +285,7 @@ export default async function uploadRoutes(fastify) {
     const newFilename = `${randomUUID()}.${ext}`;
     const storageKey = `${category}/${newFilename}`;
 
-    // 6. 调用 presign
+    // 6. 调用 presign（usePresignedUpload 检查已内置于 presign 方法）
     try {
       const presignResult = await fastify.storage.presign(storageKey, { mimetype });
       if (!presignResult.supported) {

@@ -160,14 +160,6 @@ export const SETTING_KEYS = {
     category: 'features',
     accessLevel: ACCESS_LEVEL.PUBLIC,
   },
-  UPLOAD_STRIP_EXIF: {
-    key: 'upload_strip_exif',
-    defaultValue: 'true',
-    valueType: 'boolean',
-    description: '上传图片时自动根据 EXIF 旋转像素方向并剥离 EXIF 元数据（保护用户隐私，移除 GPS 定位和设备信息）',
-    category: 'features',
-    accessLevel: ACCESS_LEVEL.ADMIN,
-  },
 
   // ============ 用户设置 ============
   ALLOW_USERNAME_CHANGE: {

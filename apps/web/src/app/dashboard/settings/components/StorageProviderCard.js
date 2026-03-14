@@ -220,6 +220,7 @@ function StorageProviderCard({
 
   const getInitialFormData = (cfg) => ({
     isEnabled: provider.isEnabled,
+    stripExif: cfg.stripExif !== false,
     // S3
     accessKeyId: cfg.accessKeyId || '',
     secretAccessKey: cfg.secretAccessKey || '',
@@ -228,6 +229,7 @@ function StorageProviderCard({
     endpoint: cfg.endpoint || '',
     customDomain: cfg.customDomain || '',
     forcePathStyle: cfg.forcePathStyle || false,
+    usePresignedUpload: cfg.usePresignedUpload !== false,
   });
 
   const [formData, setFormData] = useState(getInitialFormData(config));
@@ -235,6 +237,7 @@ function StorageProviderCard({
 
   const isEditing = editingSlug === provider.slug;
   const isS3 = provider.type === 's3';
+  const isLocal = provider.type === 'local';
 
   const Icon = TYPE_ICONS[provider.type] || Server;
 
@@ -242,6 +245,10 @@ function StorageProviderCard({
     try {
       setSaving(true);
       const configPayload = {};
+
+      if (isLocal) {
+        configPayload.stripExif = formData.stripExif;
+      }
 
       if (isS3) {
         configPayload.accessKeyId = formData.accessKeyId;
@@ -251,6 +258,8 @@ function StorageProviderCard({
         configPayload.endpoint = formData.endpoint || null;
         configPayload.forcePathStyle = formData.forcePathStyle;
         configPayload.customDomain = formData.customDomain || null;
+        configPayload.usePresignedUpload = formData.usePresignedUpload;
+        configPayload.stripExif = formData.stripExif;
       }
 
       const updatePayload = {
@@ -324,7 +333,7 @@ function StorageProviderCard({
       isEnabled={provider.isEnabled}
       isEditing={isEditing}
       onToggleEnabled={handleToggleEnabled}
-      {...(isS3 && {
+      {...((isS3 || isLocal) && {
         onEditClick: () => {
           setEditingSlug(provider.slug);
           setFormData(getInitialFormData(provider.config || {}));
@@ -333,6 +342,43 @@ function StorageProviderCard({
       })}
       summary={getSummary()}
     >
+      {isLocal && (
+        <div className='space-y-4 pt-2'>
+          <div className='flex items-center justify-between'>
+            <div>
+              <Label htmlFor={`${provider.slug}-stripExif`}>上传剥离 EXIF</Label>
+              <p className='text-xs text-muted-foreground'>
+                上传图片时自动根据 EXIF 旋转像素方向并剥离 EXIF 元数据（保护用户隐私，移除 GPS 定位和设备信息）
+              </p>
+            </div>
+            <Switch
+              id={`${provider.slug}-stripExif`}
+              checked={formData.stripExif}
+              onCheckedChange={(checked) => setFormData({ ...formData, stripExif: checked })}
+            />
+          </div>
+
+          <div className='flex items-center gap-2 pt-2 border-t border-border'>
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className='h-4 w-4 animate-spin' />
+                  保存中...
+                </>
+              ) : (
+                <>
+                  <Check className='h-4 w-4' />
+                  保存配置
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {isS3 && (
         <div className='space-y-4 pt-2'>
 
@@ -418,6 +464,37 @@ function StorageProviderCard({
             <p className='text-xs text-muted-foreground'>
               配置后文件 URL 将使用此域名
             </p>
+          </div>
+
+          <div className='flex items-center justify-between'>
+            <div>
+              <Label htmlFor={`${provider.slug}-usePresignedUpload`}>客户端直传（Presigned URL）</Label>
+              <p className='text-xs text-muted-foreground'>
+                开启后文件由客户端直传至存储服务，不经过服务端，上传更快、服务端负载更低
+              </p>
+            </div>
+            <Switch
+              id={`${provider.slug}-usePresignedUpload`}
+              checked={formData.usePresignedUpload}
+              onCheckedChange={(checked) => setFormData({ ...formData, usePresignedUpload: checked })}
+            />
+          </div>
+
+          <div className='flex items-center justify-between'>
+            <div>
+              <Label htmlFor={`${provider.slug}-stripExif`}>上传剥离 EXIF</Label>
+              <p className='text-xs text-muted-foreground'>
+                {formData.usePresignedUpload
+                  ? '客户端直传模式下文件不经过服务端，此选项不生效'
+                  : '上传图片时自动根据 EXIF 旋转像素方向并剥离 EXIF 元数据（保护用户隐私）'}
+              </p>
+            </div>
+            <Switch
+              id={`${provider.slug}-stripExif`}
+              checked={formData.stripExif}
+              disabled={formData.usePresignedUpload}
+              onCheckedChange={(checked) => setFormData({ ...formData, stripExif: checked })}
+            />
           </div>
 
           {/* 操作按钮 */}

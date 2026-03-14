@@ -39,21 +39,6 @@ export function SecuritySettings({ settings, handleBooleanChange, saving }) {
           </SettingItem>
         )}
 
-        {settings.upload_strip_exif && (
-          <SettingItem
-            title="上传剥离 EXIF"
-            description={settings.upload_strip_exif.description}
-          >
-            <Switch
-              id='upload_strip_exif'
-              checked={settings.upload_strip_exif.value}
-              onCheckedChange={(checked) =>
-                handleBooleanChange('upload_strip_exif', checked)
-              }
-              disabled={saving}
-            />
-          </SettingItem>
-        )}
       </SettingSection>
     </div>
   );

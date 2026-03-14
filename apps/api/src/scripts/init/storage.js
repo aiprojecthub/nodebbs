@@ -18,6 +18,8 @@ const S3_DEFAULT_CONFIG = {
   endpoint: null,
   forcePathStyle: false,
   customDomain: null,
+  usePresignedUpload: true,
+  stripExif: false,
 };
 
 /**
@@ -30,7 +32,7 @@ export const STORAGE_PROVIDERS = [
     isEnabled: true,
     displayName: '本地存储',
     displayOrder: 1,
-    config: JSON.stringify({}),
+    config: JSON.stringify({ stripExif: true }),
   },
   {
     slug: 'cloudflare-r2',

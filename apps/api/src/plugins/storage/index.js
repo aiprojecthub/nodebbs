@@ -89,7 +89,8 @@ async function storagePlugin(fastify) {
   async function getActiveProvider() {
     const record = await getEnabledProviderRecord();
     const slug = record ? record.slug : 'local';
-    return { provider: await getProvider(slug), name: slug };
+    const config = parseConfig(record);
+    return { provider: await getProvider(slug), name: slug, config };
   }
 
   /**
@@ -122,11 +123,17 @@ async function storagePlugin(fastify) {
      * 从本地临时文件上传（本地存储直接 rename，S3 读取后上传）
      * @param {string} tmpPath - 临时文件路径
      * @param {string} key - 存储路径
-     * @param {object} options - { mimetype, size }
+     * @param {object} options - { mimetype, size, providerSlug? }
      * @returns {Promise<{ url: string, key: string, provider: string }>}
      */
     async uploadFromFile(tmpPath, key, options = {}) {
-      const { provider, name } = await getActiveProvider();
+      let provider, name;
+      if (options.providerSlug) {
+        provider = await getProvider(options.providerSlug);
+        name = options.providerSlug;
+      } else {
+        ({ provider, name } = await getActiveProvider());
+      }
       const result = await provider.uploadFromFile(tmpPath, key, options);
       return { ...result, provider: name };
     },
@@ -211,11 +218,26 @@ async function storagePlugin(fastify) {
 
     /**
      * 获取预签名上传 URL（客户端直传）
+     * 内部检查 usePresignedUpload 配置，关闭时返回 { supported: false }
      */
     async presign(key, options = {}) {
-      const { provider, name } = await getActiveProvider();
+      const { provider, name, config } = await getActiveProvider();
+      if (config.usePresignedUpload === false) {
+        return { supported: false };
+      }
       const result = await provider.getPresignedUrl(key, options);
       return result.supported ? { ...result, provider: name } : { supported: false };
+    },
+
+    /**
+     * 获取当前活跃 provider 的名称和配置（不创建实例，仅一次 DB 查询）
+     * @returns {Promise<{ name: string, config: object }>}
+     */
+    async getActiveProviderInfo() {
+      const record = await getEnabledProviderRecord();
+      const name = record ? record.slug : 'local';
+      const config = parseConfig(record);
+      return { name, config };
     },
 
     /**
