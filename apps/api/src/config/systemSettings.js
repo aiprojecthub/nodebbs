@@ -136,6 +136,14 @@ export const SETTING_KEYS = {
     category: 'features',
     accessLevel: ACCESS_LEVEL.ADMIN,
   },
+  MODERATION_LOG_RETENTION_DAYS: {
+    key: 'moderation_log_retention_days',
+    defaultValue: '180',
+    valueType: 'number',
+    description: '审核日志保留天数（超过此天数的日志将被自动清理，0 表示永不清理）',
+    category: 'features',
+    accessLevel: ACCESS_LEVEL.ADMIN,
+  },
   QR_LOGIN_ENABLED: {
     key: 'qr_login_enabled',
     defaultValue: 'false',

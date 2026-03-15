@@ -1,6 +1,6 @@
 import fp from 'fastify-plugin';
 import db from '../db/index.js';
-import { qrLoginRequests, users } from '../db/schema.js';
+import { qrLoginRequests, users, moderationLogs } from '../db/schema.js';
 import { and, eq, lt, sql } from 'drizzle-orm';
 import { anonymizeUser } from '../services/user/index.js';
 import { DELETION_COOLDOWN_MS } from '../constants/user.js';
@@ -130,7 +130,20 @@ async function cleanupPlugin(fastify, options) {
     return processed;
   });
 
+  // 4. 过期审核日志自动清理
+  registerCleanupTask('moderation-logs-cleanup', async () => {
+    const retentionDays = await fastify.settings.get('moderation_log_retention_days', 180);
+    if (!retentionDays || retentionDays <= 0) {
+      return 0; // 0 表示永不清理
+    }
 
+    const threshold = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+    const result = await db
+      .delete(moderationLogs)
+      .where(lt(moderationLogs.createdAt, threshold));
+
+    return result.rowCount || 0;
+  });
 
   // 启动定时任务 (每2小时)
   const interval = setInterval(runAllTasks, 2 * 60 * 60 * 1000);
@@ -145,5 +158,5 @@ async function cleanupPlugin(fastify, options) {
 
 export default fp(cleanupPlugin, {
   name: 'cleanup',
-  dependencies: ['db'],
+  dependencies: ['db', 'settings'],
 });

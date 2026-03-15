@@ -153,7 +153,7 @@ function SystemSettingsContent() {
       case 'user-management':
         return <UserManagementSettings settings={settings} handleBooleanChange={handleBooleanChange} handleNumberChange={handleNumberChange} saving={saving} />;
       case 'security':
-        return <SecuritySettings settings={settings} handleBooleanChange={handleBooleanChange} saving={saving} />;
+        return <SecuritySettings settings={settings} handleBooleanChange={handleBooleanChange} handleNumberChange={handleNumberChange} saving={saving} />;
       case 'spam-protection':
         return <SpamProtectionSettings settings={settings} handleBooleanChange={handleBooleanChange} handleStringChange={handleStringChange} saving={saving} />;
       case 'rate-limit':
