@@ -23,7 +23,7 @@ const DEFAULT_TOOLBAR = [
   '|',
   'horizontalRule',
   '|',
-  'link', 'image', 'video', 'audio', 'table', 'protected', 'emoji'
+  'link', 'image', 'video', 'audio', 'table', 'emoji'
 ];
 
 /**

@@ -9,6 +9,20 @@ import { AlertCircle, Loader2, Folder, Tag, Info, Send } from 'lucide-react';
 import { useTopicForm } from '@/hooks/topic/useTopicForm';
 import { usePermission } from '@/hooks/usePermission';
 
+// 话题编辑器工具栏（比默认多一个"回复可见"按钮）
+const TOPIC_TOOLBAR = [
+  'heading', '|',
+  'bold', 'italic', 'strike',
+  '|',
+  'code', 'quote', 'codeBlock',
+  '|',
+  'bulletList', 'orderedList', 'checklist',
+  '|',
+  'horizontalRule',
+  '|',
+  'link', 'image', 'video', 'audio', 'table', 'protected', 'emoji'
+];
+
 /**
  * 话题表单组件 - 用于创建和编辑话题
  * 纯 UI 组件，消费 useTopicForm Hook
@@ -79,7 +93,8 @@ export default function TopicForm({
               onChange={(value) => updateField('content', value)}
               placeholder='详细描述你的话题内容，支持 Markdown 格式...'
               className={errors.content ? 'border-destructive' : ''}
-              uploadType="topics" // 显式指定上传类型
+              toolbar={TOPIC_TOOLBAR}
+              uploadType="topics"
             />
 
             {errors.content && (
