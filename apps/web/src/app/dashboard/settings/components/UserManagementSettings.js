@@ -144,6 +144,42 @@ export function UserManagementSettings({ settings, handleChange, handleInputBlur
           </SettingItem>
         )}
       </SettingSection>
+
+      <SettingSection title="账号注销" description="控制用户自助注销账号的功能和冷静期">
+        {settings.account_deletion_enabled && (
+          <SettingItem
+            title="允许用户注销账号"
+            description={settings.account_deletion_enabled.description}
+          >
+            <Switch
+              id='account_deletion_enabled'
+              checked={settings.account_deletion_enabled.value}
+              onCheckedChange={(checked) =>
+                handleChange('account_deletion_enabled', checked)
+              }
+              disabled={saving}
+            />
+          </SettingItem>
+        )}
+
+        {settings.account_deletion_cooldown_days && (
+          <SettingItem
+            title="注销冷静期（天）"
+            description={settings.account_deletion_cooldown_days.description}
+          >
+            <Input
+              key={`deletion-cooldown-${settings.account_deletion_cooldown_days.value}`}
+              id='account_deletion_cooldown_days'
+              type='number'
+              min='0'
+              className='w-32'
+              defaultValue={settings.account_deletion_cooldown_days.value}
+              onBlur={(e) => handleInputBlur('account_deletion_cooldown_days', e)}
+              disabled={saving}
+            />
+          </SettingItem>
+        )}
+      </SettingSection>
     </div>
   );
 }

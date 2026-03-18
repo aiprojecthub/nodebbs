@@ -234,7 +234,22 @@ export const SETTING_KEYS = {
     category: 'user_settings',
     accessLevel: ACCESS_LEVEL.PUBLIC,
   },
-
+  ACCOUNT_DELETION_ENABLED: {
+    key: 'account_deletion_enabled',
+    defaultValue: 'true',
+    valueType: 'boolean',
+    description: '是否允许用户自助注销账号',
+    category: 'user_settings',
+    accessLevel: ACCESS_LEVEL.PUBLIC,
+  },
+  ACCOUNT_DELETION_COOLDOWN_DAYS: {
+    key: 'account_deletion_cooldown_days',
+    defaultValue: '30',
+    valueType: 'number',
+    description: '注销冷静期（天），期间管理员可恢复账号，0 表示立即匿名化（最长延迟 2 小时）',
+    category: 'user_settings',
+    accessLevel: ACCESS_LEVEL.PUBLIC,
+  },
 
   // ============ StopForumSpam 垃圾注册拦截 ============
   SPAM_PROTECTION_ENABLED: {

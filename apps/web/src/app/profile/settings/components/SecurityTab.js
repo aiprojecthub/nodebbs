@@ -27,6 +27,7 @@ import { DeleteAccountDialog } from './DeleteAccountDialog';
 export function SecurityTab() {
   const { settings } = useSettings();
   const [showEmailVerifyDialog, setShowEmailVerifyDialog] = useState(false);
+  const deletionCooldownDays = settings.account_deletion_cooldown_days?.value || 30;
 
   const {
     user,
@@ -290,7 +291,7 @@ export function SecurityTab() {
       />
 
       {/* 危险操作 */}
-      {user.role !== 'admin' && (
+      {user.role !== 'admin' && settings.account_deletion_enabled?.value && (
         <>
           <div className='border border-destructive/50 rounded-lg overflow-hidden'>
             <div className='px-4 py-3 bg-destructive/5 border-b border-destructive/50'>
@@ -305,7 +306,9 @@ export function SecurityTab() {
                     注销账号
                   </p>
                   <p className='text-xs text-muted-foreground'>
-                    注销后账号将无法登录，30天内可联系管理员恢复
+                    {deletionCooldownDays > 0
+                      ? `注销后账号将无法登录，${deletionCooldownDays}天内可联系管理员恢复`
+                      : '注销后账号将无法登录，个人信息将被立即删除'}
                   </p>
                 </div>
                 <Button
@@ -325,6 +328,7 @@ export function SecurityTab() {
             user={user}
             onConfirm={accountDeletion.handleConfirm}
             loading={accountDeletion.loading}
+            cooldownDays={deletionCooldownDays}
           />
         </>
       )}

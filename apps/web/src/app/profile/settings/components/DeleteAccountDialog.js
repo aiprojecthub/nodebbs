@@ -11,7 +11,7 @@ import { AlertTriangle } from 'lucide-react';
 /**
  * 账号注销确认弹窗 — 多步确认流程
  */
-export function DeleteAccountDialog({ open, onOpenChange, user, onConfirm, loading }) {
+export function DeleteAccountDialog({ open, onOpenChange, user, onConfirm, loading, cooldownDays = 30 }) {
   const [step, setStep] = useState(1);
   const [password, setPassword] = useState('');
   const [confirmText, setConfirmText] = useState('');
@@ -77,8 +77,14 @@ export function DeleteAccountDialog({ open, onOpenChange, user, onConfirm, loadi
               <p className="font-medium text-destructive">注销账号后：</p>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                 <li>账号将<strong>立即无法登录</strong></li>
-                <li>30 天冷静期内可联系管理员恢复</li>
-                <li>到期后个人信息将被<strong>永久删除</strong></li>
+                {cooldownDays > 0 ? (
+                  <>
+                    <li>{cooldownDays} 天冷静期内可联系管理员恢复</li>
+                    <li>到期后个人信息将被<strong>永久删除</strong></li>
+                  </>
+                ) : (
+                  <li>个人信息将被<strong>立即永久删除</strong></li>
+                )}
                 <li>发布的帖子和话题将保留，但作者显示为&ldquo;已注销用户&rdquo;</li>
               </ul>
             </div>

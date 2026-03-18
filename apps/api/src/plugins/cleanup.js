@@ -3,7 +3,6 @@ import db from '../db/index.js';
 import { qrLoginRequests, users, moderationLogs } from '../db/schema.js';
 import { and, eq, lt, sql } from 'drizzle-orm';
 import { anonymizeUser } from '../services/user/index.js';
-import { DELETION_COOLDOWN_MS } from '../constants/user.js';
 import moderationLogService from '../services/moderationLogService.js';
 import { EVENTS } from '../constants/events.js';
 
@@ -69,7 +68,9 @@ async function cleanupPlugin(fastify, options) {
 
   // 3. 到期注销用户自动匿名化
   registerCleanupTask('pending-deletion-users', async () => {
-    const threshold = new Date(Date.now() - DELETION_COOLDOWN_MS);
+    const cooldownDays = await fastify.settings.get('account_deletion_cooldown_days', 30);
+    const cooldownMs = cooldownDays * 24 * 60 * 60 * 1000;
+    const threshold = new Date(Date.now() - cooldownMs);
     const expiredUsers = await db
       .select({
         id: users.id,
@@ -100,7 +101,7 @@ async function cleanupPlugin(fastify, options) {
           moderatorId: user.id, // 系统自动执行，记录用户自身 ID
           previousStatus: 'pending_deletion',
           newStatus: 'anonymized',
-          reason: '30天冷静期到期，系统自动匿名化',
+          reason: `${cooldownDays}天冷静期到期，系统自动匿名化`,
           metadata: {
             username: user.username,
             email: user.email,

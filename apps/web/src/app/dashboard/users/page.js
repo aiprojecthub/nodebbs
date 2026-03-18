@@ -18,11 +18,11 @@ import { UserFormDialog } from './components/UserFormDialog';
 import { RoleEditDialog } from './components/RoleEditDialog';
 import { BanUserDialog } from './components/BanUserDialog';
 import { usePermission } from '@/hooks/usePermission';
-
-const DELETION_COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000; // 30 天冷静期
+import { useSettings } from '@/contexts/SettingsContext';
 
 export default function UsersManagement() {
   const { hasPermission, hasCondition } = usePermission();
+  const { settings } = useSettings();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -338,7 +338,8 @@ export default function UsersManagement() {
         }
         if (user.isDeleted && user.deletionRequestedAt) {
           const requestedAt = new Date(user.deletionRequestedAt).getTime();
-          const expiresAt = requestedAt + DELETION_COOLDOWN_MS;
+          const cooldownMs = (settings.account_deletion_cooldown_days?.value || 30) * 24 * 60 * 60 * 1000;
+          const expiresAt = requestedAt + cooldownMs;
           const daysRemaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / (24 * 60 * 60 * 1000)));
           return (
             <Badge variant="destructive" className="text-xs">
