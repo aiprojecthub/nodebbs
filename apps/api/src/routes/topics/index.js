@@ -897,11 +897,11 @@ export default async function topicRoutes(fastify, options) {
           for (const tagName of tagNames) {
             const tagSlug = generateSlug(tagName);
 
-            // 获取或创建标签
+            // 获取或创建标签（同时匹配 slug 和 name，兼容旧 slug）
             let [tag] = await db
               .select()
               .from(tags)
-              .where(eq(tags.slug, tagSlug))
+              .where(or(eq(tags.slug, tagSlug), eq(tags.name, tagName)))
               .limit(1);
 
             if (!tag) {
@@ -917,7 +917,10 @@ export default async function topicRoutes(fastify, options) {
             } else {
               await db
                 .update(tags)
-                .set({ topicCount: sql`${tags.topicCount} + 1` })
+                .set({
+                  topicCount: sql`${tags.topicCount} + 1`,
+                  ...(tag.slug !== tagSlug && { slug: tagSlug }),
+                })
                 .where(eq(tags.id, tag.id));
             }
 
@@ -1153,11 +1156,11 @@ export default async function topicRoutes(fastify, options) {
             for (const tagName of tagNames) {
               const tagSlug = generateSlug(tagName);
 
-              // 获取或创建标签
+              // 获取或创建标签（同时匹配 slug 和 name，兼容旧 slug）
               let [tag] = await db
                 .select()
                 .from(tags)
-                .where(eq(tags.slug, tagSlug))
+                .where(or(eq(tags.slug, tagSlug), eq(tags.name, tagName)))
                 .limit(1);
 
               if (!tag) {
@@ -1173,7 +1176,10 @@ export default async function topicRoutes(fastify, options) {
               } else {
                 await db
                   .update(tags)
-                  .set({ topicCount: sql`${tags.topicCount} + 1` })
+                  .set({
+                    topicCount: sql`${tags.topicCount} + 1`,
+                    ...(tag.slug !== tagSlug && { slug: tagSlug }),
+                  })
                   .where(eq(tags.id, tag.id));
               }
 
