@@ -92,7 +92,7 @@ export default function UserLayout({
   };
 
   return (
-    <div className='container mx-auto px-2 py-6 lg:px-4 lg:py-6'>
+    <div className='px-2 py-6 lg:px-4 lg:py-6'>
       <div className='flex flex-col lg:flex-row gap-6'>
         {/* 左侧：用户信息侧边栏 */}
         <UserSidebar user={user} />

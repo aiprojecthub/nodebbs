@@ -39,7 +39,7 @@ export default async function FollowingPage({ params, searchParams }) {
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <div className='container mx-auto px-4 py-8'>
+    <div className='px-4 py-8'>
       <div className='max-w-3xl mx-auto'>
         {/* 返回按钮 */}
         <Link

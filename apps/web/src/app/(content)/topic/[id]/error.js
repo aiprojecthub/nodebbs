@@ -12,7 +12,7 @@ export default function TopicErrorPage({ error, reset }) {
   }, [error]);
 
   return (
-    <div className='container mx-auto px-4 py-16 flex-1'>
+    <div className='px-4 py-16 flex-1'>
       <div className='max-w-md mx-auto text-center'>
         <div className='flex justify-center mb-6'>
           <AlertCircle className='w-16 h-16 text-destructive' />

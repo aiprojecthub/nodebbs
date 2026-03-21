@@ -44,7 +44,7 @@ function TopicLayoutContent({
   limit,
 }) {
   return (
-    <div className='container mx-auto p-0 sm:p-2 lg:px-4 lg:py-6'>
+    <div className='p-0 sm:p-2 lg:px-4 lg:py-6'>
       <main className='flex gap-6'>
         {/* 主要内容区域 */}
         <div className='flex-1 min-w-0'>

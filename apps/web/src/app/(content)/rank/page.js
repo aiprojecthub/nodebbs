@@ -259,7 +259,7 @@ export default async function RankPage({ searchParams }) {
   const currencyName = await getDefaultCurrencyName();
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="px-4 py-8 max-w-4xl mx-auto">
       {/* 页面标题 */}
       <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>

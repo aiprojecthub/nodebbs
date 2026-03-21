@@ -8,7 +8,7 @@ import { Loading } from '@/components/common/Loading';
  */
 export default function SearchPage() {
   return (
-    <div className='container mx-auto py-3 sm:py-6 lg:px-4'>
+    <div className='py-3 sm:py-6 lg:px-4'>
       <Suspense fallback={<Loading text='加载中...' />}>
         <SearchLayout />
       </Suspense>

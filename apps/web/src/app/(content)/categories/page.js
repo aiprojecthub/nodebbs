@@ -60,7 +60,7 @@ export default async function CategoriesPage() {
   const categories = buildCategoryTree(data);
 
   return (
-    <div className='container mx-auto py-3 sm:py-6 lg:px-4'>
+    <div className='py-3 sm:py-6 lg:px-4'>
       <CategoriesUI categories={categories} />
     </div>
   );
