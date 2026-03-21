@@ -1,22 +1,13 @@
 import Link from '@/components/common/Link';
 import { Badge } from '@/components/ui/badge';
-import { Tag, MessageSquare, Eye } from 'lucide-react';
+import { Tag } from 'lucide-react';
 import Time from '@/components/common/Time';
-import { Loading } from '@/components/common/Loading';
 
 /**
  * 分类列表 UI 组件 - GitHub 风格
  * 强调清晰、技术感和信息密度
  */
-export function CategoriesUI({ categories, loading, error }) {
-  if (error) {
-    return (
-      <div className='flex-1 flex items-center justify-center text-red-500'>
-        加载失败: {error.message}
-      </div>
-    );
-  }
-
+export function CategoriesUI({ categories }) {
   return (
     <>
       <div className='flex flex-col sm:flex-row sm:items-end justify-between mb-4 sm:mb-6 gap-4 border-b border-border pb-4 px-3 sm:px-0'>
@@ -24,13 +15,10 @@ export function CategoriesUI({ categories, loading, error }) {
           <h1 className='text-2xl font-semibold text-foreground'>
             版块导航
           </h1>
-
         </div>
       </div>
 
-      {loading ? (
-        <Loading text='加载中...' className='flex-row py-20' />
-      ) : categories.length === 0 ? (
+      {categories.length === 0 ? (
         <div className='text-center py-24 border-y sm:border border-border sm:rounded-md bg-muted/20'>
           <Tag className='h-12 w-12 text-muted-foreground/40 mx-auto mb-4' />
           <h3 className='text-base font-semibold text-foreground mb-1'>
