@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
  * @param {string} props.avatarClassName - 头像额外样式 (用于自定义尺寸, e.g. w-24 h-24)
  * @param {string} props.className - 容器额外样式
  */
-export default function UserCard({
+export default React.memo(function UserCard({
   user,
   badges = [],
   variant = 'default',
@@ -123,4 +123,4 @@ export default function UserCard({
       </div>
     </CardWrapper>
   );
-}
+})

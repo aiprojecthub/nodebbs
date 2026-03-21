@@ -7,7 +7,7 @@ import ReportDialog from '@/components/common/ReportDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-export default function ReportUserButton({ userId, username }) {
+export default function ReportUserButton({ userId, username, variant = 'outline', size, className }) {
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const { isAuthenticated, user, openLoginDialog } = useAuth();
 
@@ -34,8 +34,9 @@ export default function ReportUserButton({ userId, username }) {
   return (
     <>
       <Button
-        variant='outline'
-        className='w-full justify-center text-orange-500 hover:text-orange-600 hover:bg-orange-50'
+        variant={variant}
+        size={size}
+        className={className}
         onClick={handleClick}
       >
         <Flag className='h-4 w-4' />

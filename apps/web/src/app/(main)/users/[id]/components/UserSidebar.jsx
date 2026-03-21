@@ -1,6 +1,7 @@
 'use client';
 
-import { Calendar, Users } from 'lucide-react';
+import { useMemo } from 'react';
+import { Users } from 'lucide-react';
 import Link from '@/components/common/Link';
 import StickySidebar from '@/components/common/StickySidebar';
 import Time from '@/components/common/Time';
@@ -16,9 +17,8 @@ import { useUserProfile } from '@/hooks/user/useUserProfile';
  * 显示用户信息、关注按钮、统计数据
  */
 export default function UserSidebar({ user }) {
-  const badges = user.badges || [];
+  const badges = useMemo(() => user.badges || [], [user.badges]);
 
-  // 使用 Hook 管理关注状态
   const {
     username,
     followerCount,
@@ -44,59 +44,40 @@ export default function UserSidebar({ user }) {
             avatarClassName="w-24 h-24"
           />
 
-          <div className='flex flex-col items-center gap-4'>
-            {/* 关注按钮 */}
+          {/* 主操作区 */}
+          <div className='flex justify-center gap-2 w-full'>
             <FollowButton
               username={username}
               initialIsFollowing={isFollowing}
               onFollowChange={handleFollowChange}
+              className="w-1/2"
             />
+            <SendMessageButton
+              recipientId={user.id}
+              recipientName={user.name || user.username}
+              recipientMessagePermission={user.messagePermission}
+              className="w-1/2"
+            />
+          </div>
 
-            {/* 关注者和粉丝 */}
-            <div className='flex items-center gap-4 text-sm'>
-              <Link
-                href={`/users/${username}/followers`}
-                className='flex items-center gap-1 hover:text-primary'
-              >
-                <Users className='h-4 w-4' />
-                <span className='font-semibold'>{followerCount}</span>
-                <span className='text-muted-foreground'>粉丝</span>
-              </Link>
-              <Link
-                href={`/users/${username}/following`}
-                className='flex items-center gap-1 hover:text-primary'
-              >
-                <span className='font-semibold'>{followingCount}</span>
-                <span className='text-muted-foreground'>关注</span>
-              </Link>
-            </div>
-
-            {/* 其他操作按钮 */}
-            <div className='space-y-2 w-full px-4 md:px-8'>
-              <SendMessageButton
-                recipientId={user.id}
-                recipientName={user.name || user.username}
-                recipientMessagePermission={user.messagePermission}
-              />
-              <BlockUserButton
-                userId={user.id}
-                username={user.name || user.username}
-              />
-              <ReportUserButton
-                userId={user.id}
-                username={user.name || user.username}
-              />
-            </div>
-
-            {/* 用户详细信息 */}
-            <div className='space-y-3 text-sm'>
-              <div className='flex items-center gap-2 text-muted-foreground'>
-                <Calendar className='h-4 w-4' />
-                <span>
-                  加入于 <Time date={user.createdAt} format='YYYY年MM月DD日' />
-                </span>
-              </div>
-            </div>
+          {/* 粉丝/关注统计 */}
+          <div className='flex items-center justify-center gap-6 text-sm'>
+            <Link
+              href={`/users/${username}/followers`}
+              className='flex items-center gap-1.5 hover:text-primary transition-colors'
+            >
+              <Users className='h-4 w-4 text-muted-foreground' />
+              <span className='font-semibold'>{followerCount}</span>
+              <span className='text-muted-foreground'>粉丝</span>
+            </Link>
+            <div className='w-px h-4 bg-border' />
+            <Link
+              href={`/users/${username}/following`}
+              className='flex items-center gap-1.5 hover:text-primary transition-colors'
+            >
+              <span className='font-semibold'>{followingCount}</span>
+              <span className='text-muted-foreground'>关注</span>
+            </Link>
           </div>
 
           {/* 统计信息 */}
@@ -115,7 +96,31 @@ export default function UserSidebar({ user }) {
                   {user.postCount || 0}
                 </span>
               </div>
+              <div className='flex items-center justify-between'>
+                <span className='text-sm text-muted-foreground'>加入时间</span>
+                <span className='text-sm text-muted-foreground'>
+                  <Time date={user.createdAt} format='YYYY-MM-DD' />
+                </span>
+              </div>
             </div>
+          </div>
+
+          {/* 次要操作 */}
+          <div className='flex items-center gap-2'>
+            <BlockUserButton
+              userId={user.id}
+              username={user.name || user.username}
+              variant="ghost"
+              size="sm"
+              className="flex-1 text-muted-foreground hover:text-foreground"
+            />
+            <ReportUserButton
+              userId={user.id}
+              username={user.name || user.username}
+              variant="ghost"
+              size="sm"
+              className="flex-1 text-muted-foreground hover:text-foreground"
+            />
           </div>
         </aside>
       </StickySidebar>

@@ -10,7 +10,7 @@ import { conversationApi, blockedUsersApi } from '@/lib/api';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
-export default function SendMessageButton({ recipientId, recipientName, recipientMessagePermission = 'everyone' }) {
+export default function SendMessageButton({ recipientId, recipientName, recipientMessagePermission = 'everyone', variant = 'outline', className = 'w-full' }) {
   const { isAuthenticated, user, openLoginDialog } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [content, setContent] = useState('');
@@ -93,8 +93,8 @@ export default function SendMessageButton({ recipientId, recipientName, recipien
   return (
     <>
       <Button
-        className='w-full'
-        variant='outline'
+        className={className}
+        variant={variant}
         onClick={() => handleOpenChange(true)}
       >
         <Mail className='h-4 w-4' />

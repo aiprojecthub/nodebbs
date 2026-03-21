@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { Loader2, UserPlus, UserMinus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
-export default function FollowButton({ username, initialIsFollowing = false, onFollowChange }) {
+export default function FollowButton({ username, initialIsFollowing = false, onFollowChange, className }) {
   const { user, isAuthenticated, openLoginDialog } = useAuth();
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [loading, setLoading] = useState(false);
@@ -59,6 +59,7 @@ export default function FollowButton({ username, initialIsFollowing = false, onF
       onClick={handleToggleFollow}
       disabled={loading}
       variant={isFollowing ? 'outline' : 'default'}
+      className={className}
     >
       {loading ? (
         <>

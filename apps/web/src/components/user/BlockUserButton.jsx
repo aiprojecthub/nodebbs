@@ -17,7 +17,7 @@ import { blockedUsersApi } from '@/lib/api';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
-export default function BlockUserButton({ userId, username }) {
+export default function BlockUserButton({ userId, username, variant = 'outline', size, className }) {
   const { isAuthenticated, user } = useAuth();
   const [isBlocked, setIsBlocked] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -90,7 +90,7 @@ export default function BlockUserButton({ userId, username }) {
   // 如果正在检查状态，显示加载状态
   if (checking) {
     return (
-      <Button variant="outline" className="w-full" disabled>
+      <Button variant={variant} className={className} size={size} disabled>
         <Loader2 className="h-4 w-4 animate-spin" />
         检查中...
       </Button>
@@ -101,8 +101,9 @@ export default function BlockUserButton({ userId, username }) {
     <>
       {isBlocked ? (
         <Button
-          variant="outline"
-          className="w-full border-orange-500 text-orange-600 hover:bg-orange-50"
+          variant={variant}
+          size={size}
+          className={className}
           onClick={() => setShowUnblockDialog(true)}
         >
           <ShieldOff className="h-4 w-4" />
@@ -110,8 +111,9 @@ export default function BlockUserButton({ userId, username }) {
         </Button>
       ) : (
         <Button
-          variant="outline"
-          className="w-full"
+          variant={variant}
+          size={size}
+          className={className}
           onClick={() => setShowBlockDialog(true)}
         >
           <Shield className="h-4 w-4" />
