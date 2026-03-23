@@ -1,133 +1,31 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useDebounce } from '@uidotdev/usehooks';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/common/DataTable';
 import { ActionMenu } from '@/components/common/ActionMenu';
-import { confirm } from '@/components/common/ConfirmPopover';
 import { PageHeader } from '@/components/common/PageHeader';
-import { postApi } from '@/lib/api';
-import { toast } from 'sonner';
-import {
-  Loader2,
-  Trash2,
-  Eye,
-  Clock,
-  AlertCircle,
-  CheckCircle,
-} from 'lucide-react';
+import { Eye, Trash2 } from 'lucide-react';
 import Link from '@/components/common/Link';
 import Time from '@/components/common/Time';
 import { usePermission } from '@/hooks/usePermission';
+import { usePostManagement } from '@/hooks/dashboard/usePostManagement';
 
 export default function AdminPostsPage() {
   const { hasPermission, hasCondition } = usePermission();
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
+  const {
+    items: posts,
+    loading,
+    search,
+    setSearch,
+    filters,
+    setFilter,
+    page,
+    total,
+    limit,
+    setPage,
+    handleDeleteClick,
+  } = usePostManagement();
 
-  const limit = 20;
-
-  // 防抖搜索词
-  const debouncedSearch = useDebounce(searchQuery, 500);
-
-  // 搜索词变化时重置页码
-  useEffect(() => {
-    if (page !== 1) {
-      setPage(1);
-    }
-  }, [debouncedSearch]);
-
-  // 数据请求
-  useEffect(() => {
-    fetchPosts();
-  }, [page, statusFilter, debouncedSearch]);
-
-  const fetchPosts = async () => {
-    setLoading(true);
-    try {
-      const params = {
-        page,
-        limit,
-        dashboard: true,
-      };
-
-      // 添加搜索参数
-      if (debouncedSearch.trim()) {
-        params.search = debouncedSearch.trim();
-      }
-
-      // 状态过滤
-      if (statusFilter === 'deleted') {
-        // 只显示已删除的回复
-        params.isDeleted = true;
-      } else if (statusFilter !== 'all') {
-        // 显示特定审核状态的回复（包括已删除和未删除）
-        params.approvalStatus = statusFilter;
-      }
-      // statusFilter === 'all' 时不传参数，使用后端默认值（显示所有）
-
-      const data = await postApi.getAdminList(params);
-      setPosts(data.items || []);
-      setTotal(data.total || 0);
-    } catch (err) {
-      console.error('获取回复列表失败:', err);
-      toast.error(err.message || '获取回复列表失败');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteClick = async (e, post, type) => {
-    const isHard = type === 'hard';
-    const confirmed = await confirm(e, {
-      title: isHard ? '确认彻底删除？' : '确认删除？',
-      description: isHard
-        ? '此操作将彻底删除该回复，包括所有点赞和相关数据。此操作不可恢复！'
-        : '此操作将逻辑删除该回复。删除后回复将不再显示，但数据仍保留在数据库中。',
-      confirmText: '确认删除',
-      variant: isHard ? 'destructive' : 'default',
-    });
-
-    if (!confirmed) return;
-
-    try {
-      await postApi.delete(post.id, isHard);
-      toast.success(isHard ? '回复已彻底删除' : '回复已删除');
-
-      // 局部更新
-      setPosts((prevPosts) => {
-        // 彻底删除：直接从列表中移除
-        if (isHard) {
-          setTotal((prev) => Math.max(0, prev - 1));
-          return prevPosts.filter((p) => p.id !== post.id);
-        }
-
-        // 逻辑删除：更新状态
-        const updatedPosts = prevPosts.map((p) =>
-          p.id === post.id ? { ...p, isDeleted: true } : p
-        );
-
-        // 如果当前筛选不包含已删除的项，则移除
-        if (statusFilter !== 'all' && statusFilter !== 'deleted') {
-          setTotal((prev) => Math.max(0, prev - 1));
-          return updatedPosts.filter((p) => p.id !== post.id);
-        }
-
-        return updatedPosts;
-      });
-    } catch (err) {
-      console.error('删除失败:', err);
-      toast.error(err.message || '删除失败');
-    }
-  };
-
-  // 定义表格列
   const columns = [
     {
       key: 'id',
@@ -147,7 +45,6 @@ export default function AdminPostsPage() {
               href={`/topic/${row.topicId}#post-${row.id}`}
               className='hover:text-primary hover:underline'
               target='_blank'
-             
             >
               {row.topicTitle}
             </Link>
@@ -165,7 +62,6 @@ export default function AdminPostsPage() {
             href={`/users/${value}`}
             className='text-sm hover:text-primary hover:underline'
             target='_blank'
-           
           >
             {value}
           </Link>
@@ -180,7 +76,6 @@ export default function AdminPostsPage() {
       label: '状态',
       width: 'w-25',
       render: (_, row) => {
-        // 优先显示审核状态
         if (row.approvalStatus === 'pending') {
           return (
             <Badge variant='outline' className='text-chart-5 border-chart-5 text-xs'>
@@ -195,7 +90,6 @@ export default function AdminPostsPage() {
             </Badge>
           );
         }
-        // 其次显示删除状态
         if (row.isDeleted) {
           return (
             <Badge variant='destructive' className='text-xs'>
@@ -271,19 +165,18 @@ export default function AdminPostsPage() {
         description='管理所有回复，支持查看和删除操作'
       />
 
-      {/* 数据表格 */}
       <DataTable
         columns={columns}
         data={posts}
         loading={loading}
         search={{
-          value: searchQuery,
-          onChange: (value) => setSearchQuery(value),
+          value: search,
+          onChange: (value) => setSearch(value),
           placeholder: '搜索回复内容...',
         }}
         filter={{
-          value: statusFilter,
-          onChange: setStatusFilter,
+          value: filters.statusFilter,
+          onChange: (value) => setFilter('statusFilter', value),
           options: [
             { value: 'all', label: '全部回复' },
             { value: 'pending', label: '待审核' },
@@ -300,9 +193,6 @@ export default function AdminPostsPage() {
         }}
         emptyMessage='暂无回复'
       />
-
-      {/* 删除确认对话框 */}
-
     </div>
   );
 }

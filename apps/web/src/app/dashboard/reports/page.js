@@ -1,182 +1,43 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useDebounce } from '@uidotdev/usehooks';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/common/DataTable';
 import { ActionMenu } from '@/components/common/ActionMenu';
-import { FormDialog } from '@/components/common/FormDialog';
 import { PageHeader } from '@/components/common/PageHeader';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { moderationApi } from '@/lib/api';
-import { toast } from 'sonner';
-import {
-  Loader2,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Eye,
-  CheckSquare,
-  XSquare,
-} from 'lucide-react';
+import { Eye, CheckSquare, XSquare } from 'lucide-react';
 import Link from '@/components/common/Link';
 import Time from '@/components/common/Time';
+import { useReportManagement } from '@/hooks/dashboard/useReportManagement';
+import { ReportResolveDialog } from './components/ReportResolveDialog';
+import { ReportDetailDialog } from './components/ReportDetailDialog';
+import { ReportTypeBadge, ReportStatusBadge, getReportTargetLink } from './components/ReportBadges';
 
 export default function ReportsManagement() {
-  const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [reportType, setReportType] = useState('all');
-  const [status, setStatus] = useState('all');
-  // 搜索
-  const [search, setSearch] = useState('');
-  const debouncedSearch = useDebounce(search, 500);
+  const {
+    items: reports,
+    loading,
+    search,
+    setSearch,
+    filters,
+    setFilter,
+    page,
+    total,
+    limit,
+    setPage,
+    // 处理对话框
+    resolveDialogOpen,
+    setResolveDialogOpen,
+    selectedReport,
+    resolveAction,
+    resolving,
+    handleResolve,
+    openResolveDialog,
+    // 详情对话框
+    detailDialogOpen,
+    setDetailDialogOpen,
+    detailReport,
+    openDetailDialog,
+  } = useReportManagement();
 
-  const limit = 20;
-
-  // 处理对话框
-  const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
-  const [selectedReport, setSelectedReport] = useState(null);
-  const [resolveAction, setResolveAction] = useState('resolve');
-  const [resolveNote, setResolveNote] = useState('');
-  const [resolving, setResolving] = useState(false);
-
-  // 详情对话框
-  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-  const [detailReport, setDetailReport] = useState(null);
-
-  // 搜索词变化时重置页码
-  useEffect(() => {
-    if (page !== 1) {
-      setPage(1);
-    }
-  }, [debouncedSearch]);
-
-  // 数据请求 - 过滤器变化时立即响应，debouncedSearch 变化也会触发 fetch
-  useEffect(() => {
-    fetchReports();
-  }, [page, reportType, status, debouncedSearch]);
-
-  const fetchReports = async () => {
-    setLoading(true);
-    try {
-      const data = await moderationApi.getReports(reportType, status, page, limit, debouncedSearch);
-      setReports(data.items || []);
-      setTotal(data.total || 0);
-    } catch (err) {
-      console.error('获取举报列表失败:', err);
-      toast.error(err.message || '获取举报列表失败');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResolve = async () => {
-    if (!selectedReport) return;
-
-    setResolving(true);
-    try {
-      await moderationApi.resolveReport(
-        selectedReport.id,
-        resolveAction,
-        resolveNote.trim()
-      );
-      toast.success(resolveAction === 'resolve' ? '举报已处理' : '举报已驳回');
-      setResolveDialogOpen(false);
-      setSelectedReport(null);
-      setResolveNote('');
-      fetchReports();
-    } catch (err) {
-      console.error('处理举报失败:', err);
-      toast.error(err.message || '处理失败');
-    } finally {
-      setResolving(false);
-    }
-  };
-
-  const openResolveDialog = (report, action) => {
-    setSelectedReport(report);
-    setResolveAction(action);
-    setResolveNote('');
-    setResolveDialogOpen(true);
-  };
-
-  const openDetailDialog = (report) => {
-    setDetailReport(report);
-    setDetailDialogOpen(true);
-  };
-
-  const getTypeText = (type) => {
-    switch (type) {
-      case 'topic':
-        return '话题';
-      case 'post':
-        return '回复';
-      case 'user':
-        return '用户';
-      default:
-        return type;
-    }
-  };
-
-  const getTypeBadge = (type) => {
-    const variants = {
-      topic: 'default',
-      post: 'secondary',
-      user: 'outline',
-    };
-    return (
-      <Badge variant={variants[type] || 'secondary'} className='text-xs'>
-        {getTypeText(type)}
-      </Badge>
-    );
-  };
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'pending':
-        return (
-          <Badge className='bg-yellow-100 text-yellow-800 text-xs'>
-            <AlertTriangle className='h-3 w-3 mr-1' />
-            待处理
-          </Badge>
-        );
-      case 'resolved':
-        return (
-          <Badge className='bg-green-100 text-green-800 text-xs'>
-            <CheckCircle className='h-3 w-3 mr-1' />
-            已处理
-          </Badge>
-        );
-      case 'dismissed':
-        return (
-          <Badge className='bg-gray-100 text-gray-800 text-xs'>
-            <XCircle className='h-3 w-3 mr-1' />
-            已驳回
-          </Badge>
-        );
-      default:
-        return <Badge variant='secondary' className='text-xs'>{status}</Badge>;
-    }
-  };
-
-  const getTargetLink = (report) => {
-    if (!report.targetInfo) return null;
-
-    if (report.reportType === 'topic') {
-      return `/topic/${report.targetId}`;
-    } else if (report.reportType === 'post' && report.targetInfo.topicId) {
-      return `/topic/${report.targetInfo.topicId}#post-${report.targetId}`;
-    } else if (report.reportType === 'user') {
-      return `/users/${report.targetInfo.username}`;
-    }
-    return null;
-  };
-
-  // 定义表格列
   const columns = [
     {
       key: 'id',
@@ -188,7 +49,7 @@ export default function ReportsManagement() {
       key: 'reportType',
       label: '类型',
       width: 'w-25',
-      render: (value) => getTypeBadge(value),
+      render: (value) => <ReportTypeBadge type={value} />,
     },
     {
       key: 'target',
@@ -197,35 +58,31 @@ export default function ReportsManagement() {
         if (!row.targetInfo) {
           return <span className='text-muted-foreground text-sm'>已删除</span>;
         }
-
         return (
           <div className='max-w-md'>
             {row.reportType === 'topic' && (
               <Link
-                href={getTargetLink(row)}
+                href={getReportTargetLink(row)}
                 className='text-primary hover:underline line-clamp-2 text-sm'
                 target='_blank'
-               
               >
                 {row.targetInfo.title}
               </Link>
             )}
             {row.reportType === 'post' && (
               <Link
-                href={getTargetLink(row)}
+                href={getReportTargetLink(row)}
                 className='text-primary hover:underline line-clamp-2 text-sm'
                 target='_blank'
-               
               >
                 {row.targetInfo.content}
               </Link>
             )}
             {row.reportType === 'user' && (
               <Link
-                href={getTargetLink(row)}
+                href={getReportTargetLink(row)}
                 className='text-primary hover:underline text-sm'
                 target='_blank'
-               
               >
                 {row.targetInfo.username}
               </Link>
@@ -258,7 +115,7 @@ export default function ReportsManagement() {
       key: 'status',
       label: '状态',
       width: 'w-30',
-      render: (value) => getStatusBadge(value),
+      render: (value) => <ReportStatusBadge status={value} />,
     },
     {
       key: 'createdAt',
@@ -303,15 +160,10 @@ export default function ReportsManagement() {
     },
   ];
 
-  // 多个独立过滤器配置
-  const filters = [
+  const tableFilters = [
     {
-      // label: '举报类型',
-      value: reportType,
-      onChange: (value) => {
-        setReportType(value);
-        setPage(1); // 过滤时重置到第一页
-      },
+      value: filters.reportType,
+      onChange: (value) => setFilter('reportType', value),
       options: [
         { value: 'all', label: '全部类型' },
         { value: 'topic', label: '话题' },
@@ -321,12 +173,8 @@ export default function ReportsManagement() {
       width: 'w-full sm:w-[150px]',
     },
     {
-      // label: '处理状态',
-      value: status,
-      onChange: (value) => {
-        setStatus(value);
-        setPage(1); // 过滤时重置到第一页
-      },
+      value: filters.reportStatus,
+      onChange: (value) => setFilter('reportStatus', value),
       options: [
         { value: 'all', label: '全部状态' },
         { value: 'pending', label: '待处理' },
@@ -344,12 +192,11 @@ export default function ReportsManagement() {
         description='管理用户提交的举报，处理违规内容'
       />
 
-      {/* 数据表格 */}
       <DataTable
         columns={columns}
         data={reports}
         loading={loading}
-        filters={filters}
+        filters={tableFilters}
         search={{
           value: search,
           onChange: (value) => setSearch(value),
@@ -364,151 +211,20 @@ export default function ReportsManagement() {
         emptyMessage='暂无举报记录'
       />
 
-      {/* 处理举报对话框 */}
-      <FormDialog
-          open={resolveDialogOpen}
-          onOpenChange={setResolveDialogOpen}
-          title={resolveAction === 'resolve' ? '处理举报' : '驳回举报'}
-          description={selectedReport && (
-                <div className='mt-2 space-y-2'>
-                  <div className='flex items-center space-x-2'>
-                    <span className='text-sm font-medium'>类型：</span>
-                    {getTypeBadge(selectedReport.reportType)}
-                  </div>
-                  <div className='text-sm'>
-                    <span className='font-medium'>举报原因：</span>
-                    <p className='mt-1 text-muted-foreground'>
-                      {selectedReport.reason}
-                    </p>
-                  </div>
-                </div>
-              )}
-          submitText={resolveAction === 'resolve' ? '确认处理' : '确认驳回'}
-          onSubmit={handleResolve}
-          loading={resolving}
-          submitClassName={resolveAction === 'resolve' ? 'bg-green-600 hover:bg-green-700' : ''}
-          maxWidth='sm:max-w-125'
-      >
-          <div className='space-y-4 py-4'>
-            <div className='space-y-2'>
-              <Label htmlFor='resolve-note'>处理备注（可选）</Label>
-              <Textarea
-                id='resolve-note'
-                placeholder='输入处理备注...'
-                value={resolveNote}
-                onChange={(e) => setResolveNote(e.target.value)}
-                disabled={resolving}
-                className='min-h-25'
-                maxLength={500}
-              />
-            </div>
-          </div>
-      </FormDialog>
+      <ReportResolveDialog
+        open={resolveDialogOpen}
+        onOpenChange={setResolveDialogOpen}
+        report={selectedReport}
+        action={resolveAction}
+        onResolve={handleResolve}
+        resolving={resolving}
+      />
 
-      {/* 详情对话框 */}
-      <FormDialog
-          open={detailDialogOpen}
-          onOpenChange={setDetailDialogOpen}
-          title="举报详情"
-          cancelText="关闭"
-          maxWidth='sm:max-w-150'
-          // Read-only, so no submit button
-      >
-          {detailReport && (
-            <div className='space-y-4 py-4'>
-              <div className='grid grid-cols-2 gap-4'>
-                <div>
-                  <Label className='text-muted-foreground'>举报ID</Label>
-                  <p className='font-mono'>#{detailReport.id}</p>
-                </div>
-                <div>
-                  <Label className='text-muted-foreground'>类型</Label>
-                  <div className='mt-1'>{getTypeBadge(detailReport.reportType)}</div>
-                </div>
-                <div>
-                  <Label className='text-muted-foreground'>状态</Label>
-                  <div className='mt-1'>{getStatusBadge(detailReport.status)}</div>
-                </div>
-                <div>
-                  <Label className='text-muted-foreground'>举报人</Label>
-                  <p>{detailReport.reporterName || detailReport.reporterUsername}</p>
-                </div>
-              </div>
-
-              <div>
-                <Label className='text-muted-foreground'>举报时间</Label>
-                <p><Time date={detailReport.createdAt} /></p>
-              </div>
-
-              <div>
-                <Label className='text-muted-foreground'>举报原因</Label>
-                <p className='mt-1 p-3 bg-muted rounded text-sm'>
-                  {detailReport.reason}
-                </p>
-              </div>
-
-              {detailReport.targetInfo && (
-                <div>
-                  <Label className='text-muted-foreground'>目标内容</Label>
-                  <div className='mt-1 p-3 bg-muted rounded text-sm'>
-                    {detailReport.reportType === 'topic' && (
-                      <div>
-                        <p className='font-medium'>{detailReport.targetInfo.title}</p>
-                        <p className='text-xs text-muted-foreground mt-1'>
-                          作者: {detailReport.targetInfo.username}
-                        </p>
-                      </div>
-                    )}
-                    {detailReport.reportType === 'post' && (
-                      <div>
-                        <p>{detailReport.targetInfo.content}</p>
-                        <p className='text-xs text-muted-foreground mt-1'>
-                          作者: {detailReport.targetInfo.username}
-                        </p>
-                      </div>
-                    )}
-                    {detailReport.reportType === 'user' && (
-                      <div>
-                        <p className='font-medium'>{detailReport.targetInfo.username}</p>
-                        {detailReport.targetInfo.name && (
-                          <p className='text-xs text-muted-foreground mt-1'>
-                            {detailReport.targetInfo.name}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  {getTargetLink(detailReport) && (
-                    <Link
-                      href={getTargetLink(detailReport)}
-                      target='_blank'
-                      className='text-sm text-primary hover:underline mt-2 inline-block'
-                    >
-                      查看原内容 →
-                    </Link>
-                  )}
-                </div>
-              )}
-
-              {detailReport.status !== 'pending' && (
-                <>
-                  <div>
-                    <Label className='text-muted-foreground'>处理时间</Label>
-                    <p><Time date={detailReport.resolvedAt} /></p>
-                  </div>
-                  {detailReport.resolverNote && (
-                    <div>
-                      <Label className='text-muted-foreground'>处理备注</Label>
-                      <p className='mt-1 p-3 bg-muted rounded text-sm'>
-                        {detailReport.resolverNote}
-                      </p>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          )}
-      </FormDialog>
+      <ReportDetailDialog
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        report={detailReport}
+      />
     </div>
   );
 }

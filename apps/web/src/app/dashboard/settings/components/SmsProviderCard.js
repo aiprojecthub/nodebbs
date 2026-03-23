@@ -1,52 +1,67 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { smsConfigApi } from '@/lib/api';
-import { toast } from 'sonner';
-import { Loader2, Check, X, MessageSquareText } from 'lucide-react';
+import { Loader2, Check, MessageSquareText } from 'lucide-react';
 import { ConfigProviderCard } from './ConfigProviderCard';
 import { Loading } from '@/components/common/Loading';
+import { useProviderSettings } from '@/hooks/dashboard/useProviderSettings';
+import { useProviderCard } from '@/hooks/dashboard/useProviderCard';
+
+const getInitialFormData = (provider) => {
+  const cfg = provider.config || {};
+  return {
+    isEnabled: provider.isEnabled,
+    // 阿里云配置
+    accessKeyId: cfg.accessKeyId || '',
+    accessKeySecret: cfg.accessKeySecret || '',
+    signName: cfg.signName || '',
+    region: cfg.region || 'cn-hangzhou',
+    // 腾讯云配置
+    secretId: cfg.secretId || '',
+    secretKey: cfg.secretKey || '',
+    appId: cfg.appId || '',
+    templates: cfg.templates || {},
+  };
+};
+
+const buildSavePayload = (formData, provider) => {
+  const isAliyun = provider.provider === 'aliyun';
+  const isTencent = provider.provider === 'tencent';
+  return {
+    isEnabled: formData.isEnabled,
+    config: {
+      signName: formData.signName,
+      ...(isAliyun && {
+        accessKeyId: formData.accessKeyId,
+        accessKeySecret: formData.accessKeySecret,
+        region: formData.region,
+      }),
+      ...(isTencent && {
+        secretId: formData.secretId,
+        secretKey: formData.secretKey,
+        appId: formData.appId,
+      }),
+      templates: formData.templates,
+    },
+  };
+};
 
 export function SmsSettings() {
-  const [providers, setProviders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [editingProvider, setEditingProvider] = useState(null);
-
-  useEffect(() => {
-    fetchProviders();
-  }, []);
-
-  const fetchProviders = async () => {
-    try {
-      setLoading(true);
-      const data = await smsConfigApi.getAllProviders();
-      setProviders(data.items || []);
-    } catch (error) {
-      console.error('Failed to fetch SMS providers:', error);
-      toast.error('获取短信服务配置失败');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateProvider = (providerName, updates) => {
-    setProviders((prev) =>
-      prev.map((p) => {
-        // 如果当前更新启用了某个 provider，则禁用其他 provider
-        if (updates.isEnabled && p.provider !== providerName) {
-          return { ...p, isEnabled: false };
-        }
-        if (p.provider === providerName) {
-          return { ...p, ...updates };
-        }
-        return p;
-      })
-    );
-  };
+  const {
+    providers,
+    loading,
+    editingProvider,
+    setEditingProvider,
+    updateProvider,
+  } = useProviderSettings({
+    fetchFn: smsConfigApi.getAllProviders,
+    exclusiveEnable: true,
+    errorMessage: '获取短信服务配置失败',
+  });
 
   if (loading) {
     return <Loading text='加载中...' className='min-h-50' />;
@@ -78,80 +93,41 @@ export function SmsSettings() {
 
 
 
-function SmsProviderCard({ 
-  provider, 
-  onUpdate, 
-  editingProvider, 
+function SmsProviderCard({
+  provider,
+  onUpdate,
+  editingProvider,
   setEditingProvider,
 }) {
   const config = provider.config || {};
-  
-  const [formData, setFormData] = useState({
-    isEnabled: provider.isEnabled,
-    // 阿里云配置
-    accessKeyId: config.accessKeyId || '',
-    accessKeySecret: config.accessKeySecret || '',
-    signName: config.signName || '',
-    region: config.region || 'cn-hangzhou',
-    // 腾讯云配置
-    secretId: config.secretId || '',
-    secretKey: config.secretKey || '',
-    appId: config.appId || '',
-    templates: config.templates || {},
-  });
-  const [saving, setSaving] = useState(false);
 
-  const isEditing = editingProvider === provider.provider;
+  const updateApiFn = useCallback(
+    (id, payload) => smsConfigApi.updateProvider(id, payload),
+    []
+  );
+
+  const {
+    formData,
+    setFormData,
+    saving,
+    isEditing,
+    handleEditClick,
+    handleCancelClick,
+    handleSave,
+    handleToggleEnabled,
+  } = useProviderCard({
+    provider,
+    idField: 'provider',
+    updateApiFn,
+    onUpdate,
+    getInitialFormData,
+    buildSavePayload,
+    editingProvider,
+    setEditingProvider,
+  });
+
   const isAliyun = provider.provider === 'aliyun';
   const isTencent = provider.provider === 'tencent';
-
-  const handleSave = async () => {
-    try {
-      setSaving(true);
-      const updatePayload = {
-        isEnabled: formData.isEnabled,
-        config: {
-          signName: formData.signName,
-          ...(isAliyun && {
-            accessKeyId: formData.accessKeyId,
-            accessKeySecret: formData.accessKeySecret,
-            region: formData.region,
-          }),
-          ...(isTencent && {
-            secretId: formData.secretId,
-            secretKey: formData.secretKey,
-            appId: formData.appId,
-          }),
-          templates: formData.templates,
-        },
-      };
-      
-      await smsConfigApi.updateProvider(provider.provider, updatePayload);
-      toast.success(`${provider.displayName} 配置已保存`);
-      setEditingProvider(null);
-      onUpdate(provider.provider, {
-        isEnabled: formData.isEnabled,
-        config: updatePayload.config,
-      });
-    } catch (error) {
-      console.error('Failed to update SMS provider:', error);
-      toast.error('保存配置失败');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleToggleEnabled = async (checked) => {
-    try {
-      const payload = { isEnabled: checked };
-      await smsConfigApi.updateProvider(provider.provider, payload);
-      toast.success(checked ? `${provider.displayName} 已启用` : `${provider.displayName} 已停用`);
-      onUpdate(provider.provider, payload);
-    } catch (error) {
-      console.error('Failed to toggle SMS provider:', error);
-      toast.error('操作失败');
-    }
-  };
 
   const summaryContent = config.signName ? (
     <div className='flex flex-col gap-1'>
@@ -172,22 +148,8 @@ function SmsProviderCard({
       isEnabled={provider.isEnabled}
       isEditing={isEditing}
       onToggleEnabled={handleToggleEnabled}
-      onEditClick={() => {
-        setEditingProvider(provider.provider);
-        const cfg = provider.config || {};
-        setFormData({
-          isEnabled: provider.isEnabled,
-          accessKeyId: cfg.accessKeyId || '',
-          accessKeySecret: cfg.accessKeySecret || '',
-          signName: cfg.signName || '',
-          region: cfg.region || 'cn-hangzhou',
-          secretId: cfg.secretId || '',
-          secretKey: cfg.secretKey || '',
-          appId: cfg.appId || '',
-          templates: cfg.templates || {},
-        });
-      }}
-      onCancelClick={() => { setEditingProvider(null); }}
+      onEditClick={handleEditClick}
+      onCancelClick={handleCancelClick}
       summary={summaryContent}
     >
       <div className='space-y-4 pt-2'>
@@ -285,53 +247,53 @@ function SmsProviderCard({
             如果未配置，将默认使用系统预设的模板 ID（{isAliyun ? 'TemplateCode' : 'TemplateId'}）。
             如需使用自定义模板，请在此处填写对应的真实 ID。
           </p>
-          
+
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
             <div className='space-y-2'>
               <Label htmlFor={`${provider.provider}-tpl-login`} className='text-xs text-muted-foreground'>登录验证码 (SMS_LOGIN)</Label>
               <Input
                 id={`${provider.provider}-tpl-login`}
                 value={formData.templates?.SMS_LOGIN || ''}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  templates: { ...formData.templates, SMS_LOGIN: e.target.value } 
+                onChange={(e) => setFormData({
+                  ...formData,
+                  templates: { ...formData.templates, SMS_LOGIN: e.target.value }
                 })}
                 placeholder='例如: SMS_987654321'
               />
             </div>
-            
+
             <div className='space-y-2'>
               <Label htmlFor={`${provider.provider}-tpl-reset`} className='text-xs text-muted-foreground'>密码重置 (SMS_PASSWORD_RESET)</Label>
               <Input
                 id={`${provider.provider}-tpl-reset`}
                 value={formData.templates?.SMS_PASSWORD_RESET || ''}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  templates: { ...formData.templates, SMS_PASSWORD_RESET: e.target.value } 
+                onChange={(e) => setFormData({
+                  ...formData,
+                  templates: { ...formData.templates, SMS_PASSWORD_RESET: e.target.value }
                 })}
               />
             </div>
-            
+
             <div className='space-y-2'>
               <Label htmlFor={`${provider.provider}-tpl-bind`} className='text-xs text-muted-foreground'>绑定手机 (SMS_BIND)</Label>
               <Input
                 id={`${provider.provider}-tpl-bind`}
                 value={formData.templates?.SMS_BIND || ''}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  templates: { ...formData.templates, SMS_BIND: e.target.value } 
+                onChange={(e) => setFormData({
+                  ...formData,
+                  templates: { ...formData.templates, SMS_BIND: e.target.value }
                 })}
               />
             </div>
-            
+
             <div className='space-y-2'>
               <Label htmlFor={`${provider.provider}-tpl-change`} className='text-xs text-muted-foreground'>更换手机 (SMS_CHANGE)</Label>
               <Input
                 id={`${provider.provider}-tpl-change`}
                 value={formData.templates?.SMS_CHANGE || ''}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  templates: { ...formData.templates, SMS_CHANGE: e.target.value } 
+                onChange={(e) => setFormData({
+                  ...formData,
+                  templates: { ...formData.templates, SMS_CHANGE: e.target.value }
                 })}
               />
             </div>

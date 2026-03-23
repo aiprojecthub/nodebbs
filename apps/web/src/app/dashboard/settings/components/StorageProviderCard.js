@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,8 @@ import { FormDialog } from '@/components/common/FormDialog';
 import { confirm } from '@/components/common/ConfirmPopover';
 import { Loading } from '@/components/common/Loading';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useProviderSettings } from '@/hooks/dashboard/useProviderSettings';
+import { useProviderCard } from '@/hooks/dashboard/useProviderCard';
 
 const TYPE_ICONS = {
   local: HardDrive,
@@ -25,44 +27,26 @@ const STORAGE_TYPES = [
 ];
 
 export function StorageSettings() {
-  const [providers, setProviders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [editingSlug, setEditingSlug] = useState(null);
-  const [testingSlug, setTestingSlug] = useState(null);
+  const {
+    providers,
+    setProviders,
+    loading,
+    editingProvider: editingSlug,
+    setEditingProvider: setEditingSlug,
+    testingProvider: testingSlug,
+    setTestingProvider: setTestingSlug,
+    updateProvider,
+    fetchProviders,
+  } = useProviderSettings({
+    fetchFn: storageConfigApi.getAllProviders,
+    idField: 'slug',
+    exclusiveEnable: true,
+    errorMessage: '获取存储服务配置失败',
+  });
+
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newProvider, setNewProvider] = useState({ slug: '', type: 's3', displayName: '' });
-
-  useEffect(() => {
-    fetchProviders();
-  }, []);
-
-  const fetchProviders = async () => {
-    try {
-      setLoading(true);
-      const data = await storageConfigApi.getAllProviders();
-      setProviders(data.items || []);
-    } catch (error) {
-      console.error('Failed to fetch storage providers:', error);
-      toast.error('获取存储服务配置失败');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateProvider = (slug, updates) => {
-    setProviders((prev) =>
-      prev.map((p) => {
-        if (updates.isEnabled && p.slug !== slug) {
-          return { ...p, isEnabled: false };
-        }
-        if (p.slug === slug) {
-          return { ...p, ...updates };
-        }
-        return p;
-      })
-    );
-  };
 
   const handleCreate = async () => {
     if (!newProvider.slug || !newProvider.displayName) {
@@ -217,99 +201,78 @@ function StorageProviderCard({
   setTestingSlug,
 }) {
   const config = provider.config || {};
-
-  const getInitialFormData = (cfg) => ({
-    isEnabled: provider.isEnabled,
-    stripExif: cfg.stripExif !== false,
-    // S3
-    accessKeyId: cfg.accessKeyId || '',
-    secretAccessKey: cfg.secretAccessKey || '',
-    bucket: cfg.bucket || '',
-    region: cfg.region || '',
-    endpoint: cfg.endpoint || '',
-    customDomain: cfg.customDomain || '',
-    forcePathStyle: cfg.forcePathStyle || false,
-    usePresignedUpload: cfg.usePresignedUpload !== false,
-  });
-
-  const [formData, setFormData] = useState(getInitialFormData(config));
-  const [saving, setSaving] = useState(false);
-
-  const isEditing = editingSlug === provider.slug;
   const isS3 = provider.type === 's3';
   const isLocal = provider.type === 'local';
-
   const Icon = TYPE_ICONS[provider.type] || Server;
 
-  const handleSave = async () => {
-    try {
-      setSaving(true);
-      const configPayload = {};
+  const getInitialFormData = useCallback((p) => {
+    const cfg = p.config || {};
+    return {
+      isEnabled: p.isEnabled,
+      stripExif: cfg.stripExif !== false,
+      // S3
+      accessKeyId: cfg.accessKeyId || '',
+      secretAccessKey: cfg.secretAccessKey || '',
+      bucket: cfg.bucket || '',
+      region: cfg.region || '',
+      endpoint: cfg.endpoint || '',
+      customDomain: cfg.customDomain || '',
+      forcePathStyle: cfg.forcePathStyle || false,
+      usePresignedUpload: cfg.usePresignedUpload !== false,
+    };
+  }, []);
 
-      if (isLocal) {
-        configPayload.stripExif = formData.stripExif;
-      }
+  const buildSavePayload = useCallback((formData, p) => {
+    const configPayload = {};
+    const pIsLocal = p.type === 'local';
+    const pIsS3 = p.type === 's3';
 
-      if (isS3) {
-        configPayload.accessKeyId = formData.accessKeyId;
-        configPayload.secretAccessKey = formData.secretAccessKey;
-        configPayload.bucket = formData.bucket;
-        configPayload.region = formData.region;
-        configPayload.endpoint = formData.endpoint || null;
-        configPayload.forcePathStyle = formData.forcePathStyle;
-        configPayload.customDomain = formData.customDomain || null;
-        configPayload.usePresignedUpload = formData.usePresignedUpload;
-        configPayload.stripExif = formData.stripExif;
-      }
-
-      const updatePayload = {
-        isEnabled: formData.isEnabled,
-        config: configPayload,
-      };
-
-      await storageConfigApi.updateProvider(provider.slug, updatePayload);
-      toast.success(`${provider.displayName} 配置已保存`);
-      setEditingSlug(null);
-      onUpdate(provider.slug, {
-        isEnabled: formData.isEnabled,
-        config: configPayload,
-      });
-    } catch (error) {
-      console.error('Failed to update storage provider:', error);
-      toast.error('保存配置失败');
-    } finally {
-      setSaving(false);
+    if (pIsLocal) {
+      configPayload.stripExif = formData.stripExif;
     }
-  };
 
-  const handleTest = async () => {
-    try {
-      setTestingSlug(provider.slug);
-      const result = await storageConfigApi.testProvider(provider.slug);
-      if (result.success) {
-        toast.success(result.message || '连接测试成功');
-      } else {
-        toast.error(result.message || '连接测试失败');
-      }
-    } catch (error) {
-      console.error('Failed to test storage provider:', error);
-      toast.error('测试连接失败');
-    } finally {
-      setTestingSlug(null);
+    if (pIsS3) {
+      configPayload.accessKeyId = formData.accessKeyId;
+      configPayload.secretAccessKey = formData.secretAccessKey;
+      configPayload.bucket = formData.bucket;
+      configPayload.region = formData.region;
+      configPayload.endpoint = formData.endpoint || null;
+      configPayload.forcePathStyle = formData.forcePathStyle;
+      configPayload.customDomain = formData.customDomain || null;
+      configPayload.usePresignedUpload = formData.usePresignedUpload;
+      configPayload.stripExif = formData.stripExif;
     }
-  };
 
-  const handleToggleEnabled = async (checked) => {
-    try {
-      const payload = { isEnabled: checked };
-      await storageConfigApi.updateProvider(provider.slug, payload);
-      toast.success(checked ? `${provider.displayName} 已启用` : `${provider.displayName} 已停用`);
-      onUpdate(provider.slug, payload);
-    } catch (error) {
-      console.error('Failed to toggle storage provider:', error);
-      toast.error('操作失败');
-    }
-  };
+    return {
+      isEnabled: formData.isEnabled,
+      config: configPayload,
+    };
+  }, []);
+
+  const {
+    formData,
+    setFormData,
+    saving,
+    isEditing,
+    isTesting,
+    handleEditClick,
+    handleCancelClick,
+    handleSave,
+    handleToggleEnabled,
+    handleTest,
+  } = useProviderCard({
+    provider,
+    idField: 'slug',
+    updateApiFn: (slug, payload) => storageConfigApi.updateProvider(slug, payload),
+    onUpdate,
+    getInitialFormData,
+    buildSavePayload,
+    editingProvider: editingSlug,
+    setEditingProvider: setEditingSlug,
+    testApiFn: (slug) => storageConfigApi.testProvider(slug),
+    testingProvider: testingSlug,
+    setTestingProvider: setTestingSlug,
+  });
 
   const getSummary = () => {
     if (isS3) {
@@ -334,11 +297,8 @@ function StorageProviderCard({
       isEditing={isEditing}
       onToggleEnabled={handleToggleEnabled}
       {...((isS3 || isLocal) && {
-        onEditClick: () => {
-          setEditingSlug(provider.slug);
-          setFormData(getInitialFormData(provider.config || {}));
-        },
-        onCancelClick: () => { setEditingSlug(null); },
+        onEditClick: handleEditClick,
+        onCancelClick: handleCancelClick,
       })}
       summary={getSummary()}
     >
@@ -518,9 +478,9 @@ function StorageProviderCard({
             <Button
               variant='outline'
               onClick={handleTest}
-              disabled={testingSlug === provider.slug}
+              disabled={isTesting}
             >
-              {testingSlug === provider.slug ? (
+              {isTesting ? (
                 <>
                   <Loader2 className='h-4 w-4 animate-spin' />
                   测试中...

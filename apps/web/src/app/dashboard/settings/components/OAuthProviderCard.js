@@ -1,48 +1,32 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { oauthConfigApi } from '@/lib/api';
 import { toast } from 'sonner';
-import { Loader2, Check, X, Globe } from 'lucide-react';
+import { Loader2, Check, Globe } from 'lucide-react';
 import { ConfigProviderCard } from './ConfigProviderCard';
 import { Loading } from '@/components/common/Loading';
+import { useProviderSettings } from '@/hooks/dashboard/useProviderSettings';
+import { useProviderCard } from '@/hooks/dashboard/useProviderCard';
 
 export function OAuthSettings() {
-  const [providers, setProviders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [editingProvider, setEditingProvider] = useState(null);
-  const [testingProvider, setTestingProvider] = useState(null);
-
-  useEffect(() => {
-    fetchProviders();
-  }, []);
-
-  const fetchProviders = async () => {
-    try {
-      setLoading(true);
-      const data = await oauthConfigApi.getAllProviders();
-      setProviders(data.items || []);
-    } catch (error) {
-      console.error('Failed to fetch OAuth providers:', error);
-      toast.error('获取 OAuth 配置失败');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 局部更新单个 provider，避免重新请求接口
-  const updateProvider = (providerName, updates) => {
-    setProviders((prev) =>
-      prev.map((p) =>
-        p.provider === providerName ? { ...p, ...updates } : p
-      )
-    );
-  };
+  const {
+    providers,
+    loading,
+    editingProvider,
+    setEditingProvider,
+    testingProvider,
+    setTestingProvider,
+    updateProvider,
+  } = useProviderSettings({
+    fetchFn: oauthConfigApi.getAllProviders,
+    exclusiveEnable: false,
+    errorMessage: '获取 OAuth 配置失败',
+  });
 
   if (loading) {
     return <Loading text='加载中...' className='min-h-50' />;
@@ -69,104 +53,98 @@ export function OAuthSettings() {
   );
 }
 
+// 解析 additionalConfig
+const parseAdditionalConfig = (config) => {
+  try {
+    return config ? JSON.parse(config) : {};
+  } catch {
+    return {};
+  }
+};
 
-
-function OAuthProviderCard({ 
-  provider, 
-  onUpdate, 
-  editingProvider, 
-  setEditingProvider, 
-  testingProvider, 
-  setTestingProvider 
+function OAuthProviderCard({
+  provider,
+  onUpdate,
+  editingProvider,
+  setEditingProvider,
+  testingProvider,
+  setTestingProvider,
 }) {
-  // 解析 additionalConfig
-  const parseAdditionalConfig = (config) => {
-    try {
-      return config ? JSON.parse(config) : {};
-    } catch {
-      return {};
-    }
-  };
-
-  const [formData, setFormData] = useState(() => {
-    const additional = parseAdditionalConfig(provider.additionalConfig);
+  const getInitialFormData = useCallback((p) => {
+    const additional = parseAdditionalConfig(p.additionalConfig);
     return {
-      isEnabled: provider.isEnabled,
-      clientId: provider.clientId || '',
-      clientSecret: provider.clientSecret || '',
-      callbackUrl: provider.callbackUrl || '',
-      scope: provider.scope || '',
+      isEnabled: p.isEnabled,
+      clientId: p.clientId || '',
+      clientSecret: p.clientSecret || '',
+      callbackUrl: p.callbackUrl || '',
+      scope: p.scope || '',
       // Apple 特有配置
       teamId: additional.teamId || '',
       keyId: additional.keyId || '',
     };
+  }, []);
+
+  const buildSavePayload = useCallback((formData, p) => {
+    const payload = {
+      isEnabled: formData.isEnabled,
+      clientId: formData.clientId,
+      clientSecret: formData.clientSecret,
+      callbackUrl: formData.callbackUrl,
+      scope: formData.scope,
+    };
+
+    // 对 Apple 特殊处理 additionalConfig
+    if (p.provider === 'apple') {
+      payload.additionalConfig = JSON.stringify({
+        teamId: formData.teamId,
+        keyId: formData.keyId,
+      });
+    }
+
+    return payload;
+  }, []);
+
+  const {
+    formData,
+    setFormData,
+    saving,
+    isEditing,
+    isTesting,
+    handleEditClick,
+    handleCancelClick,
+    handleSave,
+    handleToggleEnabled: baseHandleToggleEnabled,
+    handleTest,
+  } = useProviderCard({
+    provider,
+    idField: 'provider',
+    updateApiFn: (id, payload) => oauthConfigApi.updateProvider(id, payload),
+    onUpdate,
+    getInitialFormData,
+    buildSavePayload,
+    editingProvider,
+    setEditingProvider,
+    testApiFn: (providerId) => oauthConfigApi.testProvider(providerId),
+    testingProvider,
+    setTestingProvider,
   });
-  const [saving, setSaving] = useState(false);
 
-  const isEditing = editingProvider === provider.provider;
-
-  const handleSave = async () => {
-    try {
-      setSaving(true);
-      // 构造要保存的数据
-      const savePayload = {
-        isEnabled: formData.isEnabled,
-        clientId: formData.clientId,
-        clientSecret: formData.clientSecret,
-        callbackUrl: formData.callbackUrl,
-        scope: formData.scope,
-      };
-
-      // 对 Apple 特殊处理 additionalConfig
-      if (provider.provider === 'apple') {
-        savePayload.additionalConfig = JSON.stringify({
-          teamId: formData.teamId,
-          keyId: formData.keyId,
-        });
+  // OAuth toggle: when disabling, also set isDefault: false
+  const handleToggleEnabled = useCallback(async (checked) => {
+    if (!checked) {
+      try {
+        const payload = { isEnabled: false, isDefault: false };
+        await oauthConfigApi.updateProvider(provider.provider, payload);
+        toast.success(`${provider.displayName} 已禁用`);
+        onUpdate(provider.provider, payload);
+      } catch (error) {
+        console.error(`Failed to toggle provider ${provider.provider}:`, error);
+        toast.error('操作失败');
       }
-
-      await oauthConfigApi.updateProvider(provider.provider, savePayload);
-      toast.success(`${provider.displayName} 配置已保存`);
-      setEditingProvider(null);
-      // 局部更新状态，无需重新请求接口
-      onUpdate(provider.provider, savePayload);
-    } catch (error) {
-      console.error('Failed to update OAuth provider:', error);
-      toast.error('保存配置失败');
-    } finally {
-      setSaving(false);
+    } else {
+      baseHandleToggleEnabled(checked);
     }
-  };
-
-  const handleTest = async () => {
-    try {
-      setTestingProvider(provider.provider);
-      const result = await oauthConfigApi.testProvider(provider.provider);
-      if (result.success) {
-        toast.success(result.message || '配置测试通过');
-      } else {
-        toast.error(result.message || '配置测试失败');
-      }
-    } catch (error) {
-      console.error('Failed to test OAuth provider:', error);
-      toast.error('测试配置失败');
-    } finally {
-      setTestingProvider(null);
-    }
-  };
-
-  const handleToggleEnabled = async (checked) => {
-    try {
-      const payload = { isEnabled: checked, ...(checked ? {} : { isDefault: false }) };
-      await oauthConfigApi.updateProvider(provider.provider, payload);
-      toast.success(checked ? `${provider.displayName} 已启用` : `${provider.displayName} 已禁用`);
-      // 局部更新状态，无需重新请求接口
-      onUpdate(provider.provider, payload);
-    } catch (error) {
-      console.error('Failed to toggle OAuth provider:', error);
-      toast.error('操作失败');
-    }
-  };
+  }, [baseHandleToggleEnabled, provider.provider, provider.displayName, onUpdate]);
 
   // 准备 summary 内容
   const summaryContent = provider.clientId ? (
@@ -185,21 +163,8 @@ function OAuthProviderCard({
       isEnabled={provider.isEnabled}
       isEditing={isEditing}
       onToggleEnabled={handleToggleEnabled}
-      onEditClick={() => {
-        setEditingProvider(provider.provider);
-        const additional = parseAdditionalConfig(provider.additionalConfig);
-        setFormData({
-          isEnabled: provider.isEnabled,
-          clientId: provider.clientId || '',
-          clientSecret: provider.clientSecret || '',
-          callbackUrl: provider.callbackUrl || '',
-          scope: provider.scope || '',
-          // Apple 配置
-          teamId: additional.teamId || '',
-          keyId: additional.keyId || '',
-        });
-      }}
-      onCancelClick={() => { setEditingProvider(null); setFormData(prev => ({ ...prev, isDefault: provider.isDefault })); }}
+      onEditClick={handleEditClick}
+      onCancelClick={handleCancelClick}
       summary={summaryContent}
     >
       <div className='space-y-4 pt-2'>
@@ -272,7 +237,7 @@ function OAuthProviderCard({
                 value={formData.callbackUrl}
                 onChange={(e) => setFormData({ ...formData, callbackUrl: e.target.value })}
                 placeholder={
-                  provider.provider === 'apple' 
+                  provider.provider === 'apple'
                     ? `${typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com'}/api/oauth/apple/callback`
                     : `${typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com'}/auth/${provider.provider}/callback`
                 }
@@ -315,9 +280,9 @@ function OAuthProviderCard({
           <Button
             variant='outline'
             onClick={handleTest}
-            disabled={testingProvider === provider.provider || !provider.clientId}
+            disabled={isTesting || !provider.clientId}
           >
-            {testingProvider === provider.provider ? (
+            {isTesting ? (
               <>
                 <Loader2 className='h-4 w-4 animate-spin' />
                 测试中...

@@ -118,7 +118,7 @@ export default async function userRoutes(fastify, options) {
           search: { type: 'string' },
           role: { type: 'string', enum: ['user', 'admin'] },
           isBanned: { type: 'boolean' },
-          includeDeleted: { type: 'boolean', default: true },
+          isDeleted: { type: 'boolean' },
           pendingDeletion: { type: 'boolean' },
         }
       }
@@ -127,7 +127,15 @@ export default async function userRoutes(fastify, options) {
     // 检查用户管理权限
     await fastify.permission.check(request, 'dashboard.users');
 
-    const { page = 1, limit = 20, search, role, isBanned, includeDeleted = true, pendingDeletion } = request.query;
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      role,
+      isBanned,
+      isDeleted,
+      pendingDeletion,
+    } = request.query;
     const offset = (page - 1) * limit;
 
     let query = db.select({
@@ -149,12 +157,6 @@ export default async function userRoutes(fastify, options) {
 
     // 应用筛选条件
     const conditions = [];
-    
-    // 默认不显示已删除用户，除非明确请求（pendingDeletion 隐含 includeDeleted）
-    if (!includeDeleted && !pendingDeletion) {
-      conditions.push(eq(users.isDeleted, false));
-    }
-    
     if (search) {
       conditions.push(
         sql`${users.username} ILIKE ${`%${search}%`} OR ${users.email} ILIKE ${`%${search}%`} OR ${users.name} ILIKE ${`%${search}%`}`
@@ -169,6 +171,11 @@ export default async function userRoutes(fastify, options) {
     if (pendingDeletion) {
       conditions.push(eq(users.isDeleted, true));
       conditions.push(sql`${users.deletionRequestedAt} IS NOT NULL`);
+    } else if (isDeleted !== undefined) {
+      conditions.push(eq(users.isDeleted, isDeleted));
+      if (isDeleted) {
+        conditions.push(sql`${users.deletionRequestedAt} IS NULL`);
+      }
     }
 
     if (conditions.length > 0) {
