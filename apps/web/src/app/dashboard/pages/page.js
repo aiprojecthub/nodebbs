@@ -28,6 +28,50 @@ function getTypeBadgeClassName(type) {
   return '';
 }
 
+function getContentPlaceholder(type) {
+  if (type === 'json') {
+    return '{\n  "key": "value"\n}';
+  }
+
+  if (type === 'html') {
+    return '<section>\n  <h1>页面标题</h1>\n  <p>请输入 HTML 内容</p>\n</section>';
+  }
+
+  if (type === 'markdown') {
+    return '# 页面标题\n\n请输入 Markdown 内容';
+  }
+
+  return '请输入页面内容';
+}
+
+function getTypeDescription(type) {
+  if (type === 'text') {
+    return '纯文本输出，适合 ads.txt、校验文件等文件型页面。';
+  }
+
+  if (type === 'html') {
+    return '站内 HTML 页面，适合自定义落地页或静态说明页。';
+  }
+
+  if (type === 'markdown') {
+    return '站内 Markdown 页面，适合文档、帮助页和说明页。';
+  }
+
+  if (type === 'json') {
+    return 'JSON 原始输出，适合配置文件或接口型页面。';
+  }
+
+  return '';
+}
+
+function normalizeSlugPreview(value) {
+  return String(value || '')
+    .trim()
+    .replace(/^\/+|\/+$/g, '')
+    .replace(/\/{2,}/g, '/')
+    .toLowerCase();
+}
+
 export default function PagesManagementPage() {
   const {
     items: pages,
@@ -54,6 +98,9 @@ export default function PagesManagementPage() {
     handleTogglePublished,
     setPage,
   } = usePageManagement();
+  const normalizedSlug = normalizeSlugPreview(formData.slug);
+  const routePreview = normalizedSlug ? `/${normalizedSlug}` : '/your-page';
+  const typeDescription = getTypeDescription(formData.type);
 
   const columns = [
     {
@@ -217,6 +264,9 @@ export default function PagesManagementPage() {
                 onChange={(e) => setFormData((prev) => ({ ...prev, slug: e.target.value }))}
                 placeholder='例如：ads.txt 或 a/b/c'
               />
+              <p className='text-xs text-muted-foreground'>
+                无需输入前导 `/`，支持 `ads.txt`、`a/b/c`
+              </p>
             </div>
           </div>
 
@@ -236,15 +286,28 @@ export default function PagesManagementPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className='space-y-2'>
+              <Label>访问预览</Label>
+              <div className='rounded-lg border bg-muted/30 px-3 py-2.5 space-y-1.5'>
+                <div className='font-mono text-sm'>{routePreview}</div>
+                <p className='text-xs text-muted-foreground'>
+                  {typeDescription}
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className='space-y-2'>
             <Label htmlFor='content'>页面内容</Label>
+            <p className='text-xs text-muted-foreground'>
+              {typeDescription}
+            </p>
             <Textarea
               id='content'
               value={formData.content}
               onChange={(e) => setFormData((prev) => ({ ...prev, content: e.target.value }))}
-              placeholder={formData.type === 'json' ? '{\n  "key": "value"\n}' : '请输入页面内容'}
+              placeholder={getContentPlaceholder(formData.type)}
               className='min-h-[360px] font-mono text-sm'
             />
           </div>
