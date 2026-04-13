@@ -94,6 +94,10 @@ export function validatePagePayload(payload, { partial = false } = {}) {
     normalized.isPublished = Boolean(payload.isPublished);
   }
 
+  if (payload.standalone !== undefined) {
+    normalized.standalone = Boolean(payload.standalone);
+  }
+
   if (normalized.type === 'json' && normalized.content !== undefined) {
     try {
       JSON.parse(normalized.content);

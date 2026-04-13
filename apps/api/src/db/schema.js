@@ -954,6 +954,7 @@ export const pages = pgTable(
     type: varchar('type', { length: 20 }).notNull(), // text | html | markdown | json
     content: text('content').notNull(),
     isPublished: boolean('is_published').notNull().default(false),
+    standalone: boolean('standalone').notNull().default(false),
   },
   (table) => [
     index('pages_slug_idx').on(table.slug),

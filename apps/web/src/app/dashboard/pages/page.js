@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import Time from '@/components/common/Time';
 import { Check, Edit, ExternalLink, Plus, Trash2, X } from 'lucide-react';
 import { usePageManagement } from '@/hooks/dashboard/usePageManagement';
@@ -128,10 +129,17 @@ export default function PagesManagementPage() {
       key: 'type',
       label: '类型',
       width: 'w-30',
-      render: (value) => (
-        <Badge variant='secondary' className={getTypeBadgeClassName(value)}>
-          {value}
-        </Badge>
+      render: (value, pageItem) => (
+        <div className='flex items-center gap-1.5'>
+          <Badge variant='secondary' className={getTypeBadgeClassName(value)}>
+            {value}
+          </Badge>
+          {pageItem.standalone && (
+            <Badge variant='outline' className='text-xs'>
+              独立页面
+            </Badge>
+          )}
+        </div>
       ),
     },
     {
@@ -238,7 +246,7 @@ export default function PagesManagementPage() {
         open={showDialog}
         onOpenChange={setShowDialog}
         title={dialogMode === 'create' ? '创建页面' : '编辑页面'}
-        description='页面路径支持斜杠，例如 ads.txt 或 a/b/c'
+        description='创建自定义页面，支持 text、html、markdown、json 类型'
         onSubmit={handleSubmit}
         loading={submitting}
         submitText={dialogMode === 'create' ? '创建' : '保存'}
@@ -265,7 +273,7 @@ export default function PagesManagementPage() {
                 placeholder='例如：ads.txt 或 a/b/c'
               />
               <p className='text-xs text-muted-foreground'>
-                无需输入前导 `/`，支持 `ads.txt`、`a/b/c`
+                无需输入前导 `/`，支持斜杠嵌套如 `a/b/c`
               </p>
             </div>
           </div>
@@ -298,11 +306,24 @@ export default function PagesManagementPage() {
             </div>
           </div>
 
+          {(formData.type === 'html' || formData.type === 'markdown') && (
+            <div className='flex items-center justify-between rounded-lg border px-4 py-3'>
+              <div className='space-y-0.5'>
+                <Label htmlFor='standalone'>独立页面模式</Label>
+                <p className='text-xs text-muted-foreground'>
+                  开启后页面将独立渲染，不继承站点布局和样式
+                </p>
+              </div>
+              <Switch
+                id='standalone'
+                checked={formData.standalone}
+                onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, standalone: checked }))}
+              />
+            </div>
+          )}
+
           <div className='space-y-2'>
             <Label htmlFor='content'>页面内容</Label>
-            <p className='text-xs text-muted-foreground'>
-              {typeDescription}
-            </p>
             <Textarea
               id='content'
               value={formData.content}

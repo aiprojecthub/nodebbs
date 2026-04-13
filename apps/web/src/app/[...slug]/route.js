@@ -1,4 +1,9 @@
 import { NextResponse } from 'next/server';
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkGfm from 'remark-gfm';
+import remarkRehype from 'remark-rehype';
+import rehypeStringify from 'rehype-stringify';
 import { encodeSlugPath, getPageBySlug, joinSlugSegments } from '@/lib/server/pages';
 
 export const dynamic = 'force-dynamic';
@@ -49,6 +54,34 @@ async function renderHtmlNotFound(request) {
   });
 }
 
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+async function renderMarkdown(content) {
+  const file = await unified()
+    .use(remarkParse)
+    .use(remarkGfm)
+    .use(remarkRehype)
+    .use(rehypeStringify)
+    .process(content);
+  return String(file);
+}
+
+function buildStandaloneHtml(title, renderedContent) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${escapeHtml(title)}</title>
+</head>
+<body>
+${renderedContent}
+</body>
+</html>`;
+}
+
 export async function GET(request, { params }) {
   try {
     const resolvedParams = await params;
@@ -84,6 +117,21 @@ export async function GET(request, { params }) {
     }
 
     if (page.type === 'html' || page.type === 'markdown') {
+      // standalone 模式：直接构建完整 HTML，不继承根 layout
+      if (page.standalone) {
+        const content = page.type === 'markdown'
+          ? await renderMarkdown(page.content)
+          : page.content;
+        const html = buildStandaloneHtml(page.title, content);
+        return new NextResponse(html, {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'no-store',
+          },
+        });
+      }
+
       const target = new URL(`/page-render/${encodeSlugPath(resolvedParams.slug)}`, request.url);
 
       const { html, status } = await fetchInternalPage(target, request);

@@ -34,6 +34,7 @@ const DEFAULT_FORM = {
   type: 'text',
   content: '',
   isPublished: false,
+  standalone: false,
 };
 
 function normalizeSlugInput(value) {
@@ -87,6 +88,7 @@ function validateForm(formData) {
     type: formData.type,
     content: formData.content,
     isPublished: Boolean(formData.isPublished),
+    standalone: Boolean(formData.standalone),
   };
 }
 
@@ -152,6 +154,7 @@ export function usePageManagement() {
       type: pageItem.type || 'text',
       content: pageItem.content || '',
       isPublished: Boolean(pageItem.isPublished),
+      standalone: Boolean(pageItem.standalone),
     });
     setShowDialog(true);
   }, []);
@@ -160,6 +163,7 @@ export function usePageManagement() {
     setFormData((prev) => ({
       ...prev,
       type: value,
+      ...(!['html', 'markdown'].includes(value) && { standalone: false }),
     }));
   }, []);
 
