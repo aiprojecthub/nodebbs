@@ -6,9 +6,8 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { LedgerProvider } from '@/extensions/ledger/contexts/LedgerContext';
 import { EmojiProvider } from '@/components/common/Emoji/EmojiProvider';
 
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
-import EmailVerificationBanner from '@/components/auth/EmailVerificationBanner';
+import { getTemplate, getTemplateName } from '@/templates';
+
 import AutoCheckIn from '@/extensions/rewards/components/AutoCheckIn';
 import ProgressBar from '@/components/common/ProgressBar';
 import { getLayoutData, generateThemeScript, getLayoutMetadata } from '@/lib/server/layout';
@@ -33,14 +32,8 @@ export const viewport = {
 };
 
 function AppLayout({ children, apiInfo }) {
-  return (
-    <div className='min-h-screen bg-background flex flex-col'>
-      <Header />
-      <EmailVerificationBanner />
-      <main className='flex-1 flex flex-col'>{children}</main>
-      <Footer version={apiInfo?.version} />
-    </div>
-  );
+  const AppLayoutComponent = getTemplate('AppLayout');
+  return <AppLayoutComponent apiInfo={apiInfo}>{children}</AppLayoutComponent>;
 }
 
 export default async function RootLayout({ children }) {
@@ -58,7 +51,7 @@ export default async function RootLayout({ children }) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: initScript }} />
       </head>
-      <body className={`antialiased`}>
+      <body data-template={getTemplateName()} className={`antialiased`}>
         {/* 自定义统计脚本注入 */}
         {analyticsScript && (
           <div 

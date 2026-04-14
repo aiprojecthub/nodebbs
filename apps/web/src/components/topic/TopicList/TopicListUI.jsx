@@ -245,7 +245,7 @@ export function TopicListUI({
 
   return (
     <>
-      <div className='bg-card sm:border sm:border-border sm:rounded-xl overflow-hidden w-full'>
+      <div className='content-card overflow-hidden w-full'>
         {/* 话题列表 */}
         <div className='divide-y divide-border/60'>
           {topics.map((topic, index) => (

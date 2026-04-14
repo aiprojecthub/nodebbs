@@ -7,7 +7,7 @@ import Time from '@/components/common/Time';
  * 分类列表 UI 组件 - GitHub 风格
  * 强调清晰、技术感和信息密度
  */
-export function CategoriesUI({ categories }) {
+export function CategoriesView({ categories }) {
   return (
     <>
       <div className='flex flex-col sm:flex-row sm:items-end justify-between mb-4 sm:mb-6 gap-4 border-b border-border pb-4 px-3 sm:px-0'>
@@ -39,7 +39,7 @@ export function CategoriesUI({ categories }) {
 
 function CategoryCard({ category }) {
   return (
-    <div className='flex flex-col bg-card border-b border-x-0 sm:border border-border sm:rounded-md px-3 py-4 sm:p-4 hover:bg-accent/50 sm:hover:border-primary/50 transition-colors'>
+    <div className='flex flex-col content-card px-3 py-4 sm:p-4 hover:bg-accent/50 transition-colors'>
       <div className='flex items-start gap-3 mb-3'>
         {/* 图标 */}
         <div

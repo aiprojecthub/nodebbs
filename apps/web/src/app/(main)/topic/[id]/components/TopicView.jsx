@@ -7,7 +7,7 @@ import TopicContent from './TopicContent';
 import ReplySection from './ReplySection';
 import TopicSidebar from './TopicSidebar';
 
-export default function TopicLayout({
+export default function TopicView({
   topic: initialTopic,
   initialPosts,
   totalPosts,
@@ -65,7 +65,7 @@ function TopicLayoutContent({
 
         {/* 右侧边栏 */}
         <div className='fixed z-10 -left-full lg:static lg:w-64 shrink-0'>
-          <StickySidebar className='sticky top-[107px] space-y-4'>
+          <StickySidebar className='sticky top-[var(--header-offset)] space-y-4'>
             <AdSlot slotCode='topic_sidebar_top' />
             <TopicSidebar />
             <AdSlot slotCode='topic_sidebar_bottom' />

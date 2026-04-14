@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getCategoryBySlug, getTopicsData } from '@/lib/server/topics';
-import SidebarLayout from '../../components/SidebarLayout';
-import CategoryView from './components/CategoryView';
+import { getTemplate } from '@/templates';
 
 // 生成页面元数据
 export async function generateMetadata({ params }) {
@@ -47,16 +46,16 @@ export default async function CategoryPage({ params, searchParams }) {
 
   const totalPages = Math.ceil(data.total / LIMIT);
 
+  const CategoryView = getTemplate('CategoryView');
+
   return (
-    <SidebarLayout>
-      <CategoryView
-        category={category}
-        sort={sort}
-        data={data}
-        page={page}
-        totalPages={totalPages}
-        limit={LIMIT}
-      />
-    </SidebarLayout>
+    <CategoryView
+      category={category}
+      sort={sort}
+      data={data}
+      page={page}
+      totalPages={totalPages}
+      limit={LIMIT}
+    />
   );
 }

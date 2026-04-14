@@ -233,7 +233,7 @@ function SystemSettingsContent() {
       <div className='flex flex-col lg:flex-row gap-8 items-start'>
         
         {/* 左侧导航：极简透明风格 */}
-        <aside className='hidden lg:block w-56 shrink-0 sticky top-20.25 self-start'>
+        <aside className='hidden lg:block w-56 shrink-0 sticky top-[var(--header-offset)] self-start'>
           <nav className='space-y-6 lg:pr-6 lg:border-r lg:border-border/40'>
             {navigationGroups.map((group, groupIdx) => (
               <div key={groupIdx}>

@@ -1,10 +1,10 @@
 import { TopicList } from '@/components/topic/TopicList';
 import { TopicSortTabs } from '@/components/topic/TopicSortTabs';
+import SidebarLayout from '@/app/(main)/components/SidebarLayout';
 
 export default function CategoryView({ category, sort, data, page, totalPages, limit }) {
   return (
-    <>
-      {/* 分类标题 & 排序切换 */}
+    <SidebarLayout>
       <div className='flex flex-col gap-2 mb-3 px-3 sm:px-0 lg:flex-row lg:items-end lg:justify-between lg:gap-4 lg:mb-4'>
         <div className='pt-3 sm:pt-0'>
           <div className='flex items-center gap-2'>
@@ -20,11 +20,8 @@ export default function CategoryView({ category, sort, data, page, totalPages, l
             </p>
           )}
         </div>
-
         <TopicSortTabs defaultValue={sort} className='w-auto' />
       </div>
-
-      {/* 话题列表 */}
       <TopicList
         initialData={data.items}
         total={data.total}
@@ -34,6 +31,6 @@ export default function CategoryView({ category, sort, data, page, totalPages, l
         showPagination={true}
         useUrlPagination={true}
       />
-    </>
+    </SidebarLayout>
   );
 }

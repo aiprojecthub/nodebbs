@@ -1,0 +1,62 @@
+/*
+ * Twitter 模板样式覆盖
+ * 通过 data-template="twitter" 属性作用域限制
+ * 核心原则：通过 CSS 变量控制，不覆盖具体 Tailwind 类名
+ */
+
+/* 卡片样式：无圆角、无边框、无背景 */
+[data-template="twitter"] {
+  --radius: 0;
+  --card-content-radius: 0;
+  --card-content-border: none;
+  --card-content-bg: transparent;
+}
+
+/* Tabs: 全宽下划线风格 */
+[data-template="twitter"] [data-slot="tabs"] {
+  gap: 0;
+}
+
+[data-template="twitter"] [data-slot="tabs-list"] {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  height: auto;
+  width: 100%;
+  border-bottom: 1px solid var(--border);
+}
+
+[data-template="twitter"] [data-slot="tabs-trigger"] {
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  height: auto;
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  position: relative;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+[data-template="twitter"] [data-slot="tabs-trigger"]:hover {
+  background-color: color-mix(in oklch, var(--accent) 60%, transparent);
+}
+
+[data-template="twitter"] [data-slot="tabs-trigger"][data-state="active"] {
+  background: transparent;
+  color: var(--foreground);
+  box-shadow: none;
+}
+
+[data-template="twitter"] [data-slot="tabs-trigger"][data-state="active"]::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3.5rem;
+  height: 4px;
+  border-radius: 9999px;
+  background-color: var(--primary);
+}

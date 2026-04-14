@@ -1,6 +1,5 @@
 import { getTopicsData } from '@/lib/server/topics';
-import SidebarLayout from './components/SidebarLayout';
-import HomeView from './components/HomeView';
+import { getTemplate } from '@/templates';
 
 // 页面标题映射
 const PAGE_OPTS = {
@@ -53,17 +52,17 @@ export default async function HomePage({ searchParams }) {
 
   const totalPages = Math.ceil(data.total / LIMIT);
 
+  const HomeView = getTemplate('HomeView');
+
   return (
-    <SidebarLayout>
-      <HomeView
-        title={title}
-        description={description}
-        sort={sort}
-        data={data}
-        page={page}
-        totalPages={totalPages}
-        limit={LIMIT}
-      />
-    </SidebarLayout>
+    <HomeView
+      title={title}
+      description={description}
+      sort={sort}
+      data={data}
+      page={page}
+      totalPages={totalPages}
+      limit={LIMIT}
+    />
   );
 }

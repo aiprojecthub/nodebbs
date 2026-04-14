@@ -1,5 +1,5 @@
 import { getTagsData } from '@/lib/server/topics';
-import TagsUI from './components/TagsUI';
+import { getTemplate } from '@/templates';
 
 export const metadata = {
   title: '标签广场',
@@ -8,10 +8,11 @@ export const metadata = {
 
 export default async function TagsPage() {
   const tags = await getTagsData({ limit: 500 });
+  const TagsView = getTemplate('TagsView');
 
   return (
     <div className='py-3 sm:py-6 lg:px-4'>
-      <TagsUI tags={tags} />
+      <TagsView tags={tags} />
     </div>
   );
 }

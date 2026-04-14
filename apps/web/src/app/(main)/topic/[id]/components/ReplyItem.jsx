@@ -24,12 +24,12 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
     <>
       <div
         id={`post-${hooks.localReply.id}`}
-        className={`bg-card border-b border-x-0 border-t-0 sm:border sm:rounded-lg hover:border-border/80 transition-colors duration-300 group ${
+        className={`content-card hover:border-border/80 transition-colors duration-300 group ${
           hooks.isPending
             ? 'border-chart-5/30 bg-chart-5/5'
             : hooks.isRejected
             ? 'border-destructive/30 bg-destructive/5'
-            : 'border-border'
+            : ''
         }`}
         data-post-number={hooks.localReply.postNumber}
       >

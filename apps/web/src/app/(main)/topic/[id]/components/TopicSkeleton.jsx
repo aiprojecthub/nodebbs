@@ -7,7 +7,7 @@ export function TopicSkeleton() {
         {/* 主要内容区域 */}
         <div className='flex-1 min-w-0'>
           {/* 话题标题骨架 */}
-          <div className="px-3 pt-4 sm:px-0 sm:pt-0 mb-6">
+          <div className="px-4 pt-4 mb-6">
              <div className="flex items-start">
                <div className="flex-1 space-y-3 min-w-0">
                  <Skeleton className="h-8 sm:h-9 w-3/4" />
@@ -21,7 +21,7 @@ export function TopicSkeleton() {
           </div>
 
           {/* 话题内容骨架 */}
-          <div className='bg-card border-b sm:border sm:border-border sm:rounded-lg mb-6 px-3 sm:px-6 py-4 sm:py-5 space-y-4'>
+          <div className='content-card mb-6 px-3 sm:px-6 py-4 sm:py-5 space-y-4'>
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-2/3" />
@@ -42,7 +42,7 @@ export function TopicSkeleton() {
           {/* 回复列表骨架 - 模拟3条回复 */}
           <div className="space-y-4">
              {[1, 2, 3].map((i) => (
-               <div key={i} className="bg-card border-b border-x-0 border-t-0 sm:border sm:rounded-lg p-3 sm:p-5 flex gap-3">
+               <div key={i} className="content-card p-3 sm:p-5 flex gap-3">
                   <Skeleton className="h-8 w-8 sm:h-10 sm:w-10 rounded-full shrink-0" />
                   <div className="flex-1 space-y-2 min-w-0">
                      <div className="flex justify-between items-start">

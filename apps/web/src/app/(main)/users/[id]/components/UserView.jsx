@@ -11,7 +11,7 @@ import { useUserProfile } from '@/hooks/user/useUserProfile';
  * 用户主页布局组件
  * 组合侧边栏和活动内容区，处理内容访问权限
  */
-export default function UserLayout({
+export default function UserView({
   user,
   initialTab,
   initialTopics,

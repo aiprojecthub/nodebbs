@@ -15,7 +15,7 @@ export default async function SidebarLayout({ children }) {
       <AdSlot slotCode='home_header_banner' className='rounded-none lg:rounded-lg' />
       <div className='flex lg:gap-6'>
         <div className='fixed z-10 -left-full lg:static lg:w-64 shrink-0'>
-          <StickySidebar className='sticky top-20.25 space-y-4'>
+          <StickySidebar className='sticky top-[var(--header-offset)] space-y-4'>
             <AdSlot slotCode='home_sidebar_top' />
             <Sidebar categories={categories} stats={safeStats} />
             <AdSlot slotCode='home_sidebar_bottom' />

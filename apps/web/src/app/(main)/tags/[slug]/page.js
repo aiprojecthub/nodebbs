@@ -1,7 +1,5 @@
 import { getTopicsData, getTagData } from '@/lib/server/topics';
-import SidebarLayout from '../../components/SidebarLayout';
-import TagView from './components/TagView';
-import TagNotFound from './components/TagNotFound';
+import { getTemplate } from '@/templates';
 
 // 生成页面元数据
 export async function generateMetadata({ params }) {
@@ -39,21 +37,21 @@ export default async function TagTopicListPage({ params, searchParams }) {
   ]);
 
   if (!tag) {
-    return <TagNotFound />;
+    const TagNotFoundView = getTemplate('TagNotFoundView');
+    return <TagNotFoundView />;
   }
 
   const totalPages = Math.ceil(data.total / LIMIT);
+  const TagView = getTemplate('TagView');
 
   return (
-    <SidebarLayout>
-      <TagView
-        tag={tag}
-        sort={sort}
-        data={data}
-        page={page}
-        totalPages={totalPages}
-        limit={LIMIT}
-      />
-    </SidebarLayout>
+    <TagView
+      tag={tag}
+      sort={sort}
+      data={data}
+      page={page}
+      totalPages={totalPages}
+      limit={LIMIT}
+    />
   );
 }

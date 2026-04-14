@@ -37,7 +37,7 @@ export default function ReplyForm({
 
   if (!isAuthenticated) {
     return (
-      <div className='mt-4 sm:mt-6 bg-card border-x-0 border-y sm:border sm:border-border sm:rounded-lg p-6 text-center'>
+      <div className='mt-4 sm:mt-6 content-card p-6 text-center'>
         <p className='text-muted-foreground mb-4'>请先登录后再发表评论</p>
         <Button onClick={openLoginDialog}>登录</Button>
       </div>
@@ -70,9 +70,9 @@ export default function ReplyForm({
         </div>
       )}
 
-      <div className='bg-card border-y sm:border sm:border-border sm:rounded-lg'>
+      <div className='content-card'>
         {/* 回复框头部 */}
-        <div className='flex items-center space-x-3 px-3 py-2 sm:px-4 sm:py-3 bg-muted border-b border-border sm:rounded-t-lg'>
+        <div className='flex items-center space-x-3 px-3 py-2 sm:px-4 sm:py-3 bg-muted border-b border-border'>
           <UserAvatar url={user?.avatar} name={user?.name || user?.username} size='sm' />
           <span className='text-sm font-medium text-card-foreground'>
             写下你的评论

@@ -1,11 +1,11 @@
 import { TopicList } from '@/components/topic/TopicList';
 import { TopicSortTabs } from '@/components/topic/TopicSortTabs';
 import { AdSlot } from '@/extensions/ads/components';
+import SidebarLayout from './SidebarLayout';
 
 export default function HomeView({ title, description, sort, data, page, totalPages, limit }) {
   return (
-    <>
-      {/* 页面标题 & 排序切换 */}
+    <SidebarLayout>
       <div className='flex flex-col gap-2 px-3 sm:px-0 lg:flex-row lg:items-end lg:justify-between lg:gap-4'>
         <div>
           <h1 className='text-2xl sm:text-3xl font-semibold tracking-tight'>{title}</h1>
@@ -26,6 +26,6 @@ export default function HomeView({ title, description, sort, data, page, totalPa
           4: <AdSlot key='ad-topic-inline' slotCode='topic_list_inline' className='p-3 rounded-none' />
         }}
       />
-    </>
+    </SidebarLayout>
   );
 }

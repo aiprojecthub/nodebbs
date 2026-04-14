@@ -1,7 +1,7 @@
 import NotFoundView from '@/components/common/NotFoundView';
 import { Tag } from 'lucide-react';
 
-export default function TagNotFound() {
+export default function TagNotFoundView() {
   return (
     <NotFoundView
       icon={<Tag className='h-10 w-10 text-muted-foreground/50 stroke-[1.5]' />}

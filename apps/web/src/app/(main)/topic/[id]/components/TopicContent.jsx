@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Pin,
+  Lock,
   Archive,
   Loader2,
   AlertCircle,
@@ -122,34 +123,36 @@ export default function TopicContent() {
       )}
 
       {/* 话题标题 */}
-      <div className='px-3 pt-4 sm:px-0 sm:pt-0 mb-6'>
+      <div className='px-4 pt-4 mb-6'>
         <div className='flex items-start'>
           <div className='flex-1 min-w-0'>
+            {/* 分类 */}
+            {topic.categoryName && (
+              <Link
+                href={`/categories/${topic.categorySlug}`}
+                className='inline-flex items-center gap-1.5 text-sm font-medium mb-2 hover:opacity-80 transition-opacity'
+                style={{ color: topic.categoryColor }}
+              >
+                <span
+                  className='w-2.5 h-2.5 rounded-sm shrink-0'
+                  style={{ backgroundColor: topic.categoryColor }}
+                />
+                {topic.categoryName}
+              </Link>
+            )}
+
             <h1 className='text-2xl sm:text-3xl font-semibold mb-3 leading-tight text-foreground break-all'>
               {topic.isPinned && (
                 <Pin className='inline-block h-5 w-5 text-chart-5 -mt-1' />
+              )}
+              {topic.isClosed && (
+                <Lock className='inline-block h-4 w-4 text-muted-foreground -mt-0.5 mr-1' />
               )}
               {topic.title}
             </h1>
 
             {/* 元信息 */}
             <div className='flex items-center gap-2 text-sm text-muted-foreground/70 flex-wrap'>
-              <span
-                className={
-                  topic.isDeleted
-                    ? 'text-destructive/80'
-                    : topic.isClosed
-                    ? 'text-muted-foreground/70'
-                    : 'text-chart-2/80'
-                }
-              >
-                {topic.isDeleted
-                  ? '已删除'
-                  : topic.isClosed
-                  ? '已关闭'
-                  : '开放中'}
-              </span>
-              <span className='opacity-50'>•</span>
               <Link
                 href={`/users/${topic.username}`}
 
@@ -160,6 +163,12 @@ export default function TopicContent() {
               <span className='opacity-70'>
                 发布于 <Time date={topic.createdAt} fromNow />
               </span>
+              {topic.viewCount > 0 && (
+                <>
+                  <span className='opacity-50'>•</span>
+                  <span className='opacity-70'>{topic.viewCount} 次浏览</span>
+                </>
+              )}
               {topic.approvalStatus === 'pending' && (
                 <>
                   <span className='opacity-50'>•</span>
@@ -189,7 +198,7 @@ export default function TopicContent() {
 
       {/* 话题内容 - 首帖 */}
       <div
-        className='bg-card border-b sm:border sm:border-border sm:rounded-lg mb-6'
+        className='content-card mb-6'
         data-post-number='1'
       >
         <div className='px-3 sm:px-6 py-4 sm:py-5'>

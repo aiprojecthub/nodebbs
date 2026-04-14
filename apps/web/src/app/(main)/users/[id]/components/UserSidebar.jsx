@@ -34,7 +34,7 @@ export default function UserSidebar({ user }) {
 
   return (
     <div className='w-full lg:w-72 shrink-0'>
-      <StickySidebar className='sticky top-[81px]' enabled={false}>
+      <StickySidebar className='sticky top-[var(--header-offset)]' enabled={false}>
         <aside className='space-y-4'>
           {/* 用户头像和基本信息 */}
           <UserCard

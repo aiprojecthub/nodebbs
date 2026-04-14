@@ -1,7 +1,6 @@
-export default function MainLayout({ children }) {
-  return (
-    <div className='container mx-auto'>
-      {children}
-    </div>
-  );
+import { getTemplate } from '@/templates';
+
+export default function Layout({ children }) {
+  const PageLayout = getTemplate('PageLayout');
+  return <PageLayout>{children}</PageLayout>;
 }

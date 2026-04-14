@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
  * 标签列表 UI 组件
  * 支持即时搜索过滤
  */
-export default function TagsUI({ tags = [] }) {
+export default function TagsView({ tags = [] }) {
   const [searchQuery, setSearchQuery] = useState('');
 
   // 前端过滤标签
@@ -74,7 +74,7 @@ function TagCard({ tag }) {
   return (
     <Link
       href={`/tags/${tag.slug}`}
-      className='group flex flex-col h-full space-y-3 bg-card border-b border-x-0 sm:border border-border sm:rounded-lg px-3 py-4 sm:p-5 hover:bg-accent/50 sm:hover:border-primary/50 transition-colors duration-200'
+      className='group flex flex-col h-full space-y-3 content-card px-3 py-4 sm:p-5 hover:bg-accent/50 transition-colors duration-200'
      
     >
       <div className='flex items-start justify-between'>

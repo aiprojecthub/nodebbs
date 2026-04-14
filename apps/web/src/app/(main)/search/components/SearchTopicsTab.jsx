@@ -12,7 +12,7 @@ export function SearchTopicsTab({ loading, results, onLoadPage, searchQuery }) {
 
   if (loading) {
     return (
-      <div className='mx-3 sm:mx-0 bg-card border-0 sm:border sm:border-border sm:rounded-xl'>
+      <div className='mx-3 sm:mx-0 content-card'>
         <Loading text='加载中...' className='py-16' />
       </div>
     );
@@ -20,7 +20,7 @@ export function SearchTopicsTab({ loading, results, onLoadPage, searchQuery }) {
 
   if (total === 0) {
     return (
-      <div className='text-center py-20 mx-3 sm:mx-0 border-0 sm:border sm:border-border sm:rounded-xl bg-card'>
+      <div className='text-center py-20 mx-3 sm:mx-0 content-card'>
         <div className='w-16 h-16 mx-auto mb-6 rounded-full bg-muted/50 flex items-center justify-center'>
           <BookOpen className='h-8 w-8 text-muted-foreground/50' />
         </div>
@@ -42,7 +42,7 @@ export function SearchTopicsTab({ loading, results, onLoadPage, searchQuery }) {
       </div>
 
       {/* 话题列表 */}
-      <div className='bg-card sm:border sm:border-border sm:rounded-xl overflow-hidden'>
+      <div className='content-card overflow-hidden'>
         <div className='divide-y divide-border/60'>
           {items.map((topic) => (
             <SearchTopicItem

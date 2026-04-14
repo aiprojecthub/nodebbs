@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
-import TopicLayout from './components/TopicLayout';
 import { getTopicData, getPostsData, getRewardEnabledStatus, getRewardStats } from '@/lib/server/topics';
 import { getSiteInfo } from '@/lib/server/layout';
+import { getTemplate } from '@/templates';
 
 // 生成页面元数据（SEO优化）
 export async function generateMetadata({ params }) {
@@ -81,8 +81,10 @@ export default async function TopicDetailPage({ params, searchParams }) {
     ? await getRewardStats(topic, posts) 
     : {};
 
+  const TopicView = getTemplate('TopicView');
+
   return (
-    <TopicLayout
+    <TopicView
       topic={topic}
       initialPosts={posts}
       totalPosts={totalPosts}

@@ -7,7 +7,7 @@ import { SearchUI } from './SearchUI';
  * 搜索页面布局组件
  * 消费 useSearch Hook，将数据传递给 SearchUI
  */
-export default function SearchLayout() {
+export default function SearchView() {
   const {
     searchQuery,
     searchType,
