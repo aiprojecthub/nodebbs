@@ -142,12 +142,6 @@ export default function TopicContent() {
             )}
 
             <h1 className='text-2xl sm:text-3xl font-semibold mb-3 leading-tight text-foreground break-all'>
-              {topic.isPinned && (
-                <Pin className='inline-block h-5 w-5 text-chart-5 -mt-1' />
-              )}
-              {topic.isClosed && (
-                <Lock className='inline-block h-4 w-4 text-muted-foreground -mt-0.5 mr-1' />
-              )}
               {topic.title}
             </h1>
 
@@ -168,6 +162,9 @@ export default function TopicContent() {
                   <span className='opacity-50'>•</span>
                   <span className='opacity-70'>{topic.viewCount} 次浏览</span>
                 </>
+              )}
+              {topic.isClosed && (
+                <Lock className='inline-block h-4 w-4 text-muted-foreground -mt-0.5 mr-1' />
               )}
               {topic.approvalStatus === 'pending' && (
                 <>
