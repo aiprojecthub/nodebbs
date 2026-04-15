@@ -1,6 +1,7 @@
 import { request, getCurrentUser } from '@/lib/server/api';
 import { getDefaultCurrencyName } from '@/lib/server/ledger';
 import { getTemplate } from '@/templates';
+import { VIEWS } from '@/templates/constants';
 
 export const metadata = {
   title: '排行榜',
@@ -22,7 +23,7 @@ export default async function RankPage({ searchParams }) {
 
   const ranking = rankData?.items || [];
 
-  const RankView = getTemplate('RankView');
+  const RankView = getTemplate(VIEWS.RankView);
 
   return (
     <RankView

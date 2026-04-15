@@ -3,9 +3,9 @@
 import StickySidebar from '@/components/common/StickySidebar';
 import { TopicProvider } from '@/contexts/TopicContext';
 import { AdSlot } from '@/extensions/ads/components';
-import TopicContent from './TopicContent';
-import ReplySection from './ReplySection';
-import TopicSidebar from './TopicSidebar';
+import TopicContent from '@/app/(main)/topic/[id]/components/TopicContent';
+import ReplySection from '@/app/(main)/topic/[id]/components/ReplySection';
+import TopicSidebar from '@/app/(main)/topic/[id]/components/TopicSidebar';
 
 export default function TopicView({
   topic: initialTopic,

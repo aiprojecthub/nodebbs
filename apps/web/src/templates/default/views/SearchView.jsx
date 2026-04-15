@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearch } from '@/hooks/useSearch';
-import { SearchUI } from './SearchUI';
+import { SearchUI } from '@/app/(main)/search/components/SearchUI';
 
 /**
  * 搜索页面布局组件

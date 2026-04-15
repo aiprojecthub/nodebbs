@@ -1,8 +1,8 @@
 'use client';
 
+import { useRef } from 'react';
 import ReplyList from './ReplyList';
 import ReplyForm from './ReplyForm';
-import { useReplySection } from '@/hooks/topic/useReplySection';
 import { useTopicContext } from '@/contexts/TopicContext';
 
 export default function ReplySection({
@@ -12,12 +12,16 @@ export default function ReplySection({
   currentPage,
   limit,
 }) {
-  const { replyListRef, handleReplyAdded } = useReplySection();
-  const { 
-    topic, 
-    isRewardEnabled, 
-    rewardStats, 
-    handleRewardSuccess 
+  const replyListRef = useRef(null);
+  const handleReplyAdded = (newPost) => {
+    replyListRef.current?.addPost(newPost);
+  };
+
+  const {
+    topic,
+    isRewardEnabled,
+    rewardStats,
+    handleRewardSuccess
   } = useTopicContext();
 
   return (

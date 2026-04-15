@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getTopicData, getPostsData, getRewardEnabledStatus, getRewardStats } from '@/lib/server/topics';
 import { getSiteInfo } from '@/lib/server/layout';
 import { getTemplate } from '@/templates';
+import { VIEWS } from '@/templates/constants';
 
 // 生成页面元数据（SEO优化）
 export async function generateMetadata({ params }) {
@@ -81,7 +82,7 @@ export default async function TopicDetailPage({ params, searchParams }) {
     ? await getRewardStats(topic, posts) 
     : {};
 
-  const TopicView = getTemplate('TopicView');
+  const TopicView = getTemplate(VIEWS.TopicView);
 
   return (
     <TopicView

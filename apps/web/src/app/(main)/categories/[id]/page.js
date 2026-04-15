@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getCategoryBySlug, getTopicsData } from '@/lib/server/topics';
 import { getTemplate } from '@/templates';
+import { VIEWS } from '@/templates/constants';
 
 // 生成页面元数据
 export async function generateMetadata({ params }) {
@@ -46,7 +47,7 @@ export default async function CategoryPage({ params, searchParams }) {
 
   const totalPages = Math.ceil(data.total / LIMIT);
 
-  const CategoryView = getTemplate('CategoryView');
+  const CategoryView = getTemplate(VIEWS.CategoryView);
 
   return (
     <CategoryView

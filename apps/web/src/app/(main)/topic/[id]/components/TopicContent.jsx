@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from '@/components/common/Link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Pin,
   Lock,
   Archive,
   Loader2,
@@ -19,8 +18,6 @@ import { RewardListDialog } from '@/extensions/rewards/components/RewardListDial
 import Time from '@/components/common/Time';
 import { useTopicContext } from '@/contexts/TopicContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { postApi } from '@/lib/api';
-import { toast } from 'sonner';
 
 /**
  * 话题内容组件（首帖展示）
@@ -31,64 +28,15 @@ export default function TopicContent() {
     rewardStats,
     isRewardEnabled,
     handleRewardSuccess,
+    toggleFirstPostLike,
+    actionLoading,
   } = useTopicContext();
 
   const { user, isAuthenticated, openLoginDialog } = useAuth();
 
-  // 首帖点赞状态
-  const [likingPostIds, setLikingPostIds] = useState(new Set());
-  const [likeState, setLikeState] = useState({
-    isFirstPostLiked: topic.isFirstPostLiked || false,
-    firstPostLikeCount: topic.firstPostLikeCount || 0,
-  });
-
-  // topic 更新时同步点赞状态
-  useEffect(() => {
-    setLikeState({
-      isFirstPostLiked: topic.isFirstPostLiked || false,
-      firstPostLikeCount: topic.firstPostLikeCount || 0,
-    });
-  }, [topic.isFirstPostLiked, topic.firstPostLikeCount]);
-
-  // 打赏弹窗状态
+  // 打赏弹窗状态（纯 UI 状态，保留在组件内）
   const [rewardDialogOpen, setRewardDialogOpen] = useState(false);
   const [rewardListOpen, setRewardListOpen] = useState(false);
-
-  /**
-   * 切换首帖点赞状态
-   */
-  const handleTogglePostLike = async (postId, isLiked) => {
-    if (!isAuthenticated) return openLoginDialog();
-    if (likingPostIds.has(postId)) return;
-
-    setLikingPostIds((prev) => new Set(prev).add(postId));
-
-    try {
-      if (isLiked) {
-        await postApi.unlike(postId);
-      } else {
-        await postApi.like(postId);
-      }
-
-      setLikeState((prev) => ({
-        isFirstPostLiked: !isLiked,
-        firstPostLikeCount: isLiked
-          ? (prev.firstPostLikeCount || 0) - 1
-          : (prev.firstPostLikeCount || 0) + 1,
-      }));
-
-      toast.success(isLiked ? '已取消点赞' : '点赞成功');
-    } catch (err) {
-      console.error('点赞操作失败:', err);
-      toast.error(err.message || '操作失败');
-    } finally {
-      setLikingPostIds((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(postId);
-        return newSet;
-      });
-    }
-  };
 
   return (
     <>
@@ -210,34 +158,27 @@ export default function TopicContent() {
               <Button
                 variant='ghost'
                 size='sm'
-                onClick={() =>
-                  handleTogglePostLike(
-                    topic.firstPostId,
-                    likeState.isFirstPostLiked
-                  )
-                }
-                disabled={
-                  likingPostIds.has(topic.firstPostId) || !isAuthenticated
-                }
+                onClick={toggleFirstPostLike}
+                disabled={actionLoading.like}
                 className={`${
-                  likeState.isFirstPostLiked
+                  topic.isFirstPostLiked
                     ? 'text-destructive hover:text-destructive/80 bg-destructive/5'
                     : 'text-muted-foreground hover:text-destructive hover:bg-destructive/5'
                 }`}
-                title={likeState.isFirstPostLiked ? '取消点赞' : '点赞'}
+                title={topic.isFirstPostLiked ? '取消点赞' : '点赞'}
               >
-                {likingPostIds.has(topic.firstPostId) ? (
+                {actionLoading.like ? (
                   <Loader2 className='h-4 w-4 animate-spin' />
                 ) : (
                   <>
                     <ThumbsUp
                       className={`h-4 w-4 ${
-                        likeState.isFirstPostLiked ? 'fill-current' : ''
+                        topic.isFirstPostLiked ? 'fill-current' : ''
                       }`}
                     />
                     <span className='text-sm'>
-                      {likeState.firstPostLikeCount > 0
-                        ? likeState.firstPostLikeCount
+                      {topic.firstPostLikeCount > 0
+                        ? topic.firstPostLikeCount
                         : '点赞'}
                     </span>
                   </>

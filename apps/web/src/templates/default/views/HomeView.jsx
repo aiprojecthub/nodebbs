@@ -1,9 +1,11 @@
 import { TopicList } from '@/components/topic/TopicList';
 import { TopicSortTabs } from '@/components/topic/TopicSortTabs';
 import { AdSlot } from '@/extensions/ads/components';
-import SidebarLayout from './SidebarLayout';
+import { getTemplate } from '@/templates';
+import { LAYOUTS } from '@/templates/constants';
 
 export default function HomeView({ title, description, sort, data, page, totalPages, limit }) {
+  const SidebarLayout = getTemplate(LAYOUTS.SidebarLayout);
   return (
     <SidebarLayout>
       <div className='flex flex-col gap-2 px-3 sm:px-0 lg:flex-row lg:items-end lg:justify-between lg:gap-4'>

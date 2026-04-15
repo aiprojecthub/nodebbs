@@ -27,5 +27,27 @@ export function getTemplateName() {
  */
 export function getTemplate(componentName) {
   const active = templates[ACTIVE_TEMPLATE];
-  return active?.[componentName] || defaultTemplate[componentName];
+  const component = active?.[componentName] || defaultTemplate[componentName];
+  if (process.env.NODE_ENV === 'development' && !component) {
+    console.warn(`[templates] Component not found: "${componentName}"`);
+  }
+  return component;
+}
+
+/**
+ * 获取当前模板的 manifest 元数据
+ */
+export function getTemplateMeta() {
+  const active = templates[ACTIVE_TEMPLATE];
+  return active?.manifest || defaultTemplate.manifest;
+}
+
+/**
+ * 获取所有已注册模板列表
+ */
+export function getTemplateList() {
+  return Object.keys(templates).map(key => ({
+    id: key,
+    ...(templates[key].manifest || {}),
+  }));
 }

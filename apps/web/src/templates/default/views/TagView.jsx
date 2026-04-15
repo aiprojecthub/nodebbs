@@ -2,9 +2,11 @@ import { TopicList } from '@/components/topic/TopicList';
 import { TopicSortTabs } from '@/components/topic/TopicSortTabs';
 import { Tag } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import SidebarLayout from '@/app/(main)/components/SidebarLayout';
+import { getTemplate } from '@/templates';
+import { LAYOUTS } from '@/templates/constants';
 
 export default function TagView({ tag, sort, data, page, totalPages, limit }) {
+  const SidebarLayout = getTemplate(LAYOUTS.SidebarLayout);
   return (
     <SidebarLayout>
       <div className="mb-4 sm:mb-8 p-4 sm:p-6 content-card">

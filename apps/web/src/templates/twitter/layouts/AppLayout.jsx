@@ -1,13 +1,14 @@
 import { getTemplate } from '@/templates';
+import { GLOBALS } from '@/templates/constants';
 import { DesktopNav } from '../globals/Header';
 import EmailVerificationBanner from '@/components/auth/EmailVerificationBanner';
 import '../styles.css';
 
 export default function AppLayout({ children }) {
-  const Header = getTemplate('Header');
+  const Header = getTemplate(GLOBALS.Header);
 
   return (
-    <div className='min-h-screen bg-background' style={{ '--header-offset': '8px' }}>
+    <div className='min-h-screen bg-background' style={{ '--header-offset': '16px' }}>
       <Header />
       <EmailVerificationBanner />
       <div className='container mx-auto flex min-h-screen'>

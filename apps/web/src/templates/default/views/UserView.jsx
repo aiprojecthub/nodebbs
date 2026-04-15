@@ -3,8 +3,8 @@
 import { Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/common/Loading';
-import UserSidebar from './UserSidebar';
-import UserActivityTabs from './UserActivityTabs';
+import UserSidebar from '@/app/(main)/users/[id]/components/UserSidebar';
+import UserActivityTabs from '@/app/(main)/users/[id]/components/UserActivityTabs';
 import { useUserProfile } from '@/hooks/user/useUserProfile';
 
 /**

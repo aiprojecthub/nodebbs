@@ -1,3 +1,5 @@
+export { default as manifest } from './manifest';
+
 // X/Twitter 风格模板 — 覆盖全部 View 组件
 export { default as HomeView } from './views/HomeView';
 export { default as TopicView } from './views/TopicView';
@@ -12,6 +14,7 @@ export { default as RankView } from './views/RankView';
 // Layouts
 export { default as PageLayout } from './layouts/PageLayout';
 export { default as AppLayout } from './layouts/AppLayout';
+export { default as SidebarLayout } from './layouts/SidebarLayout';
 
 // Globals
 export { default as Header } from './globals/Header';

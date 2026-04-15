@@ -1,10 +1,12 @@
 import { TopicSortTabs } from '@/components/topic/TopicSortTabs';
 import { Pager } from '@/components/common/Pagination';
-import SidebarLayout from '../layouts/SidebarLayout';
+import { getTemplate } from '@/templates';
+import { LAYOUTS } from '@/templates/constants';
 import TimelineItem from '../components/TimelineItem';
 import EmptyTimeline from '../components/EmptyTimeline';
 
 export default function HomeView({ title, description, sort, data, page, totalPages, limit }) {
+  const SidebarLayout = getTemplate(LAYOUTS.SidebarLayout);
   return (
     <SidebarLayout>
       <div>

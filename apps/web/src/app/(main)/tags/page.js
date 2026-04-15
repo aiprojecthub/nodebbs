@@ -1,5 +1,6 @@
 import { getTagsData } from '@/lib/server/topics';
 import { getTemplate } from '@/templates';
+import { VIEWS } from '@/templates/constants';
 
 export const metadata = {
   title: '标签广场',
@@ -8,7 +9,7 @@ export const metadata = {
 
 export default async function TagsPage() {
   const tags = await getTagsData({ limit: 500 });
-  const TagsView = getTemplate('TagsView');
+  const TagsView = getTemplate(VIEWS.TagsView);
 
   return (
     <div className='py-3 sm:py-6 lg:px-4'>

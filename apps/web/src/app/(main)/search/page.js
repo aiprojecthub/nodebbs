@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { getTemplate } from '@/templates';
+import { VIEWS } from '@/templates/constants';
 import { Loading } from '@/components/common/Loading';
 
 /**
@@ -7,7 +8,7 @@ import { Loading } from '@/components/common/Loading';
  * 使用 Suspense 包裹客户端组件以支持 useSearchParams
  */
 export default function SearchPage() {
-  const SearchView = getTemplate('SearchView');
+  const SearchView = getTemplate(VIEWS.SearchView);
 
   return (
     <div className='py-3 sm:py-6 lg:px-4'>

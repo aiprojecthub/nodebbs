@@ -7,6 +7,7 @@ import { LedgerProvider } from '@/extensions/ledger/contexts/LedgerContext';
 import { EmojiProvider } from '@/components/common/Emoji/EmojiProvider';
 
 import { getTemplate, getTemplateName } from '@/templates';
+import { LAYOUTS } from '@/templates/constants';
 
 import AutoCheckIn from '@/extensions/rewards/components/AutoCheckIn';
 import ProgressBar from '@/components/common/ProgressBar';
@@ -32,7 +33,7 @@ export const viewport = {
 };
 
 function AppLayout({ children, apiInfo }) {
-  const AppLayoutComponent = getTemplate('AppLayout');
+  const AppLayoutComponent = getTemplate(LAYOUTS.AppLayout);
   return <AppLayoutComponent apiInfo={apiInfo}>{children}</AppLayoutComponent>;
 }
 

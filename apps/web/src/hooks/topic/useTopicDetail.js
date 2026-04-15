@@ -37,6 +37,7 @@ export function useTopicDetail({
     toggleStatus: false,
     togglePin: false,
     delete: false,
+    like: false,
   });
 
   // 监听 initialRewardStats 变化
@@ -203,6 +204,49 @@ export function useTopicDetail({
   };
 
   /**
+   * 切换首帖点赞状态
+   * 包含乐观更新和错误回滚
+   */
+  const toggleFirstPostLike = async () => {
+    if (!isAuthenticated) return openLoginDialog();
+
+    const postId = topic.firstPostId;
+    if (!postId) return;
+
+    setLoading('like', true);
+    const wasLiked = topic.isFirstPostLiked;
+
+    // 乐观更新
+    updateTopic({
+      isFirstPostLiked: !wasLiked,
+      firstPostLikeCount: wasLiked
+        ? (topic.firstPostLikeCount || 0) - 1
+        : (topic.firstPostLikeCount || 0) + 1,
+    });
+
+    try {
+      if (wasLiked) {
+        await postApi.unlike(postId);
+      } else {
+        await postApi.like(postId);
+      }
+      toast.success(wasLiked ? '已取消点赞' : '点赞成功');
+    } catch (err) {
+      // 回滚
+      updateTopic({
+        isFirstPostLiked: wasLiked,
+        firstPostLikeCount: wasLiked
+          ? (topic.firstPostLikeCount || 0) + 1
+          : (topic.firstPostLikeCount || 0) - 1,
+      });
+      console.error('点赞操作失败:', err);
+      toast.error(err.message || '操作失败');
+    } finally {
+      setLoading('like', false);
+    }
+  };
+
+  /**
    * 处理打赏成功的回调
    * 更新本地打赏统计数据
    * @param {number} postId - 帖子ID
@@ -311,6 +355,8 @@ export function useTopicDetail({
     togglePinTopic,
     /** 删除话题方法 */
     deleteTopic,
+    /** 切换首帖点赞方法 */
+    toggleFirstPostLike,
     /** 重新获取话题数据 */
     refreshTopic,
   };
