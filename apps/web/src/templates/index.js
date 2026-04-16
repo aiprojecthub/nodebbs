@@ -12,7 +12,7 @@ const templates = {
 
 // 第一阶段：通过环境变量硬编码模板名称
 // 后续改为从数据库/settings 读取
-const ACTIVE_TEMPLATE = process.env.NEXT_PUBLIC_TEMPLATE || 'twitter';
+const ACTIVE_TEMPLATE = process.env.NEXT_PUBLIC_TEMPLATE || 'default';
 
 /**
  * 获取当前激活的模板名称

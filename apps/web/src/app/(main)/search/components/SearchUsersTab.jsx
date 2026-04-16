@@ -13,7 +13,7 @@ export function SearchUsersTab({ loading, results, onLoadPage, searchQuery }) {
 
   if (loading) {
     return (
-      <div className='mx-3 sm:mx-0 bg-card border border-border rounded-lg'>
+      <div className='mx-3 sm:mx-0 card-base'>
         <Loading text='加载中...' className='py-16' />
       </div>
     );
@@ -21,7 +21,7 @@ export function SearchUsersTab({ loading, results, onLoadPage, searchQuery }) {
 
   if (total === 0) {
     return (
-      <div className='text-center py-16 mx-3 sm:mx-0 bg-card border border-border rounded-lg'>
+      <div className='text-center py-16 mx-3 sm:mx-0 card-base'>
         <User className='h-12 w-12 text-muted-foreground/50 mx-auto mb-4' />
         <div className='text-lg font-medium text-foreground mb-2'>
           未找到相关用户
@@ -46,7 +46,7 @@ export function SearchUsersTab({ loading, results, onLoadPage, searchQuery }) {
           <Link
             key={user.id}
             href={`/users/${user.username}`}
-            className='block bg-card border border-border rounded-lg p-4 hover:bg-accent/50 hover:border-accent-foreground/20 transition-colors'
+            className='block card-base p-4 hover:bg-accent/50 hover:border-accent-foreground/20 transition-colors'
           >
             <div className='flex items-center space-x-3'>
               <UserAvatar

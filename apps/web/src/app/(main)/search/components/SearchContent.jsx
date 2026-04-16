@@ -19,7 +19,7 @@ export function SearchContent({
   // 空搜索状态
   if (!searchQuery) {
     return (
-      <div className='text-center py-20 mx-3 sm:mx-0 bg-card border border-border rounded-lg'>
+      <div className='text-center py-20 mx-3 sm:mx-0 card-base'>
         <Search className='h-16 w-16 text-muted-foreground/50 mx-auto mb-4' />
         <div className='text-xl font-medium text-foreground mb-2'>
           请输入搜索关键词

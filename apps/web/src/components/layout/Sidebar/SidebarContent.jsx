@@ -13,7 +13,7 @@ export function CategoryList({ categories, currentPath }) {
   };
 
   return (
-    <div className='border border-border rounded-lg bg-card'>
+    <div className='card-base'>
       <div className='px-4 py-3 border-b border-border'>
         <h3 className='text-sm font-semibold flex items-center gap-2'>
           <Tag className='h-4 w-4' />
@@ -64,7 +64,7 @@ export function CategoryList({ categories, currentPath }) {
 // 统计信息组件
 export function StatsPanel({ stats }) {
   return (
-    <div className='border border-border rounded-lg bg-card'>
+    <div className='card-base'>
       <div className='px-4 py-3 border-b border-border'>
         <h3 className='text-sm font-semibold flex items-center gap-2'>
           <BarChart3 className='h-4 w-4' />

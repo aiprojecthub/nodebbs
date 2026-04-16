@@ -32,7 +32,7 @@ export default React.memo(function UserCard({
       return (
         <div
           className={cn(
-            'border border-border rounded-lg bg-card overflow-hidden',
+            'card-base overflow-hidden',
             className
           )}
         >

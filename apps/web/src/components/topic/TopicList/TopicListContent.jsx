@@ -17,7 +17,7 @@ import Time from '@/components/common/Time';
 // 空状态组件
 export function EmptyState() {
   return (
-    <div className='text-center py-20 border-0 sm:border sm:border-border sm:rounded-xl bg-card'>
+    <div className='text-center py-20 content-card'>
       <div className='w-16 h-16 mx-auto mb-6 rounded-full bg-muted/50 flex items-center justify-center'>
         <BookOpen className='h-8 w-8 text-muted-foreground/50' />
       </div>

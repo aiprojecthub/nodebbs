@@ -13,7 +13,7 @@ export function SearchPostsTab({ loading, results, onLoadPage, searchQuery }) {
 
   if (loading) {
     return (
-      <div className='mx-3 sm:mx-0 bg-card border border-border rounded-lg'>
+      <div className='mx-3 sm:mx-0 card-base'>
         <Loading text='加载中...' className='py-16' />
       </div>
     );
@@ -21,7 +21,7 @@ export function SearchPostsTab({ loading, results, onLoadPage, searchQuery }) {
 
   if (total === 0) {
     return (
-      <div className='text-center py-16 mx-3 sm:mx-0 bg-card border border-border rounded-lg'>
+      <div className='text-center py-16 mx-3 sm:mx-0 card-base'>
         <Hash className='h-12 w-12 text-muted-foreground/50 mx-auto mb-4' />
         <div className='text-lg font-medium text-foreground mb-2'>
           未找到相关回复
@@ -46,7 +46,7 @@ export function SearchPostsTab({ loading, results, onLoadPage, searchQuery }) {
           <Link
             key={post.id}
             href={`/topic/${post.topicId}#post-${post.id}`}
-            className='block bg-card border border-border rounded-lg p-4 hover:bg-accent/50 transition-colors'
+            className='block card-base p-4 hover:bg-accent/50 transition-colors'
           >
             <div className='text-sm font-medium text-muted-foreground mb-2'>
               <HighlightText text={post.topicTitle} keyword={searchQuery} />

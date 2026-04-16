@@ -70,7 +70,7 @@ export function TopicSkeleton() {
           </div>
 
           {/* 作者卡片 */}
-          <div className="h-28 rounded-lg bg-card border border-border p-4 flex flex-col gap-3">
+          <div className="h-28 card-base p-4 flex flex-col gap-3">
              <div className="flex items-center gap-3">
                <Skeleton className="h-12 w-12 rounded-full" />
                <div className="space-y-2">

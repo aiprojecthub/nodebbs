@@ -162,7 +162,7 @@ export default function TopicList({
   // 6. 渲染
   if (displayLoading) {
     return (
-      <div className='bg-card border-0 sm:border sm:border-border sm:rounded-xl'>
+      <div className='content-card'>
         <Loading text='加载中...' className='py-16' />
       </div>
     );
@@ -170,7 +170,7 @@ export default function TopicList({
 
   if (displayError) {
     return (
-      <div className='text-center py-16 border border-border rounded-lg bg-card'>
+      <div className='text-center py-16 card-base'>
         <div className='text-destructive font-semibold mb-2'>加载失败</div>
         <p className='text-sm text-muted-foreground mb-4'>{displayError}</p>
         {!hasExternalData && (

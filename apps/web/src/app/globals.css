@@ -49,9 +49,6 @@
 
 :root {
   --radius: 0.625rem;
-  --card-content-radius: var(--radius);
-  --card-content-border: 1px solid var(--border);
-  --card-content-bg: var(--card);
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
@@ -521,16 +518,23 @@ html {
   user-select: none;
 }
 
-/* 内容卡片工具类 — 模板通过 CSS 变量控制样式 */
+/* 内容卡片 — 移动端无边框，sm+ 有卡片样式。模板通过选择器覆盖 */
 .content-card {
   border-bottom: 1px solid var(--border);
 }
 
 @media (min-width: 640px) {
   .content-card {
-    background: var(--card-content-bg);
-    border: var(--card-content-border);
-    border-radius: var(--card-content-radius);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
   }
+}
+
+/* 通用卡片容器 — 所有断点均为卡片。模板通过选择器覆盖 */
+.card-base {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
 

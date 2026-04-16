@@ -39,7 +39,7 @@ export default function PollWidget({ pollId }) {
   // 加载中状态
   if (loading) {
     return (
-      <div className="my-4 p-4 border border-border rounded-lg bg-card animate-pulse">
+      <div className="my-4 p-4 card-base animate-pulse">
         <div className="h-5 bg-muted rounded w-1/3 mb-3"></div>
         <div className="space-y-2">
           <div className="h-10 bg-muted rounded"></div>
@@ -61,7 +61,7 @@ export default function PollWidget({ pollId }) {
 
   // 占位 UI（等待后端 API 实现）
   return (
-    <div className="my-4 p-4 border border-border rounded-lg bg-card">
+    <div className="my-4 p-4 card-base">
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
         <span>📊</span>
         <span>投票组件</span>

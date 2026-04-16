@@ -113,7 +113,7 @@ export default function TopicForm({
         <div className='w-full lg:w-80 shrink-0'>
           <aside className={`lg:sticky ${stickyTop} flex flex-col gap-6`}>
             {/* 分类与标签分组区块 */}
-            <div className='flex flex-col gap-4 p-5 rounded-lg border border-border bg-card'>
+            <div className='flex flex-col gap-4 p-5 card-base'>
               {/* 分类选择 */}
               <div className='space-y-3'>
                 <div className='flex items-center gap-2 text-sm font-medium text-foreground/80'>

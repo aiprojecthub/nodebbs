@@ -17,7 +17,7 @@ export default function TopicTags() {
   }
 
   return (
-    <div className='border border-border rounded-lg bg-card'>
+    <div className='card-base'>
       <div className='px-3 py-2 border-b border-border'>
         <h3 className='text-sm font-semibold'>标签</h3>
       </div>

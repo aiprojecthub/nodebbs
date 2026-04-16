@@ -1,13 +1,24 @@
 /*
  * Twitter 模板样式覆盖
  * 通过 data-template="twitter" 属性作用域限制
- * 核心原则：通过 CSS 变量控制，不覆盖具体 Tailwind 类名
  */
 
-/* 卡片样式：无圆角、无边框、无背景 */
+/* 全局圆角归零 */
 [data-template="twitter"] {
   --radius: 0;
-  --card-content-radius: 0;
-  --card-content-border: none;
-  --card-content-bg: transparent;
+}
+
+/* 卡片样式：无边框、无背景 */
+[data-template="twitter"] .card-base {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+@media (min-width: 640px) {
+  [data-template="twitter"] .content-card {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+  }
 }

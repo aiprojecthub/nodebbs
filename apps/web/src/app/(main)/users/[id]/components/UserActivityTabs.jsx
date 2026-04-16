@@ -87,7 +87,7 @@ function EmptyState({ type }) {
   const { title, description } = config[type] || config.topics;
 
   return (
-    <div className='border border-border rounded-lg p-12 text-center bg-card'>
+    <div className='card-base p-12 text-center'>
       <MessageSquare className='h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50' />
       <h3 className='text-base font-semibold mb-2'>{title}</h3>
       <p className='text-sm text-muted-foreground'>{description}</p>
@@ -97,7 +97,7 @@ function EmptyState({ type }) {
 
 function TopicItem({ topic }) {
   return (
-    <div className='border border-border rounded-lg hover:border-muted-foreground/50 transition-colors bg-card'>
+    <div className='card-base hover:border-muted-foreground/50 transition-colors'>
       <div className='p-4'>
         <div className='flex items-start gap-3'>
           <div className='shrink-0 mt-1'>
@@ -139,7 +139,7 @@ function TopicItem({ topic }) {
 
 function PostItem({ post }) {
   return (
-    <div className='border border-border rounded-lg hover:border-muted-foreground/50 transition-colors bg-card'>
+    <div className='card-base hover:border-muted-foreground/50 transition-colors'>
       <div className='p-4'>
         {post.topicTitle && (
           <div className='mb-3'>
@@ -161,7 +161,7 @@ function PostItem({ post }) {
 }
 
 function TopicsList({ topics, isLoading, total, currentPage, pageSize, onPageChange }) {
-  if (isLoading) return <Loading text='加载中' className='border border-border rounded-lg p-12 bg-card' />;
+  if (isLoading) return <Loading text='加载中' className='card-base p-12' />;
   if (topics.length === 0) return <EmptyState type='topics' />;
   return (
     <>
@@ -174,7 +174,7 @@ function TopicsList({ topics, isLoading, total, currentPage, pageSize, onPageCha
 }
 
 function PostsList({ posts, isLoading, total, currentPage, pageSize, onPageChange }) {
-  if (isLoading) return <Loading text='加载中' className='border border-border rounded-lg p-12 bg-card' />;
+  if (isLoading) return <Loading text='加载中' className='card-base p-12' />;
   if (posts.length === 0) return <EmptyState type='posts' />;
   return (
     <>
