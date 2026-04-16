@@ -8,13 +8,16 @@ import { useTopicContext } from '@/contexts/TopicContext';
 
 /**
  * 话题元信息行（作者、时间、浏览数、状态）
- * 原子组件，无外层布局样式
+ * 原子组件，无外间距
+ *
+ * @param {Object} props
+ * @param {string} [props.className] - 容器自定义样式
  */
-export default function TopicMetaLine() {
+export default function TopicMetaLine({ className }) {
   const { topic } = useTopicContext();
 
   return (
-    <div className='flex items-center gap-2 text-sm text-muted-foreground/70 flex-wrap'>
+    <div className={className || 'flex items-center gap-2 text-sm text-muted-foreground/70 flex-wrap'}>
       <Link
         href={`/users/${topic.username}`}
         className='hover:text-foreground transition-colors'

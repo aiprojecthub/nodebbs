@@ -89,7 +89,7 @@ export default function TopicViewInner({
       </article>
 
       {/* 底部操作（点赞/打赏） */}
-      <div className='border-t border-border/60 mb-8'>
+      <div className='border-t border-border/60 py-4'>
         <FirstPostActions />
       </div>
 

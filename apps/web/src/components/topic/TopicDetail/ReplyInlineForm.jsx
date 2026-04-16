@@ -25,7 +25,7 @@ export default function ReplyInlineForm({
   submitting,
 }) {
   return (
-    <div className='px-4 sm:px-6 pb-5 pt-0 opacity-100 transition-all'>
+    <div className='opacity-100 transition-all'>
       <div className='bg-muted/30 rounded-lg p-3 sm:p-4 border border-border/50'>
         <div className='flex items-center justify-between text-xs text-muted-foreground mb-2'>
           <span className="flex items-center gap-1">

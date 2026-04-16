@@ -18,12 +18,12 @@ export default function TopicContent() {
   return (
     <>
       {/* 提示信息 */}
-      <div className='px-4'>
+      <div className='px-4 mb-4'>
         <TopicAlerts />
       </div>
 
       {/* 话题标题 + 元信息 */}
-      <div className='px-4 mb-6'>
+      <div className='px-4 mb-6 space-y-3'>
         <TopicHeader />
         <TopicMetaLine />
       </div>
@@ -35,7 +35,9 @@ export default function TopicContent() {
       >
         <div className='px-3 sm:px-6 py-4 sm:py-5'>
           <TopicBody content={topic.content} />
-          <FirstPostActions />
+          <div className='pt-4 mt-4 border-t border-border/50'>
+            <FirstPostActions />
+          </div>
         </div>
       </div>
     </>

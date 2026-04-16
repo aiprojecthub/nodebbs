@@ -43,13 +43,15 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
       >
         <div className='p-3 sm:p-5'>
           {/* 头部 */}
-          <ReplyHeader
-            reply={localReply}
-            topicId={topicId}
-            origin={origin}
-            isPending={isPending}
-            isRejected={isRejected}
-          />
+          <div className='mb-4'>
+            <ReplyHeader
+              reply={localReply}
+              topicId={topicId}
+              origin={origin}
+              isPending={isPending}
+              isRejected={isRejected}
+            />
+          </div>
 
           <div className="pl-0 sm:pl-13">
             {/* 引用 */}
@@ -73,7 +75,8 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
             />
 
             {/* 操作栏 */}
-            <ReplyActionBar
+            <div className='mt-4 pt-3 border-t border-dashed border-border/60'>
+              <ReplyActionBar
               reply={localReply}
               isAuthenticated={isAuthenticated}
               openLoginDialog={openLoginDialog}
@@ -100,12 +103,14 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
                 setReportDialogOpen(true);
               }}
             />
+            </div>
           </div>
         </div>
 
         {/* 楼中楼回复表单 */}
         {replyingToPostId === localReply.id && (
-          <ReplyInlineForm
+          <div className='px-4 sm:px-6 pb-5'>
+            <ReplyInlineForm
             reply={localReply}
             replyContent={replyToContent}
             onReplyChange={setReplyToContent}
@@ -116,6 +121,7 @@ export default function ReplyItem({ reply, topicId, onDeleted, onReplyAdded, isR
             }}
             submitting={submitting}
           />
+          </div>
         )}
       </div>
 

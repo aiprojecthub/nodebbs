@@ -21,7 +21,7 @@ import { toast } from 'sonner';
  */
 export default function ReplyHeader({ reply, topicId, origin, isPending, isRejected }) {
   return (
-    <div className='flex items-start justify-between gap-4 mb-4'>
+    <div className='flex items-start justify-between gap-4'>
       <div className='flex items-start gap-3'>
         <Link href={`/users/${reply.username}`} className="shrink-0 mt-0.5">
           <UserAvatar url={reply.userAvatar} name={reply.userName} size='md' frameMetadata={reply.userAvatarFrame?.itemMetadata} />

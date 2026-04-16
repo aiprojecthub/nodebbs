@@ -72,7 +72,7 @@ export default function MarkdownEditor({
     <div className={cn('flex flex-col', className)}>
       {/* 工具栏 */}
       {showToolbar && (
-        <div className="flex items-center justify-between p-2 border border-b-0 rounded-tl-lg rounded-tr-lg bg-muted/30">
+        <div className="flex items-center justify-between p-2 border border-b-0 rounded-t-lg bg-muted/30">
           <div className="flex items-center gap-1 flex-wrap">
             {toolbar.map((item, index) => {
               if (item === '|') {
@@ -124,7 +124,7 @@ export default function MarkdownEditor({
       )}
 
       {/* 内容区域 */}
-      <div className="bg-card flex-1 relative group">
+      <div className={cn('bg-card flex-1 relative group', showToolbar ? 'rounded-b-lg' : 'rounded-lg')} >
         {/* 触发展开的按钮 */}
         {(minimal && !isExpanded) && (
           <Button

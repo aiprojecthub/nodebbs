@@ -11,8 +11,10 @@ import { useAuth } from '@/contexts/AuthContext';
 /**
  * 首帖操作栏（点赞 + 打赏）
  * 原子组件，从 TopicContext 获取数据和操作
+ * @param {Object} props
+ * @param {string} [props.className] - 容器自定义样式（覆盖对齐方向等）
  */
-export default function FirstPostActions() {
+export default function FirstPostActions({ className }) {
   const {
     topic,
     rewardStats,
@@ -31,7 +33,7 @@ export default function FirstPostActions() {
 
   return (
     <>
-      <div className='flex items-center justify-end gap-2 pt-4'>
+      <div className={className || 'flex items-center justify-end gap-2'}>
         {/* 点赞按钮 */}
         <Button
           variant='ghost'
