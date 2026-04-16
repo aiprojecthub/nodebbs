@@ -1,22 +1,17 @@
 'use client';
 
-import { useRef } from 'react';
 import ReplyList from './ReplyList';
 import ReplyForm from './ReplyForm';
 import { useTopicContext } from '@/contexts/TopicContext';
+import { useReplyList } from '@/hooks/topic/useReplyList';
 
 export default function ReplySection({
   initialPosts,
-  totalPosts,
+  totalPosts: initialTotalPosts,
   totalPages,
   currentPage,
   limit,
 }) {
-  const replyListRef = useRef(null);
-  const handleReplyAdded = (newPost) => {
-    replyListRef.current?.addPost(newPost);
-  };
-
   const {
     topic,
     isRewardEnabled,
@@ -24,13 +19,26 @@ export default function ReplySection({
     handleRewardSuccess
   } = useTopicContext();
 
+  const {
+    posts,
+    totalPosts,
+    repliesContainerRef,
+    handlePageChange,
+    handlePostDeleted,
+    handleReplyAdded,
+  } = useReplyList({
+    topicId: topic.id,
+    initialPosts,
+    totalPosts: initialTotalPosts,
+    currentPage,
+  });
+
   return (
     <>
       {/* 回复列表 */}
       <ReplyList
-        ref={replyListRef}
         topicId={topic.id}
-        initialPosts={initialPosts}
+        posts={posts}
         totalPosts={totalPosts}
         totalPages={totalPages}
         currentPage={currentPage}
@@ -38,6 +46,10 @@ export default function ReplySection({
         isRewardEnabled={isRewardEnabled}
         rewardStatsMap={rewardStats}
         onRefreshRewards={handleRewardSuccess}
+        onPostDeleted={handlePostDeleted}
+        onReplyAdded={handleReplyAdded}
+        repliesContainerRef={repliesContainerRef}
+        onPageChange={handlePageChange}
       />
 
       {/* 回复表单 */}

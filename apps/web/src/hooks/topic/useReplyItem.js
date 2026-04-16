@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermission } from '@/hooks/usePermission';
 import { postApi } from '@/lib/api';
@@ -40,11 +40,6 @@ export function useReplyItem({
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
   const [origin, setOrigin] = useState('');
   const [reportTarget, setReportTarget] = useState({ type: '', id: 0, title: '' });
-  // 内容折叠
-  const contentRef = useRef(null);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [needsCollapse, setNeedsCollapse] = useState(false);
-  const [hasCheckedHeight, setHasCheckedHeight] = useState(false);
   // 引用展开
   const [quoteExpanded, setQuoteExpanded] = useState(false);
   const [quoteContent, setQuoteContent] = useState(null);
@@ -58,13 +53,6 @@ export function useReplyItem({
   useEffect(() => {
     if (typeof window !== 'undefined') setOrigin(window.location.origin);
   }, []);
-
-  useEffect(() => {
-    if (contentRef.current) {
-      setNeedsCollapse(contentRef.current.scrollHeight > 300);
-      setHasCheckedHeight(true);
-    }
-  }, [localReply.content]);
 
   // ===== Derived =====
   const isPending = localReply.approvalStatus === 'pending';
@@ -195,7 +183,6 @@ export function useReplyItem({
     rewardListOpen, setRewardListOpen,
     isEditing, editContent, setEditContent, isSubmittingEdit,
     origin,
-    contentRef, isExpanded, setIsExpanded, needsCollapse, hasCheckedHeight,
     quoteExpanded, quoteContent, quoteLoading,
     isPending, isRejected, isOwnReply, canEdit, canDelete, canInteract,
     handleTogglePostLike, handleDeletePost, handleSubmitReplyToPost,

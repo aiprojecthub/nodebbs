@@ -1,144 +1,31 @@
 'use client';
 
-import { useState } from 'react';
-import Link from '@/components/common/Link';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  Lock,
-  Archive,
-  Loader2,
-  AlertCircle,
-  Coins,
-  ThumbsUp,
-} from 'lucide-react';
-import MarkdownRender from '@/components/common/MarkdownRender';
-import { RewardDialog } from '@/extensions/rewards/components/RewardDialog';
-import { RewardListDialog } from '@/extensions/rewards/components/RewardListDialog';
-import Time from '@/components/common/Time';
+import TopicAlerts from '@/components/topic/TopicDetail/TopicAlerts';
+import TopicHeader from '@/components/topic/TopicDetail/TopicHeader';
+import TopicMetaLine from '@/components/topic/TopicDetail/TopicMetaLine';
+import TopicBody from '@/components/topic/TopicDetail/TopicBody';
+import FirstPostActions from '@/components/topic/TopicDetail/FirstPostActions';
 import { useTopicContext } from '@/contexts/TopicContext';
-import { useAuth } from '@/contexts/AuthContext';
 
 /**
  * 话题内容组件（首帖展示）
+ * 默认组合：组装原子组件，保持向后兼容
+ * 模板可直接使用此组件，也可单独引用原子组件自由组合
  */
 export default function TopicContent() {
-  const {
-    topic,
-    rewardStats,
-    isRewardEnabled,
-    handleRewardSuccess,
-    toggleFirstPostLike,
-    actionLoading,
-  } = useTopicContext();
-
-  const { user, isAuthenticated, openLoginDialog } = useAuth();
-
-  // 打赏弹窗状态（纯 UI 状态，保留在组件内）
-  const [rewardDialogOpen, setRewardDialogOpen] = useState(false);
-  const [rewardListOpen, setRewardListOpen] = useState(false);
+  const { topic } = useTopicContext();
 
   return (
     <>
-      {/* 已删除话题提示 */}
-      {topic.isDeleted && (
-        <div className='mb-4 bg-destructive/10 border border-destructive/30 rounded-lg p-4 flex items-start gap-3'>
-          <Archive className='h-5 w-5 text-destructive shrink-0 mt-0.5' />
-          <div className='flex-1'>
-            <p className='text-sm font-medium text-destructive mb-1'>
-              此话题已被删除
-            </p>
-            <p className='text-xs text-muted-foreground'>
-              您有权限查看已删除的话题内容。普通用户无法访问此话题。
-            </p>
-          </div>
-        </div>
-      )}
+      {/* 提示信息 */}
+      <div className='px-4'>
+        <TopicAlerts />
+      </div>
 
-      {/* 被拒绝话题提示 */}
-      {topic.approvalStatus === 'rejected' && user?.id === topic.userId && (
-        <div className='mb-4 bg-destructive/10 border border-destructive/30 rounded-lg p-4 flex items-start gap-3'>
-          <AlertCircle className='h-5 w-5 text-destructive shrink-0 mt-0.5' />
-          <div className='flex-1'>
-            <p className='text-sm font-medium text-destructive mb-1'>
-              此话题审核未通过
-            </p>
-            <p className='text-xs text-muted-foreground'>
-              您可以编辑话题内容后重新提交审核。编辑后，话题将自动重新进入待审核状态。
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* 话题标题 */}
+      {/* 话题标题 + 元信息 */}
       <div className='px-4 mb-6'>
-        <div className='flex items-start'>
-          <div className='flex-1 min-w-0'>
-            {/* 分类 */}
-            {topic.categoryName && (
-              <Link
-                href={`/categories/${topic.categorySlug}`}
-                className='inline-flex items-center gap-1.5 text-sm font-medium mb-2 hover:opacity-80 transition-opacity'
-                style={{ color: topic.categoryColor }}
-              >
-                <span
-                  className='w-2.5 h-2.5 rounded-sm shrink-0'
-                  style={{ backgroundColor: topic.categoryColor }}
-                />
-                {topic.categoryName}
-              </Link>
-            )}
-
-            <h1 className='text-2xl sm:text-3xl font-semibold mb-3 leading-tight text-foreground break-all'>
-              {topic.title}
-            </h1>
-
-            {/* 元信息 */}
-            <div className='flex items-center gap-2 text-sm text-muted-foreground/70 flex-wrap'>
-              <Link
-                href={`/users/${topic.username}`}
-
-                className='hover:text-foreground transition-colors'
-              >
-                {topic.userName || topic.username}
-              </Link>
-              <span className='opacity-70'>
-                发布于 <Time date={topic.createdAt} fromNow />
-              </span>
-              {topic.viewCount > 0 && (
-                <>
-                  <span className='opacity-50'>•</span>
-                  <span className='opacity-70'>{topic.viewCount} 次浏览</span>
-                </>
-              )}
-              {topic.isClosed && (
-                <Lock className='inline-block h-4 w-4 text-muted-foreground -mt-0.5 mr-1' />
-              )}
-              {topic.approvalStatus === 'pending' && (
-                <>
-                  <span className='opacity-50'>•</span>
-                  <Badge
-                    variant='outline'
-                    className='text-chart-5 border-chart-5 text-xs'
-                  >
-                    待审核
-                  </Badge>
-                </>
-              )}
-              {topic.approvalStatus === 'rejected' && (
-                <>
-                  <span className='opacity-50'>•</span>
-                  <Badge
-                    variant='outline'
-                    className='text-destructive border-destructive text-xs'
-                  >
-                    已拒绝
-                  </Badge>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
+        <TopicHeader />
+        <TopicMetaLine />
       </div>
 
       {/* 话题内容 - 首帖 */}
@@ -147,120 +34,10 @@ export default function TopicContent() {
         data-post-number='1'
       >
         <div className='px-3 sm:px-6 py-4 sm:py-5'>
-          <article className='max-w-none prose prose-stone dark:prose-invert break-all'>
-            <MarkdownRender content={topic.content} />
-          </article>
-
-          {/* 首帖底部操作栏 */}
-          {topic.firstPostId && (
-            <div className='flex items-center justify-end gap-2 mt-5 pt-4 border-t border-border/50'>
-              {/* 点赞按钮 */}
-              <Button
-                variant='ghost'
-                size='sm'
-                onClick={toggleFirstPostLike}
-                disabled={actionLoading.like}
-                className={`${
-                  topic.isFirstPostLiked
-                    ? 'text-destructive hover:text-destructive/80 bg-destructive/5'
-                    : 'text-muted-foreground hover:text-destructive hover:bg-destructive/5'
-                }`}
-                title={topic.isFirstPostLiked ? '取消点赞' : '点赞'}
-              >
-                {actionLoading.like ? (
-                  <Loader2 className='h-4 w-4 animate-spin' />
-                ) : (
-                  <>
-                    <ThumbsUp
-                      className={`h-4 w-4 ${
-                        topic.isFirstPostLiked ? 'fill-current' : ''
-                      }`}
-                    />
-                    <span className='text-sm'>
-                      {topic.firstPostLikeCount > 0
-                        ? topic.firstPostLikeCount
-                        : '点赞'}
-                    </span>
-                  </>
-                )}
-              </Button>
-
-              {/* 打赏按钮 */}
-              {(isRewardEnabled && user?.id !== topic.userId) && (
-                <Button
-                  variant='ghost'
-                  size='sm'
-                  onClick={() => {
-                    if (!isAuthenticated) {
-                      openLoginDialog();
-                      return;
-                    }
-                    setRewardDialogOpen(true);
-                  }}
-                  className={`gap-1.5 transition-colors ${
-                    (rewardStats[topic.firstPostId]?.totalAmount || 0) > 0
-                      ? 'text-amber-600 bg-amber-50 hover:bg-amber-100 dark:text-amber-400 dark:bg-amber-900/20 dark:hover:bg-amber-900/40 border-amber-200/50 dark:border-amber-900/50'
-                      : 'text-muted-foreground hover:text-yellow-600 hover:bg-yellow-500/10'
-                  }`}
-                  title='打赏'
-                >
-                  <Coins className='h-4 w-4' />
-                  {(rewardStats[topic.firstPostId]?.totalAmount || 0) > 0 ? (
-                    <span className='text-sm font-medium'>
-                      {rewardStats[topic.firstPostId].totalAmount}
-                    </span>
-                  ) : (
-                    <span className='text-sm'>
-                      打赏
-                    </span>
-                  )}
-                </Button>
-              )}
-
-              {/* 如果是作者，或者有打赏记录，且不是当前用户（因为当前用户点击打赏按钮也能看到记录入口），显示查看记录按钮 */}
-              {(isRewardEnabled && user?.id === topic.userId && (rewardStats[topic.firstPostId]?.totalCount || 0) > 0) && (
-                 <Button
-                  variant='ghost'
-                  size='sm'
-                  onClick={() => setRewardListOpen(true)}
-                  className='text-muted-foreground hover:text-foreground'
-                  title='查看打赏记录'
-                 >
-                   <span className="text-xs">
-                     {rewardStats[topic.firstPostId].totalCount} 次打赏
-                   </span>
-                 </Button>
-              )}
-            </div>
-          )}
+          <TopicBody content={topic.content} />
+          <FirstPostActions />
         </div>
       </div>
-
-      {/* 打赏对话框 */}
-      {topic.firstPostId && (
-        <RewardDialog
-          open={rewardDialogOpen}
-          onOpenChange={setRewardDialogOpen}
-          postId={topic.firstPostId}
-          postAuthor={topic.userName || topic.username}
-          onSuccess={(amount) => {
-            handleRewardSuccess(topic.firstPostId, amount);
-          }}
-          onViewHistory={() => {
-            setRewardDialogOpen(false);
-            setRewardListOpen(true);
-          }}
-        />
-      )}
-
-      {/* 打赏记录对话框 */}
-      {topic.firstPostId && (
-        <RewardListDialog
-          open={rewardListOpen}
-          onOpenChange={setRewardListOpen}
-          postId={topic.firstPostId}
-        />
-      )}
     </>
   );
 }
