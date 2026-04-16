@@ -11,7 +11,7 @@ import { toast } from 'sonner';
  *
  * 使用方：
  * - TopicActions（default/twitter 侧边栏样式）
- * - TopicActionMenu（jatra 内联样式）
+ * - TopicActionMenu（内联样式）
  * - 任何需要话题操作按钮的模板组件
  */
 export function useTopicActions() {
