@@ -1,0 +1,40 @@
+/*
+ * Medium 模板样式
+ * 阅读优先 — 衬线标题、无卡片边框、大量留白
+ */
+
+[data-template="medium"] {
+  --font-serif: 'Georgia', 'Noto Serif SC', 'Source Serif 4', serif;
+}
+
+/* 标题使用衬线字体 */
+[data-template="medium"] h1,
+[data-template="medium"] h2,
+[data-template="medium"] h3 {
+  font-family: var(--font-serif);
+  letter-spacing: -0.02em;
+}
+
+/* 卡片: 无边框无背景 */
+[data-template="medium"] .card-base {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+@media (min-width: 640px) {
+  [data-template="medium"] .content-card {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+  }
+}
+
+/* prose 中标题也用衬线 */
+[data-template="medium"] .prose h1,
+[data-template="medium"] .prose h2,
+[data-template="medium"] .prose h3,
+[data-template="medium"] .prose h4 {
+  font-family: var(--font-serif);
+  letter-spacing: -0.02em;
+}

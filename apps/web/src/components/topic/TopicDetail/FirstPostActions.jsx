@@ -31,7 +31,7 @@ export default function FirstPostActions() {
 
   return (
     <>
-      <div className='flex items-center justify-end gap-2 mt-5 pt-4 border-t border-border/50'>
+      <div className='flex items-center justify-end gap-2 pt-4'>
         {/* 点赞按钮 */}
         <Button
           variant='ghost'

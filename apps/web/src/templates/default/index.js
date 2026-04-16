@@ -8,6 +8,7 @@ export { CategoriesView } from './views/CategoriesView';
 export { default as TagNotFoundView } from './views/TagNotFoundView';
 export { default as TagsView } from './views/TagsView';
 export { default as TopicView } from './views/TopicView';
+export { TopicSkeleton } from '@/app/(main)/topic/[id]/components/TopicSkeleton';
 export { default as UserView } from './views/UserView';
 export { default as RankView } from './views/RankView';
 export { default as SearchView } from './views/SearchView';

@@ -7,15 +7,15 @@ import { toast } from 'sonner';
 import { Loader2, UserPlus, UserMinus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
-export default function FollowButton({ username, initialIsFollowing = false, onFollowChange, className }) {
+export default function FollowButton({ username, initialIsFollowing, isFollowing: isFollowingProp, onFollowChange, className }) {
   const { user, isAuthenticated, openLoginDialog } = useAuth();
-  const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
+  const externalValue = initialIsFollowing ?? isFollowingProp ?? false;
+  const [isFollowing, setIsFollowing] = useState(externalValue);
   const [loading, setLoading] = useState(false);
 
-  // 当initialIsFollowing变化时更新状态
   useEffect(() => {
-    setIsFollowing(initialIsFollowing);
-  }, [initialIsFollowing]);
+    setIsFollowing(externalValue);
+  }, [externalValue]);
 
   const handleToggleFollow = async () => {
     if (!isAuthenticated) {

@@ -7,6 +7,7 @@
 export const VIEWS = {
   HomeView: 'HomeView',
   TopicView: 'TopicView',
+  TopicSkeleton: 'TopicSkeleton',
   CategoryView: 'CategoryView',
   CategoriesView: 'CategoriesView',
   TagView: 'TagView',
