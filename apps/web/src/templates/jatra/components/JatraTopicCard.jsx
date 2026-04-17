@@ -62,7 +62,7 @@ export default function JatraTopicCard({ topic }) {
       <div className='flex flex-wrap items-center justify-between border-t border-border pt-3 mt-2 relative z-20'>
         <div className='flex items-center gap-2'>
           {topic.categoryName && (
-            <Link href={`/category/${topic.categoryId}`} className='text-xs bg-muted text-muted-foreground hover:bg-muted/80 px-2.5 py-1 rounded-md transition'>
+            <Link href={`/categories/${topic.categorySlug}`} className='text-xs bg-muted text-muted-foreground hover:bg-muted/80 px-2.5 py-1 rounded-md transition'>
               {topic.categoryName}
             </Link>
           )}
