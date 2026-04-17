@@ -51,8 +51,8 @@ export default function DesktopNavAside({ categories = [] }) {
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors border-l-2',
                 isActive
-                  ? 'border-accent text-foreground font-semibold'
-                  : 'border-transparent text-foreground hover:text-accent'
+                  ? 'border-primary text-foreground font-semibold'
+                  : 'border-transparent text-foreground/60 hover:text-primary'
               )}
             >
               {/* 分类带颜色圆点 */}
