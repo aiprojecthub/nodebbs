@@ -1,18 +1,56 @@
+'use client';
+
+import { useState } from 'react';
 import Link from '@/components/common/Link';
 import UserAvatar from '@/components/user/UserAvatar';
 import Time from '@/components/common/Time';
-import { ThumbsUp, MessageSquare, Eye } from 'lucide-react';
+import { ThumbsUp, MessageSquare, Eye, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { postApi } from '@/lib/api';
 
 export default function JatraTopicCard({ topic }) {
   const replyCount = Math.max((topic.postCount || 1) - 1, 0);
+  const { isAuthenticated, openLoginDialog } = useAuth();
+
+  const [isLiked, setIsLiked] = useState(!!topic.isFirstPostLiked);
+  const [likeCount, setLikeCount] = useState(topic.firstPostLikeCount || 0);
+  const [likeLoading, setLikeLoading] = useState(false);
+
+  const handleLike = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!isAuthenticated) return openLoginDialog();
+    if (!topic.firstPostId || likeLoading) return;
+
+    const wasLiked = isLiked;
+    setIsLiked(!wasLiked);
+    setLikeCount((c) => c + (wasLiked ? -1 : 1));
+    setLikeLoading(true);
+
+    try {
+      if (wasLiked) {
+        await postApi.unlike(topic.firstPostId);
+      } else {
+        await postApi.like(topic.firstPostId);
+      }
+    } catch (err) {
+      setIsLiked(wasLiked);
+      setLikeCount((c) => c + (wasLiked ? 1 : -1));
+      toast.error(err.message || '操作失败');
+    } finally {
+      setLikeLoading(false);
+    }
+  };
 
   return (
     <div className='jatra-card p-5 mb-4 hover:shadow-md transition-shadow group relative'>
       <Link href={`/topic/${topic.id}`} className='absolute inset-0 z-10'>
         <span className='sr-only'>View Topic</span>
       </Link>
-      
+
       {/* 头部：用户信息和时间与浏览量 */}
       <div className='flex items-start justify-between mb-3 relative z-20'>
         <div className='flex items-center gap-3'>
@@ -74,17 +112,37 @@ export default function JatraTopicCard({ topic }) {
         </div>
 
         <div className='flex items-center gap-3 text-[13px]'>
-          <button className='flex items-center gap-1.5 px-3 py-1 rounded-md border border-border text-muted-foreground hover:bg-muted transition-colors font-medium'>
-            <ThumbsUp className='w-3.5 h-3.5' />
-            <span>Like</span>
-            <span className='pl-2 border-l border-border font-semibold ml-0.5'>{topic.firstPostLikeCount || 0}</span>
+          <button
+            onClick={handleLike}
+            disabled={likeLoading}
+            aria-pressed={isLiked}
+            title={isLiked ? '取消点赞' : '点赞'}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1 rounded-md border transition-colors font-medium disabled:opacity-60',
+              isLiked
+                ? 'border-primary/40 bg-primary/5 text-primary hover:bg-primary/10'
+                : 'border-border text-muted-foreground hover:bg-muted'
+            )}
+          >
+            {likeLoading ? (
+              <Loader2 className='w-3.5 h-3.5 animate-spin' />
+            ) : (
+              <ThumbsUp className={cn('w-3.5 h-3.5', isLiked && 'fill-current')} />
+            )}
+            <span>点赞</span>
+            <span className={cn('pl-2 border-l font-semibold ml-0.5', isLiked ? 'border-primary/30' : 'border-border')}>
+              {likeCount}
+            </span>
           </button>
-          
-          <button className='flex items-center gap-1.5 px-3 py-1 rounded-md border border-border text-muted-foreground hover:bg-muted transition-colors font-medium'>
+
+          <Link
+            href={`/topic/${topic.id}`}
+            className='flex items-center gap-1.5 px-3 py-1 rounded-md border border-border text-muted-foreground hover:bg-muted transition-colors font-medium'
+          >
             <MessageSquare className='w-3.5 h-3.5' />
-            <span>Replies</span>
+            <span>回复</span>
             <span className='pl-2 border-l border-border font-semibold ml-0.5'>{replyCount}</span>
-          </button>
+          </Link>
         </div>
       </div>
     </div>

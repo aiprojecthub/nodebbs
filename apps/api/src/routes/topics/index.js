@@ -23,8 +23,51 @@ import { createPaginator } from '../../utils/pagination.js';
 import { userEnricher } from '../../services/user/index.js';
 import { shouldHideUserInfo } from '../../utils/visibility.js';
 
-// 匹配 :::protected{...} ... ::: 块（行首 ::: 结束）
-const PROTECTED_RE = /:::protected\{([^}]*)\}\n([\s\S]*?)^:::\s*$/gm;
+// :::protected{attrs}\n...\n::: 块（行首 ::: 结束）
+// 捕获组：1=attrs，2=content（由详情处理器消费；列表摘要处理仅使用整体匹配）
+const PROTECTED_BLOCK_PATTERN = String.raw`:::protected\{([^}]*)\}\n([\s\S]*?)^:::\s*$`;
+const PROTECTED_RE = new RegExp(PROTECTED_BLOCK_PATTERN, 'gm');
+
+// markdown 图片：![alt](url) 或 ![alt](url "title")
+// 已知限制（摘要场景可接受）：
+// - URL 含 `)` 的情况无法匹配：`![x](https://wiki/Foo_(bar))`
+// - 不支持单引号 title：`![x](url 'title')`
+// - 不处理 HTML `<img>` 或 `<...>` 包裹的 URL
+// 需要完整 CommonMark 语义请用 markdown 解析器
+const IMAGE_MD_PATTERN = String.raw`!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)`;
+
+/**
+ * 分析首帖原文，为列表页生成安全的摘要与图片列表。
+ * - 先剥除 :::protected{...}:::  块（无论权限，列表内容始终不含受限内容）
+ * - 再从剩余文本提取 markdown 图片（最多 imagesMax 张）
+ * - 最后去除图片 markdown 语法、折叠空白并截断到 snippetMax 长度
+ *
+ * 输入建议是 rawContent 前 N 字符（已由 SQL 层 SUBSTRING 限制），本函数
+ * 内置对截断造成的未闭合 :::protected 残余的保护。
+ */
+function analyzeFirstPostContent(text, { snippetMax = 300, imagesMax = 9 } = {}) {
+  if (!text) return { snippet: null, images: [] };
+  let s = String(text);
+  // 剥除闭合的受限块（new 一份 regex 避免 /g 的 lastIndex 跨用污染）
+  s = s.replace(new RegExp(PROTECTED_BLOCK_PATTERN, 'gm'), '');
+  // 剥除截断导致的未闭合残余：从开标记到字符串末尾
+  s = s.replace(/:::protected\{[^}]*\}[\s\S]*$/m, '');
+
+  // 提取图片 URL
+  const images = [];
+  const imgRe = new RegExp(IMAGE_MD_PATTERN, 'g');
+  let m;
+  while ((m = imgRe.exec(s)) !== null && images.length < imagesMax) {
+    images.push(m[1]);
+  }
+
+  // 去掉图片 markdown，避免在 snippet 中显示 ![alt](url) 原文
+  s = s.replace(new RegExp(IMAGE_MD_PATTERN, 'g'), '');
+  // 折叠空白
+  s = s.replace(/\s+/g, ' ').trim();
+  const snippet = s.length > snippetMax ? s.substring(0, snippetMax).trimEnd() : s;
+  return { snippet: snippet || null, images };
+}
 
 /**
  * 计算用户对话题的操作权限
@@ -354,8 +397,10 @@ export default async function topicRoutes(fastify, options) {
           userName: users.name,
           userAvatar: users.avatar,
           viewCount: topics.viewCount,
-          // 注意：likeCount 已从 topics 表移除，如需显示请从第一条帖子获取
           postCount: topics.postCount,
+          firstPostId: posts.id,
+          firstPostLikeCount: sql`COALESCE(${posts.likeCount}, 0)`.mapWith(Number),
+          snippet: sql`SUBSTRING(${posts.rawContent} FROM 1 FOR 2000)`,
           isPinned: topics.isPinned,
           isClosed: topics.isClosed,
           isDeleted: topics.isDeleted,
@@ -366,7 +411,15 @@ export default async function topicRoutes(fastify, options) {
         })
         .from(topics)
         .innerJoin(categories, eq(topics.categoryId, categories.id))
-        .innerJoin(users, eq(topics.userId, users.id));
+        .innerJoin(users, eq(topics.userId, users.id))
+        .leftJoin(
+          posts,
+          and(
+            eq(posts.topicId, topics.id),
+            eq(posts.postNumber, 1),
+            eq(posts.isDeleted, false)
+          )
+        );
 
       // 如果有标签过滤，添加 join 和条件
       if (tagRecord) {
@@ -484,7 +537,7 @@ export default async function topicRoutes(fastify, options) {
 
         // 将 enrich 后的数据同步回 results
         const enrichedUserMap = new Map(usersToEnrich.map(u => [u.id, u]));
-        
+
         finalResults.forEach(topic => {
             const enrichedUser = enrichedUserMap.get(topic.userId);
             if (enrichedUser) {
@@ -492,6 +545,32 @@ export default async function topicRoutes(fastify, options) {
             }
         });
       }
+
+      // 批量获取当前用户对首帖的点赞状态
+      let likedFirstPostIds = new Set();
+      if (request.user && finalResults.length > 0) {
+        const firstPostIds = finalResults
+          .map(t => t.firstPostId)
+          .filter(Boolean);
+        if (firstPostIds.length > 0) {
+          const likedRows = await db
+            .select({ postId: likes.postId })
+            .from(likes)
+            .where(
+              and(
+                eq(likes.userId, request.user.id),
+                inArray(likes.postId, firstPostIds)
+              )
+            );
+          likedFirstPostIds = new Set(likedRows.map(l => l.postId));
+        }
+      }
+      finalResults.forEach(t => {
+        t.isFirstPostLiked = t.firstPostId ? likedFirstPostIds.has(t.firstPostId) : false;
+        const { snippet, images } = analyzeFirstPostContent(t.snippet);
+        t.snippet = snippet;
+        t.images = images;
+      });
 
       // 获取总数，使用相同的过滤条件
       // 复用 conditions（已包含 tag 条件）和相同的 join 结构

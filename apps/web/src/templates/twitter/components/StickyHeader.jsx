@@ -3,7 +3,7 @@
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export default function StickyHeader({ title, subtitle, showBack = true }) {
+export default function StickyHeader({ title, subtitle, showBack = true, children }) {
   const router = useRouter();
 
   return (
@@ -13,6 +13,7 @@ export default function StickyHeader({ title, subtitle, showBack = true }) {
           <button
             onClick={() => router.back()}
             className='p-1.5 -ml-1.5 rounded-full hover:bg-accent/60 transition-colors'
+            aria-label='返回'
           >
             <ArrowLeft className='h-5 w-5' />
           </button>
@@ -24,6 +25,7 @@ export default function StickyHeader({ title, subtitle, showBack = true }) {
           )}
         </div>
       </div>
+      {children}
     </div>
   );
 }

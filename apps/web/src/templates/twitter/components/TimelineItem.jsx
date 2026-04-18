@@ -83,15 +83,7 @@ export default function TimelineItem({ topic }) {
           {/* 回复 */}
           <span className='flex items-center gap-1 text-muted-foreground text-[13px]'>
             <MessageSquare className='h-[15px] w-[15px]' />
-            {replyCount > 0 && <span className='tabular-nums'>{replyCount}</span>}
-          </span>
-
-          {/* 点赞 */}
-          <span className='flex items-center gap-1 text-muted-foreground text-[13px]'>
-            <ThumbsUp className='h-[15px] w-[15px]' />
-            {topic.firstPostLikeCount > 0 && (
-              <span className='tabular-nums'>{topic.firstPostLikeCount}</span>
-            )}
+            <span className='tabular-nums'>{replyCount ?? 0}</span>
           </span>
 
           {/* 浏览 */}
@@ -99,11 +91,7 @@ export default function TimelineItem({ topic }) {
             <Eye className='h-[15px] w-[15px]' />
             {topic.viewCount > 0 && <span className='tabular-nums'>{topic.viewCount}</span>}
           </span>
-
-          {/* 收藏 */}
-          <span className='flex items-center gap-1 text-muted-foreground text-[13px]'>
-            <Bookmark className='h-[15px] w-[15px]' />
-          </span>
+          
         </div>
       </div>
     </Link>

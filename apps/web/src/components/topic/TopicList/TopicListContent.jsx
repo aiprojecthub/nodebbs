@@ -123,11 +123,11 @@ export function TopicItem({ topic }) {
           </div>
 
           {/* 正文摘要 (主要用于搜索结果) */}
-          {topic.snippet && (
+          {/* {topic.snippet && (
             <div className='text-sm text-muted-foreground line-clamp-2 mb-2 wrap-break-word opacity-80'>
               {topic.snippet}
             </div>
-          )}
+          )} */}
 
           {/* 元信息行 */}
           <div className='flex items-center gap-2 text-sm text-muted-foreground flex-wrap'>

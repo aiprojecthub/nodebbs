@@ -6,13 +6,17 @@ import { formatCompactNumber } from '@/lib/utils';
 
 function SearchBox() {
   return (
-    <div className='sticky top-0 z-10 bg-background pt-1.5 pb-2'>
+    <div className='pt-3 pb-2'>
       <form action='/search' className='relative'>
-        <Search className='absolute left-3.5 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-muted-foreground pointer-events-none' />
+        <Search
+          aria-hidden='true'
+          className='absolute left-3.5 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-muted-foreground pointer-events-none'
+        />
         <input
-          type='text'
+          type='search'
           name='s'
           placeholder='搜索'
+          aria-label='搜索'
           className='w-full h-[42px] pl-10 pr-4 rounded-full bg-muted border-none text-[15px] outline-none focus:bg-background focus:ring-2 focus:ring-primary transition-all'
         />
       </form>
@@ -26,18 +30,15 @@ function Trending({ tags }) {
   return (
     <div className='rounded-2xl bg-muted/40 overflow-hidden'>
       <h2 className='font-extrabold text-xl px-4 pt-3 pb-2'>趋势</h2>
-      {tags.slice(0, 5).map((tag, i) => (
+      {tags.slice(0, 5).map((tag) => (
         <Link
           key={tag.id || tag.slug}
           href={`/tags/${tag.slug}`}
           className='block px-4 py-2.5 hover:bg-muted/60 transition-colors'
         >
-          <div className='flex items-center justify-between'>
-            <span className='text-[13px] text-muted-foreground'>{i + 1} · 话题</span>
-          </div>
-          <div className='font-bold text-[15px] leading-5 mt-px'>#{tag.name}</div>
+          <div className='font-bold text-[15px] leading-5'>#{tag.name}</div>
           <div className='text-[13px] text-muted-foreground mt-px'>
-            {formatCompactNumber(tag.topicCount || 0)} 帖子
+            {formatCompactNumber(tag.topicCount || 0)} 个话题
           </div>
         </Link>
       ))}
@@ -61,6 +62,7 @@ function Explore({ categories }) {
           className='flex items-center gap-3 px-4 py-2.5 hover:bg-muted/60 transition-colors'
         >
           <div
+            aria-hidden='true'
             className='w-9 h-9 rounded-lg shrink-0'
             style={{ backgroundColor: cat.color }}
           />
@@ -81,7 +83,7 @@ function FooterLinks({ stats }) {
   if (!stats) return null;
 
   return (
-    <div className='px-4 py-3 text-[13px] text-muted-foreground/60 flex items-center gap-3'>
+    <div className='px-4 py-3 text-[13px] text-muted-foreground/70 flex flex-wrap items-center gap-x-3 gap-y-1'>
       <span>{formatCompactNumber(stats.totalUsers)} 位用户</span>
       {stats.online?.total > 0 && (
         <span className='flex items-center gap-1'>
@@ -113,8 +115,8 @@ export default async function SidebarLayout({ children }) {
       <aside className='hidden lg:block w-[350px] shrink-0'>
         <div className='sticky top-0 max-h-screen overflow-y-auto px-4 space-y-4'>
           <SearchBox />
-          <AdSlot slotCode='home_sidebar_top' className='rounded-2xl' />
           <Trending tags={tags} />
+          <AdSlot slotCode='home_sidebar_top' className='rounded-2xl' />
           <Explore categories={categories} />
           <FooterLinks stats={stats} />
           <AdSlot slotCode='home_sidebar_bottom' className='rounded-2xl' />

@@ -12,8 +12,9 @@ export default function HomeView({ title, description, sort, data, page, totalPa
   return (
     <SidebarLayout>
       <div>
-        <StickyHeader title={title} showBack={false} />
-        <TopicSortTabs defaultValue={sort} className='w-full' />
+        <StickyHeader title={title} showBack={false}>
+          <TopicSortTabs defaultValue={sort} className='w-full' />
+        </StickyHeader>
         <TopicList
           initialData={data.items}
           total={data.total}

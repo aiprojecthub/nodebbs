@@ -30,8 +30,9 @@ export default function TopicListView({
 }) {
   return (
     <div>
-      <StickyHeader title={title} subtitle={subtitle} showBack={showBack} />
-      <TopicSortTabs defaultValue={sort} className='w-full' />
+      <StickyHeader title={title} subtitle={subtitle} showBack={showBack}>
+        <TopicSortTabs defaultValue={sort} className='w-full' />
+      </StickyHeader>
       <TopicList
         initialData={data.items}
         total={data.total}

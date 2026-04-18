@@ -76,11 +76,11 @@ export function DesktopNav() {
 
   if (isMinimal) {
     return (
-      <div className='flex flex-col items-center h-full py-2 px-2'>
-        <Link href='/' className='p-3 rounded-full hover:bg-accent/50' title='返回首页'>
+      <div className='flex flex-col h-full py-2 px-2 overflow-y-auto'>
+        <Link href='/' className='p-3 rounded-full hover:bg-accent/50 self-center' title='返回首页'>
           <ArrowLeft className='h-6 w-6' />
         </Link>
-        <div className='mt-auto pb-2'>
+        <div className='mt-auto pb-2 self-center'>
           <ThemeSwitcher />
         </div>
       </div>
@@ -88,7 +88,7 @@ export function DesktopNav() {
   }
 
   return (
-    <div className='flex flex-col h-full py-2 px-2'>
+    <div className='flex flex-col h-full py-2 px-2 overflow-y-auto'>
       {/* Logo */}
       <Link href='/' className='flex items-center p-3 rounded-full hover:bg-accent/50 mb-1 w-fit'>
         <img
@@ -133,7 +133,7 @@ export function DesktopNav() {
         {!loading && isAuthenticated ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className='flex items-center gap-3 w-full p-3 rounded-full hover:bg-accent/50 transition-colors'>
+              <button className='flex items-center gap-3 w-full p-3 rounded-full hover:bg-accent/50 transition-colors justify-center xl:justify-start'>
                 <UserAvatar
                   url={user?.avatar}
                   name={user?.name || user?.username}
@@ -175,7 +175,6 @@ export function DesktopNav() {
         <div className='flex flex-wrap gap-x-2 gap-y-0.5'>
           <Link href='/about' className='hover:underline'>关于</Link>
           <Link href='/reference' className='hover:underline'>API</Link>
-          <Link href='/rank' className='hover:underline'>排行榜</Link>
         </div>
         <a
           href='https://github.com/aiprojecthub/nodebbs'
@@ -224,10 +223,14 @@ export default function Header() {
         {/* 搜索框 */}
         <form onSubmit={handleSearch} className='flex-1 min-w-0'>
           <div className='relative'>
-            <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none' />
+            <Search
+              aria-hidden='true'
+              className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none'
+            />
             <input
-              type='text'
+              type='search'
               placeholder='搜索...'
+              aria-label='搜索'
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className='w-full h-9 pl-9 pr-3 rounded-full bg-muted/50 border border-border text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors'
