@@ -4,7 +4,8 @@ import { useState } from 'react';
 import Link from '@/components/common/Link';
 import UserAvatar from '@/components/user/UserAvatar';
 import Time from '@/components/common/Time';
-import { ThumbsUp, MessageSquare, Eye, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ThumbsUp, MessageSquare, Eye, Loader2, Pin, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +14,7 @@ import { postApi } from '@/lib/api';
 export default function JatraTopicCard({ topic }) {
   const replyCount = Math.max((topic.postCount || 1) - 1, 0);
   const { isAuthenticated, openLoginDialog } = useAuth();
+  const isPinned = topic.isPinned;
 
   const [isLiked, setIsLiked] = useState(!!topic.isFirstPostLiked);
   const [likeCount, setLikeCount] = useState(topic.firstPostLikeCount || 0);
@@ -46,7 +48,12 @@ export default function JatraTopicCard({ topic }) {
   };
 
   return (
-    <div className='jatra-card p-5 mb-4 hover:shadow-md transition-shadow group relative'>
+    <div
+      className={cn(
+        'jatra-card p-5 mb-4 hover:shadow-md transition-shadow group relative',
+        isPinned && 'bg-primary/5! dark:bg-primary/10! ring-1 ring-primary/10'
+      )}
+    >
       <Link href={`/topic/${topic.id}`} className='absolute inset-0 z-10'>
         <span className='sr-only'>View Topic</span>
       </Link>
@@ -83,11 +90,40 @@ export default function JatraTopicCard({ topic }) {
         </div>
       </div>
 
-      {/* 标题 */}
-      <h2 className='text-xl flex items-center font-bold text-foreground mb-2 leading-snug group-hover:text-primary transition-colors'>
-        {topic.title}
-        {topic.isPinned && <span className='ml-2 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium'>Pinned</span>}
-      </h2>
+      {/* 标题与状态标记 */}
+      <div className='mb-2 leading-snug'>
+        {isPinned && (
+          <span className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary align-middle mr-1.5'>
+            <Pin className='w-3 h-3' />
+            置顶
+          </span>
+        )}
+        {topic.isClosed && (
+          <span className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground align-middle mr-1.5'>
+            <Lock className='w-3 h-3' />
+            已关闭
+          </span>
+        )}
+        <h2 className='inline text-xl font-bold text-foreground leading-snug group-hover:text-primary transition-colors align-middle'>
+          {topic.title}
+        </h2>
+        {topic.approvalStatus === 'pending' && (
+          <Badge
+            variant='outline'
+            className='text-chart-5 border-chart-5 text-xs h-5 inline-flex align-middle ml-2'
+          >
+            待审核
+          </Badge>
+        )}
+        {topic.approvalStatus === 'rejected' && (
+          <Badge
+            variant='outline'
+            className='text-destructive border-destructive text-xs h-5 inline-flex align-middle ml-2'
+          >
+            已拒绝
+          </Badge>
+        )}
+      </div>
 
       {/* 摘要/内容 */}
       {topic.snippet && (
