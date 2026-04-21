@@ -55,6 +55,7 @@ WORKDIR /app
 # 设置环境变量
 ENV NODE_ENV=production
 ENV PORT=7100
+ENV HOST=0.0.0.0
 
 # 创建非 root 用户（安全最佳实践）
 RUN addgroup --system --gid 1001 nodejs && \
@@ -66,7 +67,6 @@ COPY --from=deps --chown=fastify:nodejs /app/apps/api/node_modules ./apps/api/no
 
 # 复制应用代码（从 prune 的完整输出）
 COPY --from=pruner --chown=fastify:nodejs /app/out/full/apps/api ./apps/api
-COPY --from=pruner --chown=fastify:nodejs /app/out/full/apps/api/package.json ./apps/api/package.json
 
 # 创建上传目录
 RUN mkdir -p /app/apps/api/uploads && \
