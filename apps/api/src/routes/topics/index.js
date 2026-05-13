@@ -38,16 +38,20 @@ const IMAGE_MD_PATTERN = String.raw`!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)`;
 
 /**
  * 分析首帖原文，为列表页生成安全的摘要与图片列表。
- * - 先剥除 :::protected{...}:::  块（无论权限，列表内容始终不含受限内容）
+ * - 先按 sourceMax 截断（在 JS 层做，避免对 SQL SUBSTRING/LEFT 的依赖；
+ *   某些历史数据中 raw_content 含非法 UTF-8 字节，server 端按字符遍历会
+ *   抛 22021 invalid byte sequence for encoding "UTF8"）
+ * - 再剥除 :::protected{...}:::  块（无论权限，列表内容始终不含受限内容）
  * - 再从剩余文本提取 markdown 图片（最多 imagesMax 张）
  * - 最后去除图片 markdown 语法、折叠空白并截断到 snippetMax 长度
  *
- * 输入建议是 rawContent 前 N 字符（已由 SQL 层 SUBSTRING 限制），本函数
- * 内置对截断造成的未闭合 :::protected 残余的保护。
+ * 本函数内置对截断造成的未闭合 :::protected 残余的保护。
  */
-function analyzeFirstPostContent(text, { snippetMax = 300, imagesMax = 9 } = {}) {
+function analyzeFirstPostContent(text, { snippetMax = 300, imagesMax = 9, sourceMax = 2000 } = {}) {
   if (!text) return { snippet: null, images: [] };
   let s = String(text);
+  // 先在 JS 层截断源文本，限制后续 regex 处理开销
+  if (s.length > sourceMax) s = s.substring(0, sourceMax);
   // 剥除闭合的受限块（new 一份 regex 避免 /g 的 lastIndex 跨用污染）
   s = s.replace(new RegExp(PROTECTED_BLOCK_PATTERN, 'gm'), '');
   // 剥除截断导致的未闭合残余：从开标记到字符串末尾
@@ -400,7 +404,7 @@ export default async function topicRoutes(fastify, options) {
           postCount: topics.postCount,
           firstPostId: posts.id,
           firstPostLikeCount: sql`COALESCE(${posts.likeCount}, 0)`.mapWith(Number).as('firstPostLikeCount'),
-          snippet: sql`SUBSTRING(${posts.rawContent} FROM 1 FOR 2000)`.as('snippet'),
+          snippet: posts.rawContent,
           isPinned: topics.isPinned,
           isClosed: topics.isClosed,
           isDeleted: topics.isDeleted,
