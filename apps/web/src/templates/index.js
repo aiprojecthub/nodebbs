@@ -1,12 +1,8 @@
 import * as defaultTemplate from './default';
-import * as twitterTemplate from './twitter';
-import * as mediumTemplate from './medium';
 import * as jatraTemplate from './jatra';
 
 const templates = {
   default: defaultTemplate,
-  twitter: twitterTemplate,
-  medium: mediumTemplate,
   jatra: jatraTemplate,
 };
 
