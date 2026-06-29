@@ -133,7 +133,7 @@ export default function AdSlot({ slotCode, className, showEmpty = false, imageFi
 
   return (
     <div 
-      className={cn('promo-slot rounded-lg overflow-hidden', className)} 
+      className={cn('promo-slot', className)} 
       data-slot={slotCode}
       style={{ 
         contain: 'layout style paint',
