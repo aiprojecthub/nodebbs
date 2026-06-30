@@ -78,7 +78,7 @@ export function LedgerTransactions() {
                         const data = await userApi.getList({ search: query, limit: 10 });
                         return data.items || [];
                       }}
-                      transformData={(user) => ({ id: user.id, label: user.username, description: user.email })}
+                      transformData={(user) => ({ id: user.id, label: user.name || user.username, description: user.username })}
                       label="选择用户"
                       placeholder="搜索用户名或邮箱"
                     />

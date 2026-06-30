@@ -51,6 +51,7 @@ export function PurchaseDialog({ open, item, accounts = [], onConfirm, onCancel,
   const transformUser = (user) => ({
     id: user.id,
     label: user.name || user.username,
+    description: user.username,
     avatar: user.avatar,
   });
 
@@ -61,7 +62,12 @@ export function PurchaseDialog({ open, item, accounts = [], onConfirm, onCancel,
       onClick={onSelect}
     >
       <UserAvatar url={transformed.avatar} name={transformed.label} size="sm" />
-      <div className="text-sm font-medium">{transformed.label}</div>
+      <div>
+        <div className="text-sm font-medium">{transformed.label}</div>
+        {
+          transformed.description && <div className="text-xs text-muted-foreground">{transformed.description}</div>
+        }
+      </div>
     </div>
   );
 
@@ -69,7 +75,12 @@ export function PurchaseDialog({ open, item, accounts = [], onConfirm, onCancel,
     <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
       <div className="flex items-center gap-3">
         <UserAvatar url={transformed.avatar} name={transformed.label} size="sm" />
-        <span className="font-medium text-sm">{transformed.label}</span>
+        <div>
+          <div className="font-medium text-sm">{transformed.label}</div>
+          {
+            transformed.description && <div className="text-xs text-muted-foreground">{transformed.description}</div>
+          }
+        </div>
       </div>
       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClear}>
         <X className="h-4 w-4" />

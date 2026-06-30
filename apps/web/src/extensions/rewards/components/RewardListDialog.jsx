@@ -103,7 +103,7 @@ export function RewardListDialog({ open, onOpenChange, postId }) {
                         href={`/users/${reward.fromUsername}`}
                         className="text-sm font-medium hover:underline truncate"
                       >
-                        {reward.fromUsername}
+                        {reward.fromUserName || reward.fromUsername}
                       </Link>
                       <span className="text-sm font-bold text-yellow-600 flex items-center gap-1 shrink-0">
                         <Coins className="h-3 w-3" />
