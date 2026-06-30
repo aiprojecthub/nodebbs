@@ -130,6 +130,7 @@ export default function TopicForm({
                   value={formData.categoryId}
                   onChange={(value) => updateField('categoryId', value)}
                   placeholder='选择一个分类'
+                  featuredFirst
                   className='w-full'
                 />
                 {errors.category && (

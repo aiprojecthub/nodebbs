@@ -14,6 +14,7 @@ import { toast } from 'sonner';
  * @param {boolean} props.disabled - 是否禁用
  * @param {number} props.excludeId - 排除的分类 ID（用于编辑时排除自己）
  * @param {boolean} props.onlyTopLevel - 只显示顶级分类
+ * @param {boolean} props.featuredFirst - 精选分类优先排列（与导航侧栏一致）
  * @param {string} props.className - 自定义样式类
  */
 export default function CategorySelector({
@@ -23,6 +24,7 @@ export default function CategorySelector({
   disabled = false,
   excludeId = null,
   onlyTopLevel = false,
+  featuredFirst = false,
   className = '',
 }) {
   const [categories, setCategories] = useState([]);
@@ -77,10 +79,15 @@ export default function CategorySelector({
       const childIds = childrenMap.get(parentId);
       if (!childIds) return [];
 
-      // 排序: position -> name
+      // 排序: featuredFirst ? (精选优先 → position → name) : (position → name)
       const sortedIds = childIds.sort((aId, bId) => {
         const a = categoryMap.get(aId);
         const b = categoryMap.get(bId);
+        if (featuredFirst) {
+          const aFeatured = a.isFeatured ? 0 : 1;
+          const bFeatured = b.isFeatured ? 0 : 1;
+          if (aFeatured !== bFeatured) return aFeatured - bFeatured;
+        }
         if (a.position !== b.position) {
           return (a.position || 0) - (b.position || 0);
         }
@@ -113,7 +120,7 @@ export default function CategorySelector({
     // 从根节点开始构建
     return buildTree(null);
 
-  }, [categories, excludeId, onlyTopLevel]);
+  }, [categories, excludeId, onlyTopLevel, featuredFirst]);
 
   return (
     <TreeSelect
