@@ -1,6 +1,6 @@
 import Link from '@/components/common/Link';
 import { Badge } from '@/components/ui/badge';
-import { Tag } from 'lucide-react';
+import { FolderKanban } from 'lucide-react';
 import Time from '@/components/common/Time';
 import SidebarLayout from '../layouts/SidebarLayout';
 
@@ -18,7 +18,7 @@ export function CategoriesView({ categories }) {
 
         {categories.length === 0 ? (
           <div className='bg-card border border-border rounded-lg text-center py-16'>
-            <Tag className='h-12 w-12 text-muted-foreground/40 mx-auto mb-4' />
+            <FolderKanban className='h-12 w-12 text-muted-foreground/40 mx-auto mb-4' />
             <h3 className='text-base font-semibold text-foreground mb-1'>暂无分类</h3>
             <p className='text-sm text-muted-foreground'>还没有创建任何分类</p>
           </div>
@@ -39,7 +39,7 @@ function CategoryCard({ category }) {
     <div className='bg-card border border-border rounded-lg p-5 hover:shadow-md transition-shadow'>
       <div className='flex items-start gap-3 mb-3'>
         <div
-          className='w-3 h-3 rounded-full mt-1.5 shrink-0'
+          className='w-3 h-3 rounded-sm mt-1.5 shrink-0'
           style={{ backgroundColor: category.color }}
         />
         <div className='flex-1 min-w-0'>
@@ -49,9 +49,9 @@ function CategoryCard({ category }) {
           >
             {category.name}
             {category.totalTopics > 0 && (
-              <span className='inline-flex items-center gap-1 text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full'>
+              <Badge variant='secondary' className='font-normal text-muted-foreground'>
                 {category.totalTopics}
-              </span>
+              </Badge>
             )}
           </Link>
           {category.description && (
@@ -66,7 +66,7 @@ function CategoryCard({ category }) {
             <Link key={sub.id} href={`/categories/${sub.slug}`}>
               <Badge
                 variant='secondary'
-                className='text-xs font-normal border-0 rounded-full px-2.5 bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors'
+                className='text-xs font-normal rounded-full px-2.5 bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors'
               >
                 {sub.name}
               </Badge>
@@ -75,7 +75,7 @@ function CategoryCard({ category }) {
         </div>
       )}
 
-      <div className='mt-auto pl-6 pt-3 border-t border-border/40'>
+      <div className='pl-6 pt-3 border-t border-border/40'>
         {category.latestTopic ? (
           <div className='flex items-center justify-between gap-4 text-xs'>
             <Link href={`/topic/${category.latestTopic.id}`} className='truncate text-foreground/80 hover:text-primary'>
