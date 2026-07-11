@@ -187,14 +187,22 @@ export function buildCategoryTree(data) {
   sortCategories(rootCategories);
 
   const calculateTotalStats = (category) => {
-    let total = category.topicCount || 0;
+    let topics = category.topicCount || 0;
+    let posts = category.postCount || 0;
+    let views = category.viewCount || 0;
     if (category.subcategories.length > 0) {
       category.subcategories.forEach(sub => {
-        total += calculateTotalStats(sub);
+        const childStats = calculateTotalStats(sub);
+        topics += childStats.topics;
+        posts += childStats.posts;
+        views += childStats.views;
       });
     }
-    category.totalTopics = total;
-    return total;
+    // 统一口径：totalTopics/totalPosts/totalViews 均为含子版块的递归聚合值
+    category.totalTopics = topics;
+    category.totalPosts = posts;
+    category.totalViews = views;
+    return { topics, posts, views };
   };
   rootCategories.forEach(calculateTotalStats);
 
