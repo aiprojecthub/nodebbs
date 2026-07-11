@@ -231,7 +231,7 @@ export default async function registerRoute(fastify, options) {
             const isRewardsActive = await fastify.ledger.isCurrencyActive(DEFAULT_CURRENCY_CODE);
 
             if (isRewardsActive) {
-              const inviteAmount = await fastify.ledger.getCurrencyConfig(DEFAULT_CURRENCY_CODE, 'invite_user_amount', 10);
+              const inviteAmount = await fastify.ledger.getCurrencyConfig(DEFAULT_CURRENCY_CODE, 'invite_reward_amount', 50);
 
               if (inviteAmount > 0) {
                 await fastify.ledger.grant({

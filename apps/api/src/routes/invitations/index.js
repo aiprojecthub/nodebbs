@@ -302,6 +302,9 @@ export default async function invitationsRoutes(fastify) {
                   todayRemaining: { type: 'number' },
                   maxUsesPerCode: { type: 'number' },
                   expireDays: { type: 'number' },
+                  pointsCost: { type: 'number' },
+                  rewardAmount: { type: 'number' },
+                  currencyName: { type: 'string' },
                 },
               },
               stats: {
@@ -360,6 +363,19 @@ export default async function invitationsRoutes(fastify) {
           .from(invitationCodes)
           .where(eq(invitationCodes.createdBy, userId));
 
+        // 解析奖励与货币名（与 register 发放逻辑一致：货币未启用则奖励为 0）
+        let rewardAmount = 0;
+        let currencyName = DEFAULT_CURRENCY_CODE;
+        try {
+          const isRewardsActive = await fastify.ledger.isCurrencyActive(DEFAULT_CURRENCY_CODE);
+          if (isRewardsActive) {
+            rewardAmount = await fastify.ledger.getCurrencyConfig(DEFAULT_CURRENCY_CODE, 'invite_reward_amount', 50);
+          }
+          currencyName = await fastify.ledger.getCurrencyName(DEFAULT_CURRENCY_CODE).catch(() => DEFAULT_CURRENCY_CODE);
+        } catch (e) {
+          // 账本不可用时降级：奖励为 0，货币名回退代码
+        }
+
         return {
           quota: {
             dailyLimit: rule.dailyLimit,
@@ -367,6 +383,9 @@ export default async function invitationsRoutes(fastify) {
             todayRemaining: Math.max(0, rule.dailyLimit - todayUsed),
             maxUsesPerCode: rule.maxUsesPerCode,
             expireDays: rule.expireDays,
+            pointsCost: rule.pointsCost,
+            rewardAmount,
+            currencyName,
           },
           stats: stats || { total: 0, active: 0, used: 0, expired: 0 },
         };

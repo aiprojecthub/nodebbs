@@ -218,6 +218,34 @@ export default function InvitationsPage() {
         </Card>
       )}
 
+      {/* 邀请规则：生成消耗 / 邀请奖励（值 > 0 才显示，均为 0 则整块不渲染） */}
+      {quota && (quota.pointsCost > 0 || quota.rewardAmount > 0) && (
+        <Card className="border-0 bg-muted/30 shadow-none">
+          <CardContent className="p-4">
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
+              {quota.pointsCost > 0 && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">生成消耗</span>
+                  <span className="font-semibold text-foreground tabular-nums">
+                    {quota.pointsCost} {quota.currencyName}
+                  </span>
+                  <span className="text-xs text-muted-foreground">/ 码</span>
+                </div>
+              )}
+              {quota.rewardAmount > 0 && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">邀请奖励</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                    +{quota.rewardAmount} {quota.currencyName}
+                  </span>
+                  <span className="text-xs text-muted-foreground">/ 人</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* 筛选器 */}
       <div className="flex items-center gap-3">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
