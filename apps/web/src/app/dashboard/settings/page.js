@@ -49,14 +49,14 @@ const navigationGroups = [
   {
     group: '基础配置',
     items: [
-      { id: 'general', label: '通用设置', icon: Settings, description: '站点名称、Logo与SEO优化' },
+      { id: 'general', label: '通用设置', icon: Settings, description: '站点名称、Logo 与 SEO' },
     ]
   },
   {
     group: '用户与权限',
     items: [
       { id: 'registration', label: '注册设置', icon: KeyRound, description: '开放注册与首选验证方式' },
-      { id: 'user-management', label: '账户资料', icon: Users, description: '用户名修改权限与头像上传' },
+      { id: 'user-management', label: '账户资料', icon: Users, description: '用户名、邮箱、手机号修改与账号注销' },
     ]
   },
   {
@@ -64,23 +64,23 @@ const navigationGroups = [
     items: [
       { id: 'security', label: '邮箱验证', icon: Shield, description: '要求验证邮箱后才能发帖、回复、私信' },
       { id: 'content-moderation', label: '内容审核', icon: ShieldCheck, description: '全站审核开关与分类型策略' },
-      { id: 'spam-protection', label: '垃圾拦截', icon: ShieldAlert, description: '防垃圾库与邮箱域名黑名单' },
-      { id: 'rate-limit', label: '访问限速', icon: Gauge, description: 'API调用频率限制与防DDoS' },
+      { id: 'spam-protection', label: '垃圾拦截', icon: ShieldAlert, description: '防垃圾注册(StopForumSpam)' },
+      { id: 'rate-limit', label: '访问限速', icon: Gauge, description: 'API 调用频率限制' },
       { id: 'captcha', label: '人机验证', icon: Bot, description: 'Cloudflare Turnstile 验证配置' },
     ]
   },
   {
     group: '认证与集成',
     items: [
-      { id: 'authentication', label: '认证方式', icon: Fingerprint, description: '密码登录与验证码快捷配置' },
-      { id: 'oauth', label: '三方登录', icon: Unplug, description: 'GitHub, Google 等 SSO 接入' },
+      { id: 'authentication', label: '认证方式', icon: Fingerprint, description: '扫码登录与手机号登录' },
+      { id: 'oauth', label: '三方登录', icon: Unplug, description: 'GitHub、Google 等 SSO 接入' },
     ]
   },
   {
     group: '外部服务',
     items: [
       { id: 'message', label: '消息服务', icon: Send, description: '邮件(SMTP/Resend)与短信通道' },
-      { id: 'storage', label: '存储服务', icon: HardDrive, description: '本地存储与 S3 兼容对象网关' },
+      { id: 'storage', label: '存储服务', icon: HardDrive, description: '本地存储与 S3 兼容对象存储' },
       { id: 'webhook', label: 'Webhook 集成', icon: Webhook, description: '事件通知与外部系统集成' },
     ]
   }

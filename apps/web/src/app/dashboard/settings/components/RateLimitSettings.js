@@ -7,7 +7,7 @@ import { SettingSection, SettingItem } from '@/components/common/SettingLayout';
 export function RateLimitSettings({ settings, handleChange, handleInputBlur, saving }) {
   return (
     <div className='space-y-6'>
-      <SettingSection title="访问限速 (Rate Limit)" description="防止接口被恶意高频调用（修改后立即生效）">
+      <SettingSection description="防止接口被恶意高频调用（修改后立即生效）">
         {settings.rate_limit_enabled && (
           <SettingItem
             title="启用访问限速"

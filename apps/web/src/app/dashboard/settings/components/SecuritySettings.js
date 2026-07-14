@@ -6,7 +6,7 @@ import { SettingSection, SettingItem } from '@/components/common/SettingLayout';
 export function SecuritySettings({ settings, handleChange, saving }) {
   return (
     <div className='space-y-6'>
-      <SettingSection title="邮箱验证" description="要求用户验证邮箱后才能进行发帖、回复、发私信等操作">
+      <SettingSection>
         {settings.email_verification_required && (
           <SettingItem
             title="邮箱验证要求"

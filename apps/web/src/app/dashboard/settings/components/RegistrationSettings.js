@@ -14,7 +14,7 @@ export function RegistrationSettings({ settings, handleChange, saving }) {
 
   return (
     <div className='space-y-6'>
-      <SettingSection title="注册模式" description="控制用户如何注册账号">
+      <SettingSection>
         <SettingItem
           title="注册模式"
           description={settings.registration_mode.description}

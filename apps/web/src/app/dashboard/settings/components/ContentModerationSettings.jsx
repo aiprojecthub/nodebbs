@@ -57,7 +57,7 @@ export function ContentModerationSettings({ settings, handleInputBlur, saving })
 
   return (
     <div className='space-y-6'>
-      <SettingSection title='内容审核' description='配置哪些新发布的内容需要审核通过后才能公开显示'>
+      <SettingSection description='配置哪些新发布的内容需要审核通过后才能公开显示'>
         <SettingItem
           title='启用内容审核'
           description='关闭时所有内容直接发布；开启后按下方分类型开关决定'

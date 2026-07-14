@@ -11,7 +11,7 @@ export function SpamProtectionSettings({ settings, handleChange, handleInputBlur
 
   return (
     <div className='space-y-6'>
-      <SettingSection title="垃圾注册拦截" description="使用 StopForumSpam API 检测和拦截垃圾注册">
+      <SettingSection description="使用 StopForumSpam API 检测和拦截垃圾注册">
         {settings.spam_protection_enabled && (
           <SettingItem
             title="启用垃圾注册拦截"

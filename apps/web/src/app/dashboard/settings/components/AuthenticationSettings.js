@@ -7,7 +7,7 @@ import { SettingSection, SettingItem } from '@/components/common/SettingLayout';
 export function AuthenticationSettings({ settings, handleChange, saving }) {
   return (
     <div className='space-y-6'>
-      <SettingSection title="认证方式" description="配置用户登录和认证相关功能">
+      <SettingSection>
         {settings.qr_login_enabled && (
           <>
             <SettingItem
