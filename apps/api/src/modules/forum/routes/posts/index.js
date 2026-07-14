@@ -1246,13 +1246,16 @@ export default async function postRoutes(fastify, options) {
       // 检查是否存在拉黑关系
       const blocked = await isBlocked(request.user.id, post.userId);
       if (!blocked) {
+        // 区分被赞的是话题正文（postNumber=1）还是回复，供前端通知文案区分
+        const isTopicContent = post.postNumber === 1;
         await fastify.notification.send({
           userId: post.userId,
           type: 'like',
           triggeredByUserId: request.user.id,
           topicId: post.topicId,
           postId: id,
-          message: `${request.user.username} 赞了你的帖子`
+          message: `${request.user.username} 赞了你的${isTopicContent ? '话题' : '回复'}`,
+          metadata: { isTopicContent }
         });
       }
 

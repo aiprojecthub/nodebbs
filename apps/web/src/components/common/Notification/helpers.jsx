@@ -68,10 +68,26 @@ export const getNotificationMessage = (notification) => {
       return notification.topicTitle
         ? `回复了你的话题 "${notification.topicTitle}"`
         : '回复了你的话题';
-    case 'like':
+    case 'like': {
+      // like 有两种：赞话题正文(postNumber=1) 或 赞回复；后端 metadata.isTopicContent 区分
+      let isTopicContent = false;
+      try {
+        const meta = typeof notification.metadata === 'string'
+          ? JSON.parse(notification.metadata)
+          : notification.metadata;
+        isTopicContent = !!meta?.isTopicContent;
+      } catch {
+        // metadata 解析失败按回复处理（兼容无 metadata 的旧数据）
+      }
+      if (isTopicContent) {
+        return notification.topicTitle
+          ? `赞了你的话题 "${notification.topicTitle}"`
+          : '赞了你的话题';
+      }
       return notification.topicTitle
         ? `在 "${notification.topicTitle}" 中赞了你的回复`
         : '赞了你的回复';
+    }
     case 'mention':
       return notification.topicTitle
         ? `在 "${notification.topicTitle}" 中提到了你`
