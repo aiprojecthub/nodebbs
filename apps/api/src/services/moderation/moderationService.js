@@ -1,8 +1,8 @@
 /**
- * 通用内容审核服务（P1）。
+ * 通用内容审核服务（gate 行门禁 + stage 字段暂存）。
  *
  * 控制面：moderation_items 统一队列；数据面：各业务行 approval_status 冗余投影。
- * 通过适配器注册表解耦具体内容类型（topic/post，后续可加 user_name/avatar/... ）。
+ * 通过适配器注册表解耦具体内容类型（gate 类 topic/post；stage 类 user_name/bio/avatar/reward_message）。
  *
  * 装饰为 fastify.moderation，见 plugins/moderation.js。
  */
@@ -54,21 +54,21 @@ export class ModerationService {
     if (!cfg.enabled) return false;
     const stored = cfg.types?.[type];
     if (typeof stored === 'boolean') return stored;
-    // 未显式配置：entity（行门禁，P1）默认开；field（字段暂存，P2）默认关，需显式开启
-    return adapter.kind !== 'field';
+    // 未显式配置：用适配器声明的默认（gate 门禁类默认开、stage 暂存类默认关）
+    return adapter.defaultEnabled ?? true;
   }
 
   // ============ 统一入口（按 adapter 分流）============
   /**
    * 创建/提交时的统一审核入口——调用方无需知道内容是行门禁还是字段暂存。
-   * 按 adapter.kind 分流：entity → enqueueIfNeeded（返回 status:'approved'|'pending'），
-   * field → stageIfNeeded（返回 status:'applied'|'pending'）。参数为两者超集，原样透传。
+   * 按 adapter.kind 分流：gate（行门禁）→ enqueueIfNeeded（返回 status:'approved'|'pending'），
+   * stage（字段暂存）→ stageIfNeeded（返回 status:'applied'|'pending'）。参数为两者超集，原样透传。
    * @param {{targetType:string, targetId:number|string, field?:string, value?:any, oldValue?:any, submittedBy?:number|null, snapshot?:object|null}} params
    */
   async submit(params) {
     const adapter = this.getAdapter(params.targetType);
     if (!adapter) throw new Error(`未注册的审核类型: ${params.targetType}`);
-    return adapter.kind === 'field'
+    return adapter.kind === 'stage'
       ? this.stageIfNeeded(params)
       : this.enqueueIfNeeded(params);
   }
@@ -143,7 +143,7 @@ export class ModerationService {
 
   // ============ 字段暂存（创建/编辑字段类内容时调用）============
   /**
-   * 字段暂存版入队（P2，供 kind='field' 适配器/写路径调用）。
+   * 字段暂存版入队（P2，供 kind='stage' 适配器/写路径调用）。
    * 审核关：立即 apply（写回线上字段）；审核开：只写队列项，payload 暂存新值，线上字段不动。
    * 同一 (targetType,targetId) 最多一条 pending（最新覆盖）。
    * 约定：调用方不要自行写线上字段——写与否由本方法/适配器决定。
@@ -195,7 +195,7 @@ export class ModerationService {
 
   // ============ 审核（通过/驳回）============
   /**
-   * 处理一个审核项。业务行状态与队列状态在同一事务内双写；通过副作用（事件）在提交后触发。
+   * 处理一个审核项。业务落地（gate 翻状态 / stage 写字段）与队列状态在同一事务内双写；通过/驳回副作用在提交后触发。
    */
   async review({ itemId, action, reviewerId, reason = null }) {
     const [item] = await db
@@ -213,8 +213,8 @@ export class ModerationService {
     const newStatus = action === 'approve' ? 'approved' : 'rejected';
 
     await db.transaction(async (tx) => {
-      // 核心落地交给适配器（多态）：entity 翻 approval_status（通过/驳回都翻）；
-      // field 通过时把 payload 写回线上字段，驳回时保持旧值、不动业务行。
+      // 核心落地交给适配器（多态）：gate 翻 approval_status（通过/驳回都翻）；
+      // stage 通过时把 payload 写回线上字段，驳回时保持旧值、不动业务行。
       await adapter.settle(tx, item, action);
       await tx
         .update(moderationItems)
@@ -222,7 +222,7 @@ export class ModerationService {
         .where(eq(moderationItems.id, itemId));
     });
 
-    // 通过/驳回副作用（失败不阻断）：entity 的 onApproved 发领域事件；field 可选通知/清理
+    // 通过/驳回副作用（失败不阻断）：gate 的 onApproved 发领域事件；stage 可选通知/清理
     try {
       if (action === 'approve') await adapter.onApproved?.(item);
       else await adapter.onRejected?.(item);
@@ -230,7 +230,7 @@ export class ModerationService {
       this.fastify.log.error(e, '[审核] 通过/驳回副作用失败');
     }
 
-    // 内容审核结果：通知提交者（entity 与 field 均通知；通过=已发布/生效，驳回=保持隐藏/旧值）
+    // 内容审核结果：通知提交者（gate 与 stage 均通知；通过=已发布/生效，驳回=保持隐藏/旧值）
     if (item.submittedBy && this.fastify.notification) {
       const notif =
         action === 'approve'
@@ -238,10 +238,10 @@ export class ModerationService {
           : { type: 'moderation_rejected', message: `你提交的${adapter.label}未通过审核${reason ? `：${reason}` : ''}` };
       // 是否附内容位置链接：
       //   通过：内容已生效，一键去看；
-      //   驳回：entity（话题/回复）行仍在且作者本人可访问，附链接可跳去查看/修改；
-      //         field 驳回=新值丢弃、线上字段保持旧值，无新内容可看，不附。
+      //   驳回：gate（话题/回复）行仍在且作者本人可访问，附链接可跳去查看/修改；
+      //         stage 驳回=新值丢弃、线上字段保持旧值，无新内容可看，不附。
       let link = null;
-      if (action === 'approve' || adapter.kind === 'entity') {
+      if (action === 'approve' || adapter.kind === 'gate') {
         try {
           link = adapter.describe?.(item)?.href ?? null;
         } catch (e) {

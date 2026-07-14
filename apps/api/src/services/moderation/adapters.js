@@ -1,11 +1,13 @@
 /**
- * 审核适配器（P1：topic / post）。
+ * 审核适配器（gate 类：topic / post；stage 类：createFieldAdapter 派生的字段暂存）。
  *
  * 每个适配器封装某内容类型的审核副作用，让通用审核服务无需了解业务细节：
- *   - type / label / kind：类型标识、审核台显示名、审核模型（'entity' 行门禁 | 'field' 字段暂存）
- *   - [entity] setStatus(dbx, targetId, status)：把审核状态落到业务行（写 approval_status）
- *   - [entity] onApproved(item)：通过后的领域副作用（发 TOPIC_CREATED / POST_CREATED 事件）
- *   - [field]  apply(dbx, targetId, payload)：通过时把 payload.value 写回目标字段（见 createFieldAdapter）
+ *   - type / label / kind：类型标识、审核台显示名、审核模型（'gate' 行门禁 | 'stage' 字段暂存）
+ *   - defaultEnabled：未显式配置时是否默认需要审核（gate 类 true、stage 类 false，可在工厂覆盖）
+ *   - settle(dbx, item, action)：事务内落地审核结果（gate 翻 approval_status；stage 通过写回、驳回 no-op）
+ *   - [gate]  setStatus(dbx, targetId, status)：把审核状态落到业务行（入队/直接通过用；写 approval_status）
+ *   - [gate]  onApproved(item)：通过后的领域副作用（发 TOPIC_CREATED / POST_CREATED 事件）
+ *   - [stage] apply(dbx, targetId, payload)：审核关时把 payload.value 直接写回目标字段（见 createFieldAdapter）
  *   - describe(item)：审核台展示所需的规范化字段（优先用 item.snapshot，避免 N+1）
  *
  * 事件统一由 onApproved 发射（原先分散在 topics/posts 路由内联 emit）。
@@ -32,11 +34,13 @@ export function createTopicAdapter(fastify) {
   return {
     type: 'topic',
     label: '话题',
-    kind: 'entity',
+    kind: 'gate',
+
+    defaultEnabled: true,
 
     setStatus,
 
-    // 事务内落地审核结果：entity 直接翻 approval_status（通过/驳回都翻）
+    // 事务内落地审核结果：gate 直接翻 approval_status（通过/驳回都翻）
     async settle(dbx, item, action) {
       await setStatus(dbx, item.targetId, action === 'approve' ? 'approved' : 'rejected');
     },
@@ -79,11 +83,13 @@ export function createPostAdapter(fastify) {
   return {
     type: 'post',
     label: '回复',
-    kind: 'entity',
+    kind: 'gate',
+
+    defaultEnabled: true,
 
     setStatus,
 
-    // 事务内落地审核结果：entity 直接翻 approval_status（通过/驳回都翻）
+    // 事务内落地审核结果：gate 直接翻 approval_status（通过/驳回都翻）
     async settle(dbx, item, action) {
       await setStatus(dbx, item.targetId, action === 'approve' ? 'approved' : 'rejected');
     },
@@ -117,7 +123,7 @@ export function createPostAdapter(fastify) {
 }
 
 /**
- * 字段暂存适配器工厂（P2，kind='field'）。
+ * 字段暂存适配器工厂（P2，kind='stage'）。
  *
  * 用于"某实体上一个字段的待定新值"类审核：待审期间线上字段保持旧值/默认，
  * 新值暂存在 moderation_items.payload；通过时由 apply() 把 payload.value 写回目标字段。
@@ -134,19 +140,20 @@ export function createPostAdapter(fastify) {
  * @param {(item) => object} [cfg.oplogTarget] 映射到合法 oplog 目标 {targetType,targetId,targetLabel}（可选）
  * @param {string} [cfg.layout] 审核台展示布局标识：'text-diff'（默认）| 'image-diff' | 'message'
  */
-export function createFieldAdapter({ type, label, field, applyValue, describe, onApproved, onRejected, oplogTarget, layout }) {
+export function createFieldAdapter({ type, label, field, applyValue, describe, onApproved, onRejected, oplogTarget, layout, defaultEnabled = false }) {
   const apply = async (dbx, targetId, payload) => {
     await applyValue(dbx, targetId, payload?.value ?? null);
   };
   return {
     type,
     label,
-    kind: 'field',
+    kind: 'stage',
     field,
+    defaultEnabled,
 
     apply,
 
-    // 事务内落地审核结果：field 通过则写回线上字段；驳回=丢弃新值，字段保持旧值，不动业务行
+    // 事务内落地审核结果：stage 通过则写回线上字段；驳回=丢弃新值，字段保持旧值，不动业务行
     async settle(dbx, item, action) {
       if (action === 'approve') await apply(dbx, item.targetId, item.payload);
     },
@@ -174,7 +181,7 @@ export function createFieldAdapter({ type, label, field, applyValue, describe, o
 
 /**
  * 用户资料字段适配器（P2）：昵称 / 简介 / 头像。
- * 均为 kind='field'——待审期间线上字段保持旧值/默认，通过时写回 users.{name,bio,avatar}。
+ * 均为 kind='stage'——待审期间线上字段保持旧值/默认，通过时写回 users.{name,bio,avatar}。
  * 纯数据映射，不依赖 fastify；驳回通知等副作用可后续通过 onRejected 注入。
  */
 export function createUserNameAdapter() {

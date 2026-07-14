@@ -13,7 +13,7 @@ import {
  *
  * 装饰 fastify.moderation（ModerationService 实例），并注册 P1 适配器（topic/post）。
  * 使用方式：
- *   await fastify.moderation.submit({ targetType:'topic', targetId, submittedBy, snapshot })  // 统一入口，按 kind 分流（entity/field）
+ *   await fastify.moderation.submit({ targetType:'topic', targetId, submittedBy, snapshot })  // 统一入口，按 kind 分流（gate/stage）
  *   await fastify.moderation.review({ itemId, action:'approve', reviewerId })
  */
 async function moderationPlugin(fastify, options) {

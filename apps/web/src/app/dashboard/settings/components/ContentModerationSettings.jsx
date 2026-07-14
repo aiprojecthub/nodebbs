@@ -83,7 +83,7 @@ export function ContentModerationSettings({ settings, handleInputBlur, saving })
                     checked={
                       typeof config.types?.[t.type] === 'boolean'
                         ? config.types[t.type]
-                        : t.kind !== 'field'
+                        : t.defaultEnabled
                     }
                     disabled={savingConfig}
                     onCheckedChange={(checked) => toggleType(t.type, checked)}

@@ -1197,7 +1197,7 @@ export default async function moderationRoutes(fastify, options) {
     const cfg = await fastify.moderation.getConfig();
     const availableTypes = fastify.moderation.listTypes().map((t) => {
       const adapter = fastify.moderation.getAdapter(t);
-      return { type: t, label: adapter?.label || t, kind: adapter?.kind || 'entity' };
+      return { type: t, label: adapter?.label || t, kind: adapter?.kind || 'gate', defaultEnabled: adapter?.defaultEnabled ?? true };
     });
     return { ...cfg, availableTypes };
   });
