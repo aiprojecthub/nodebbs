@@ -211,6 +211,12 @@ export function OperationLogs() {
                               log.targetInfo.username && (
                                 <span className='text-sm font-medium'>
                                   @{log.targetInfo.username}
+                                  {log.targetInfo.label && (
+                                    <span className='text-muted-foreground font-normal'>
+                                      {' · '}
+                                      {log.targetInfo.label}
+                                    </span>
+                                  )}
                                 </span>
                               )}
                           </>

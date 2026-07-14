@@ -188,6 +188,17 @@ export default function NotificationPopover() {
                   } catch (e) {
                     console.error('Error parsing report metadata', e);
                   }
+                } else if (notification.type === 'moderation_approved' || notification.type === 'moderation_rejected') {
+                  // 审核结果：跳转到内容位置（metadata.link）。
+                  // 驳回时仅 entity（话题/回复）内容仍在且作者可访问，故带 link；field 驳回无 link。
+                  try {
+                    const meta = typeof notification.metadata === 'string'
+                      ? JSON.parse(notification.metadata)
+                      : notification.metadata;
+                    if (meta?.link) linkUrl = meta.link;
+                  } catch (e) {
+                    console.error('Error parsing moderation metadata', e);
+                  }
                 } else if (notification.topicId) {
                   // 其他类型：跳转到对应的话题/帖子
                   linkUrl = `/topic/${notification.topicId}${

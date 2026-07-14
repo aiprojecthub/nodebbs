@@ -35,6 +35,7 @@ export function ProfileTab() {
   const {
     user,
     formData,
+    pending,
     updateField,
     resetForm,
     updateAvatar, // New function
@@ -74,6 +75,9 @@ export function ProfileTab() {
                   <AvatarUpload
                     onUpload={updateAvatar}
                   />
+                  {pending?.avatar && (
+                    <p className='text-xs text-amber-600 mt-1'>头像审核中，通过后生效</p>
+                  )}
                 </div>
               ) : null}
             </div>
@@ -143,6 +147,11 @@ export function ProfileTab() {
                 maxLength={30}
                 required
               />
+              {pending?.name && (
+                <p className='text-xs text-amber-600 mt-1'>
+                  审核中：<span className='font-medium'>{pending.name.value}</span>（通过后对外显示）
+                </p>
+              )}
             </div>
 
             {/* 个人简介 */}
@@ -157,6 +166,9 @@ export function ProfileTab() {
                 placeholder='介绍一下你自己...'
                 className='resize-none'
               />
+              {pending?.bio && (
+                <p className='text-xs text-amber-600 mt-1'>简介修改审核中，通过后生效</p>
+              )}
             </div>
           </div>
         </div>

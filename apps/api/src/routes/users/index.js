@@ -464,27 +464,93 @@ export default async function userRoutes(fastify, options) {
             email: { type: ['string', 'null'] },
             name: { type: 'string' },
             bio: { type: 'string' },
-            avatar: { type: 'string' }
+            avatar: { type: 'string' },
+            pendingFields: { type: 'array', items: { type: 'string' } }
           }
         }
       }
     }
   }, async (request, reply) => {
+    const userId = request.user.id;
+
+    // 读取当前值：作为审核快照的旧值 + 用户名展示
+    const [current] = await db
+      .select({ username: users.username, name: users.name, bio: users.bio, avatar: users.avatar })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    // UGC 字段走通用审核：审核关→立即写；审核开→暂存待审，线上值保持不变
+    const pendingFields = [];
+    const ugcFields = [
+      ['name', 'user_name'],
+      ['bio', 'user_bio'],
+      ['avatar', 'user_avatar'],
+    ];
+    for (const [field, targetType] of ugcFields) {
+      const value = request.body[field];
+      if (value === undefined || value === (current?.[field] ?? null)) continue;
+      try {
+        const res = await fastify.moderation.submit({
+          targetType,
+          targetId: userId,
+          field,
+          value,
+          oldValue: current?.[field] ?? null,
+          submittedBy: userId,
+          snapshot: {
+            field,
+            old: current?.[field] ?? null,
+            new: value,
+            username: current?.username ?? null,
+            href: `/users/${current?.username}`,
+          },
+        });
+        if (res.status === 'pending') pendingFields.push(field);
+      } catch (e) {
+        fastify.log.error(e, `[资料更新] 字段 ${field} 处理失败（跳过，不阻断其余字段）`);
+      }
+    }
+
+    // 非 UGC 字段直接写
     const updates = {};
-    if (request.body.name !== undefined) updates.name = request.body.name;
-    if (request.body.bio !== undefined) updates.bio = request.body.bio;
-    if (request.body.avatar !== undefined) updates.avatar = request.body.avatar;
     if (request.body.messagePermission !== undefined) updates.messagePermission = request.body.messagePermission;
     if (request.body.contentVisibility !== undefined) updates.contentVisibility = request.body.contentVisibility;
-
-    const [updatedUser] = await db.update(users).set(updates).where(eq(users.id, request.user.id)).returning();
+    if (Object.keys(updates).length > 0) {
+      await db.update(users).set(updates).where(eq(users.id, userId));
+    }
 
     // 清除用户缓存
-    await fastify.clearUserCache(request.user.id);
+    await fastify.clearUserCache(userId);
 
+    // 返回最新用户（已应用字段已写入；待审字段仍为旧值），并附待审字段列表
+    const [updatedUser] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
     delete updatedUser.passwordHash;
 
-    return updatedUser;
+    return { ...updatedUser, pendingFields };
+  });
+
+  // 当前用户待审核的资料字段（本人侧回显"审核中"状态：昵称/简介/头像）
+  fastify.get('/me/pending-fields', {
+    preHandler: [fastify.authenticate],
+    schema: {
+      tags: ['users'],
+      description: '获取当前用户待审核的资料字段（昵称/简介/头像）',
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (request) => {
+    const userId = request.user.id;
+    const rows = await fastify.moderation.listPending({
+      submittedBy: userId,
+      targetId: userId,
+      targetTypes: ['user_name', 'user_bio', 'user_avatar'],
+    });
+    const out = {};
+    for (const r of rows) {
+      const key = r.field || r.targetType;
+      out[key] = { value: r.value, createdAt: r.createdAt };
+    }
+    return out;
   });
 
   // 修改密码

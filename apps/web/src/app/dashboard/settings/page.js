@@ -16,6 +16,7 @@ import {
   Settings,
   KeyRound,
   Shield,
+  ShieldCheck,
   Bot,
   Fingerprint,
   Users,
@@ -32,6 +33,7 @@ import { Loading } from '@/components/common/Loading';
 import { GeneralSettings } from './components/GeneralSettings';
 import { RegistrationSettings } from './components/RegistrationSettings';
 import { SecuritySettings } from './components/SecuritySettings';
+import { ContentModerationSettings } from './components/ContentModerationSettings';
 import { AuthenticationSettings } from './components/AuthenticationSettings';
 import { UserManagementSettings } from './components/UserManagementSettings';
 import { SpamProtectionSettings } from './components/SpamProtectionSettings';
@@ -60,7 +62,8 @@ const navigationGroups = [
   {
     group: '安全与防护',
     items: [
-      { id: 'security', label: '内容安全', icon: Shield, description: '邮箱验证与全站内容审核机制' },
+      { id: 'security', label: '邮箱验证', icon: Shield, description: '要求验证邮箱后才能发帖、回复、私信' },
+      { id: 'content-moderation', label: '内容审核', icon: ShieldCheck, description: '全站审核开关与分类型策略' },
       { id: 'spam-protection', label: '垃圾拦截', icon: ShieldAlert, description: '防垃圾库与邮箱域名黑名单' },
       { id: 'rate-limit', label: '访问限速', icon: Gauge, description: 'API调用频率限制与防DDoS' },
       { id: 'captcha', label: '人机验证', icon: Bot, description: 'Cloudflare Turnstile 验证配置' },
@@ -167,6 +170,8 @@ function SystemSettingsContent() {
         return <UserManagementSettings settings={settings} handleChange={handleChange} handleInputBlur={handleInputBlur} saving={saving} />;
       case 'security':
         return <SecuritySettings settings={settings} handleChange={handleChange} handleInputBlur={handleInputBlur} saving={saving} />;
+      case 'content-moderation':
+        return <ContentModerationSettings settings={settings} handleInputBlur={handleInputBlur} saving={saving} />;
       case 'spam-protection':
         return <SpamProtectionSettings settings={settings} handleChange={handleChange} handleInputBlur={handleInputBlur} saving={saving} />;
       case 'rate-limit':

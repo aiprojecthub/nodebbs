@@ -298,6 +298,11 @@ export const userApi = {
     return apiClient.patch('/users/me', data);
   },
 
+  // 当前用户待审核的资料字段（昵称/简介/头像）
+  async getMyPendingFields() {
+    return apiClient.get('/users/me/pending-fields');
+  },
+
   // 更新用户信息（管理员）
   async updateUser(userId, data) {
     return apiClient.patch(`/users/${userId}`, data);
@@ -522,6 +527,37 @@ export const moderationApi = {
   // 拒绝内容
   async reject(type, id) {
     return apiClient.post(`/moderation/reject/${type}/${id}`);
+  },
+
+  // ============= 通用审核队列（P1）=============
+  // 获取统一审核队列
+  async getQueue(type = 'all', status = 'pending', page = 1, limit = 20) {
+    return apiClient.get('/moderation/queue', { type, status, page, limit });
+  },
+
+  // 审核队列各类型待审计数（含已注册类型列表）
+  async getQueueStat() {
+    return apiClient.get('/moderation/queue/stat');
+  },
+
+  // 通过一个审核项
+  async approveItem(id) {
+    return apiClient.post(`/moderation/queue/${id}/approve`);
+  },
+
+  // 驳回一个审核项
+  async rejectItem(id, reason) {
+    return apiClient.post(`/moderation/queue/${id}/reject`, { reason });
+  },
+
+  // 读取内容审核配置
+  async getModerationConfig() {
+    return apiClient.get('/moderation/config');
+  },
+
+  // 保存内容审核配置
+  async setModerationConfig(config) {
+    return apiClient.put('/moderation/config', config);
   },
 };
 

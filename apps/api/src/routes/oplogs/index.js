@@ -122,7 +122,8 @@ export default async function oplogsRoutes(fastify, options) {
         targetInfo = {
           username: log.targetUserUsername,
           name: log.targetUserName,
-          role: log.targetUserRole
+          role: log.targetUserRole,
+          label: log.targetLabel || null
         };
       }
 

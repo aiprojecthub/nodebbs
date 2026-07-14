@@ -82,7 +82,7 @@ node src/scripts/init/index.js --reset
 #### 功能开关
 - `registration_mode`: 注册模式（open/invitation/closed）
 - `email_verification_required`: 是否要求邮箱验证
-- `content_moderation_enabled`: 是否启用内容审核
+- `moderation_config`: 内容审核配置（主开关 + 分类型开关）
 
 #### 访问限速
 - `rate_limit_enabled`: 是否启用访问限速

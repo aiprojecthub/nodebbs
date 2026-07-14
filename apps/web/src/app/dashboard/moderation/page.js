@@ -2,6 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Clock } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PendingContent } from './components/PendingContent';
@@ -10,83 +17,71 @@ import { toast } from 'sonner';
 
 export default function ContentModerationPage() {
   const [activeTab, setActiveTab] = useState('all');
-  const [stats, setStats] = useState({ totalTopics: 0, totalPosts: 0 });
+  const [status, setStatus] = useState('pending');
+  const [stat, setStat] = useState({ total: 0, byType: {}, types: [] });
 
-  // 加载统计数据
   useEffect(() => {
-    loadStats();
+    loadStat();
   }, []);
 
-  const loadStats = async () => {
+  const loadStat = async () => {
     try {
-      const data = await moderationApi.getStat();
-      setStats({
-        totalTopics: data.totalTopics || 0,
-        totalPosts: data.totalPosts || 0,
-      });
+      const data = await moderationApi.getQueueStat();
+      setStat({ total: data.total || 0, byType: data.byType || {}, types: data.types || [] });
     } catch (error) {
-      console.error('Failed to load stats:', error);
-      toast.error('加载统计数据失败');
+      console.error('Failed to load moderation stat:', error);
+      toast.error('加载审核统计失败');
     }
   };
 
-  // 当审核操作完成后，刷新统计数据
-  const handleModerationComplete = () => {
-    loadStats();
-  };
+  const types = stat.types;
 
   return (
     <div className='space-y-6'>
-      <PageHeader
-        title='内容审核'
-        description='审核待发布的话题和回复'
-      />
+      <PageHeader title='内容审核' description='审核待发布的用户内容' />
 
-      {/* Stats */}
-      <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-        <div className='border border-border rounded-lg p-4 bg-card'>
-          <div className='flex items-center gap-3'>
-            <Clock className='h-5 w-5 text-yellow-500' />
-            <div>
-              <p className='text-sm text-muted-foreground'>待审核话题</p>
-              <p className='text-2xl font-semibold'>{stats.totalTopics}</p>
-            </div>
-          </div>
-        </div>
-        <div className='border border-border rounded-lg p-4 bg-card'>
-          <div className='flex items-center gap-3'>
-            <Clock className='h-5 w-5 text-yellow-500' />
-            <div>
-              <p className='text-sm text-muted-foreground'>待审核回复</p>
-              <p className='text-2xl font-semibold'>{stats.totalPosts}</p>
-            </div>
-          </div>
-        </div>
-        <div className='border border-border rounded-lg p-4 bg-card'>
-          <div className='flex items-center gap-3'>
-            <Clock className='h-5 w-5 text-yellow-500' />
-            <div>
-              <p className='text-sm text-muted-foreground'>总计</p>
-              <p className='text-2xl font-semibold'>
-                {stats.totalTopics + stats.totalPosts}
-              </p>
-            </div>
-          </div>
-        </div>
+      {/* 待审核汇总（紧凑单行：总计 + 非空类型，取代占位较多的统计卡网格） */}
+      <div className='flex items-center gap-2 flex-wrap text-sm text-muted-foreground'>
+        <span className='flex items-center gap-1.5 font-medium text-foreground'>
+          <Clock className='h-4 w-4 text-yellow-500' />
+          待审核 {stat.total}
+        </span>
+        {types
+          .filter((t) => (stat.byType?.[t.type] || 0) > 0)
+          .map((t) => (
+            <span key={t.type}>
+              · {t.label} {stat.byType[t.type]}
+            </span>
+          ))}
       </div>
 
+      {/* 审核队列 */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value='all'>全部待审核</TabsTrigger>
-          <TabsTrigger value='topic'>话题</TabsTrigger>
-          <TabsTrigger value='post'>回复</TabsTrigger>
-        </TabsList>
+        <div className='flex items-center justify-between gap-4 flex-wrap'>
+          <TabsList>
+            <TabsTrigger value='all'>全部</TabsTrigger>
+            {types.map((t) => (
+              <TabsTrigger key={t.type} value={t.type}>
+                {t.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger className='w-32'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='pending'>待审核</SelectItem>
+              <SelectItem value='approved'>已通过</SelectItem>
+              <SelectItem value='rejected'>已驳回</SelectItem>
+              <SelectItem value='all'>全部</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         <TabsContent value={activeTab} className='space-y-4 mt-6'>
-          <PendingContent
-            type={activeTab}
-            onModerationComplete={handleModerationComplete}
-          />
+          <PendingContent type={activeTab} status={status} onModerationComplete={loadStat} />
         </TabsContent>
       </Tabs>
     </div>

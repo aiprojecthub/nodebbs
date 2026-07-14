@@ -201,6 +201,11 @@ export default async function registerRoute(fastify, options) {
       // 密码哈希加密
       const passwordHash = await fastify.hashPassword(password);
 
+      // 昵称审核：审核开启且提供了自定义昵称时，注册先落 username，自定义昵称转入审核队列
+      const nameModerated =
+        !!name && name !== normalizedUsername && (await fastify.moderation.isEnabled('user_name'));
+      const initialName = nameModerated ? normalizedUsername : name || normalizedUsername;
+
       // 创建用户
       const [newUser] = await db
         .insert(users)
@@ -208,7 +213,7 @@ export default async function registerRoute(fastify, options) {
           username: normalizedUsername,
           email,
           passwordHash,
-          name: name || normalizedUsername,
+          name: initialName,
           role: isFirstUser ? 'admin' : 'user', // 第一个用户设为管理员
           isEmailVerified: false,
           registrationIp: request.ip,
@@ -218,6 +223,30 @@ export default async function registerRoute(fastify, options) {
 
       // 分配默认角色（用户-角色关联）
       await fastify.permission.assignDefaultRoleToUser(newUser.id, { isFirstUser });
+
+      // 自定义昵称转入审核（此前已确认审核开启）；昵称在通过前保持为 username。
+      // 非阻断：昵称转审失败不应导致已建号的注册流程报错（与下方邀请码处理一致）。
+      if (nameModerated) {
+        try {
+          await fastify.moderation.submit({
+            targetType: 'user_name',
+            targetId: newUser.id,
+            field: 'name',
+            value: name,
+            oldValue: normalizedUsername,
+            submittedBy: newUser.id,
+            snapshot: {
+              field: 'name',
+              old: normalizedUsername,
+              new: name,
+              username: normalizedUsername,
+              href: `/users/${normalizedUsername}`,
+            },
+          });
+        } catch (e) {
+          fastify.log.error(e, '[注册] 昵称转审失败（不阻断注册）');
+        }
+      }
 
       // 注册成功后，不再发送邮件
       fastify.log.info(`[注册] 用户 ${email} 注册成功，等待邮箱验证`);

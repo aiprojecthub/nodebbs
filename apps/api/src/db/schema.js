@@ -723,6 +723,9 @@ export * from '../plugins/storage/schema.js';
 // ============ RBAC System (权限系统) ============
 export * from './rbac-schema.js';
 
+// ============ Moderation System (通用内容审核) ============
+export * from './moderation-schema.js';
+
 // ============ Emoji Groups (表情包分组) ============
 export * from '../extensions/emojis/schema.js';
 

@@ -231,6 +231,23 @@ export default function NotificationsPage() {
                           } catch { return null; }
                         })()}
 
+                        {/* 审核结果内容链接（驳回时仅 entity 内容带 link） */}
+                        {(notification.type === 'moderation_approved' || notification.type === 'moderation_rejected') && (() => {
+                          try {
+                            const meta = typeof notification.metadata === 'string'
+                              ? JSON.parse(notification.metadata)
+                              : notification.metadata;
+                            return meta?.link ? (
+                              <Link
+                                href={meta.link}
+                                className="text-sm text-primary hover:underline block mb-2 truncate"
+                              >
+                                查看内容
+                              </Link>
+                            ) : null;
+                          } catch { return null; }
+                        })()}
+
                         {/* 操作按钮 */}
                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           {!notification.isRead && (

@@ -1,5 +1,5 @@
 import db from '../../db/index.js';
-import { reports, posts, topics, users } from '../../db/schema.js';
+import { reports, posts, topics, users, systemSettings } from '../../db/schema.js';
 import { eq, sql, desc, and, ne, like, or, inArray, count } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { EVENTS } from '../../constants/events.js';
@@ -1099,5 +1099,145 @@ export default async function moderationRoutes(fastify, options) {
     }
   });
 
-  // Change user role (admin only)
+  // ============= 通用审核队列（P1）=============
+
+  // 获取统一审核队列（多类型）
+  fastify.get('/queue', {
+    preHandler: [fastify.requirePermission('dashboard.moderation')],
+    schema: {
+      tags: ['moderation'],
+      description: '获取统一审核队列（管理员/版主）',
+      security: [{ bearerAuth: [] }],
+      querystring: {
+        type: 'object',
+        properties: {
+          type: { type: 'string' }, // 'all' | 'topic' | 'post' | ...
+          status: { type: 'string', enum: ['pending', 'approved', 'rejected', 'all'] },
+          page: { type: 'number', default: 1 },
+          limit: { type: 'number', default: 20, maximum: 100 },
+        },
+      },
+    },
+  }, async (request) => {
+    const { type = 'all', status = 'pending', page = 1, limit = 20 } = request.query;
+    return fastify.moderation.listQueue({ type, status, page, limit });
+  });
+
+  // 审核队列各类型待审计数
+  fastify.get('/queue/stat', {
+    preHandler: [fastify.requirePermission('dashboard.moderation')],
+    schema: {
+      tags: ['moderation'],
+      description: '审核队列各类型待审计数（管理员/版主）',
+      security: [{ bearerAuth: [] }],
+    },
+  }, async () => {
+    const stat = await fastify.moderation.queueStat();
+    const types = fastify.moderation
+      .listTypes()
+      .map((t) => ({ type: t, label: fastify.moderation.getAdapter(t)?.label || t }));
+    return { ...stat, types };
+  });
+
+  // 通过一个审核项
+  fastify.post('/queue/:id/approve', {
+    preHandler: [fastify.requirePermission('dashboard.moderation')],
+    schema: {
+      tags: ['moderation'],
+      description: '通过一个审核项（管理员/版主）',
+      security: [{ bearerAuth: [] }],
+      params: { type: 'object', required: ['id'], properties: { id: { type: 'number' } } },
+    },
+  }, async (request, reply) => {
+    try {
+      const item = await fastify.moderation.review({
+        itemId: request.params.id,
+        action: 'approve',
+        reviewerId: request.user.id,
+      });
+      return { message: '已通过', item };
+    } catch (e) {
+      return reply.code(400).send({ error: e.message });
+    }
+  });
+
+  // 驳回一个审核项
+  fastify.post('/queue/:id/reject', {
+    preHandler: [fastify.requirePermission('dashboard.moderation')],
+    schema: {
+      tags: ['moderation'],
+      description: '驳回一个审核项（管理员/版主）',
+      security: [{ bearerAuth: [] }],
+      params: { type: 'object', required: ['id'], properties: { id: { type: 'number' } } },
+      body: { type: 'object', properties: { reason: { type: 'string', maxLength: 500 } } },
+    },
+  }, async (request, reply) => {
+    try {
+      const item = await fastify.moderation.review({
+        itemId: request.params.id,
+        action: 'reject',
+        reviewerId: request.user.id,
+        reason: request.body?.reason || null,
+      });
+      return { message: '已驳回', item };
+    } catch (e) {
+      return reply.code(400).send({ error: e.message });
+    }
+  });
+
+  // 读取内容审核配置
+  fastify.get('/config', {
+    preHandler: [fastify.requirePermission('dashboard.moderation')],
+    schema: {
+      tags: ['moderation'],
+      description: '读取内容审核配置（管理员/版主）',
+      security: [{ bearerAuth: [] }],
+    },
+  }, async () => {
+    const cfg = await fastify.moderation.getConfig();
+    const availableTypes = fastify.moderation.listTypes().map((t) => {
+      const adapter = fastify.moderation.getAdapter(t);
+      return { type: t, label: adapter?.label || t, kind: adapter?.kind || 'entity' };
+    });
+    return { ...cfg, availableTypes };
+  });
+
+  // 保存内容审核配置
+  fastify.put('/config', {
+    preHandler: [fastify.requirePermission('dashboard.moderation')],
+    schema: {
+      tags: ['moderation'],
+      description: '保存内容审核配置（管理员/版主）',
+      security: [{ bearerAuth: [] }],
+      body: {
+        type: 'object',
+        properties: {
+          enabled: { type: 'boolean' },
+          types: { type: 'object', additionalProperties: { type: 'boolean' } },
+        },
+      },
+    },
+  }, async (request) => {
+    const current = await fastify.moderation.getConfig();
+    const next = {
+      enabled: request.body?.enabled ?? current.enabled,
+      types: { ...current.types, ...(request.body?.types || {}) },
+    };
+    const value = JSON.stringify(next);
+    await db
+      .insert(systemSettings)
+      .values({
+        key: 'moderation_config',
+        value,
+        valueType: 'json',
+        description: '内容审核配置',
+        updatedBy: request.user.id,
+      })
+      .onConflictDoUpdate({
+        target: systemSettings.key,
+        set: { value, updatedBy: request.user.id },
+      });
+    fastify.settings.clearCache();
+    return next;
+  });
 }

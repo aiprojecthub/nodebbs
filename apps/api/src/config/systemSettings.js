@@ -130,11 +130,11 @@ export const SETTING_KEYS = {
     category: 'features',
     accessLevel: ACCESS_LEVEL.PUBLIC,
   },
-  CONTENT_MODERATION_ENABLED: {
-    key: 'content_moderation_enabled',
-    defaultValue: 'false',
-    valueType: 'boolean',
-    description: '是否启用内容审核（新发布的内容需要审核后才能公开显示）',
+  MODERATION_CONFIG: {
+    key: 'moderation_config',
+    defaultValue: JSON.stringify({ enabled: false, types: { topic: true, post: true } }),
+    valueType: 'json',
+    description: '内容审核配置：主开关 enabled + 分类型开关 types（topic/post/user_name/user_bio/user_avatar/reward_message...）',
     category: 'features',
     accessLevel: ACCESS_LEVEL.ADMIN,
   },

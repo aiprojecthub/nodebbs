@@ -3,7 +3,6 @@ import { generateSlug } from '#core/utils/slug.js';
 import { nanoid } from 'nanoid';
 
 import db from '#core/db/index.js';
-import { EVENTS } from '#core/constants/events.js';
 import {
   topics,
   posts,
@@ -934,17 +933,10 @@ export default async function topicRoutes(fastify, options) {
         }
       }
 
-      // 检查是否开启内容审核
-      const contentModerationEnabled = await fastify.settings.get(
-        'content_moderation_enabled',
-        false
-      );
-      const approvalStatus = contentModerationEnabled ? 'pending' : 'approved';
-
       // 生成 slug，使用 5 位随机字符作为后缀，并限制总长度不超过 100
       const slug = generateSlug(title, { suffix: nanoid(5).toLowerCase(), maxLength: 100 });
 
-      // 创建话题
+      // 创建话题（默认 approved；下方经审核服务按配置决定是否转入待审）
       const [newTopic] = await db
         .insert(topics)
         .values({
@@ -954,7 +946,6 @@ export default async function topicRoutes(fastify, options) {
           userId: request.user.id,
           postCount: 1,
           lastPostAt: new Date(),
-          approvalStatus,
         })
         .returning();
 
@@ -971,7 +962,6 @@ export default async function topicRoutes(fastify, options) {
           content: cleanContent,
           rawContent: cleanContent,
           postNumber: 1,
-          approvalStatus,
         })
         .returning();
 
@@ -1019,19 +1009,23 @@ export default async function topicRoutes(fastify, options) {
         }
       }
 
-      // 积分奖励：发布话题后发放积分（仅当不需要审核或已批准时）
-      if (approvalStatus === 'approved' && fastify.eventBus) {
-        fastify.eventBus.emit(EVENTS.TOPIC_CREATED, {
-          id: newTopic.id,
-          userId: newTopic.userId,
+      // 通用审核：按配置决定是否转入待审；未开启则直接通过并触发 TOPIC_CREATED（发积分等）
+      const moderation = await fastify.moderation.submit({
+        targetType: 'topic',
+        targetId: newTopic.id,
+        submittedBy: request.user.id,
+        snapshot: {
           title: newTopic.title,
           slug: newTopic.slug,
-          categoryId: newTopic.categoryId,
-          createdAt: newTopic.createdAt,
-        });
-      }
+          preview: cleanContent ? cleanContent.slice(0, 200) : null,
+        },
+      });
+      // 同步返回对象的状态，避免响应体状态陈旧
+      newTopic.approvalStatus = moderation.status;
+      firstPost.approvalStatus = moderation.status;
 
-      const message = contentModerationEnabled
+      const requiresApproval = moderation.status === 'pending';
+      const message = requiresApproval
         ? '您的话题已提交，等待审核后将公开显示'
         : '话题创建成功';
 
@@ -1039,7 +1033,7 @@ export default async function topicRoutes(fastify, options) {
         topic: newTopic,
         firstPost,
         message,
-        requiresApproval: contentModerationEnabled,
+        requiresApproval,
       };
     }
   );
@@ -1117,11 +1111,8 @@ export default async function topicRoutes(fastify, options) {
         }
       }
 
-      // 检查是否开启内容审核
-      const contentModerationEnabled = await fastify.settings.get(
-        'content_moderation_enabled',
-        false
-      );
+      // 检查是否开启内容审核（统一读 moderation_config，含 topic 分类型开关）
+      const contentModerationEnabled = await fastify.moderation.isEnabled('topic');
 
       // 准备话题更新（排除内容和标签，它们需要特殊处理）
       const { content, tags: tagNames, ...topicUpdates } = request.body;
@@ -1214,6 +1205,20 @@ export default async function topicRoutes(fastify, options) {
           metadata: { note },
           ip: request.ip,
           targetLabel: request.body.title || topic.title,
+        });
+      }
+
+      // 通用审核队列：编辑触发重审时登记队列项，使其出现在统一审核台
+      if (statusChanged) {
+        await fastify.moderation.submitForReview({
+          targetType: 'topic',
+          targetId: id,
+          submittedBy: request.user.id,
+          snapshot: {
+            title: request.body.title || topic.title,
+            slug: updatedTopic.slug,
+            preview: content !== undefined && content ? content.slice(0, 200) : null,
+          },
         });
       }
 

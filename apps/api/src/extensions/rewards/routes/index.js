@@ -77,6 +77,10 @@ export default async function rewardsRoutes(fastify, options) {
       const isTopic = post.postNumber === 1;
       const notificationType = isTopic ? 'reward_topic' : 'reward_reply';
       const defaultMessage = isTopic ? '打赏了你的话题' : '打赏了你的回复';
+
+      // 打赏留言审核：开启时留言不落公开列/通知/账本描述，转入审核队列，通过后再显示
+      const moderateMsg = !!message && (await fastify.moderation.isEnabled('reward_message'));
+      const publicMessage = moderateMsg ? null : message;
       
       // 执行转账
       const { fromTx } = await fastify.ledger.transfer({
@@ -87,9 +91,9 @@ export default async function rewardsRoutes(fastify, options) {
         type: 'reward_post',
         referenceType: 'reward_transfer',
         referenceId: `reward_post_${Date.now()}`,
-        description: message || (isTopic ? '打赏话题' : '打赏回复'),
-        metadata: { 
-            message,
+        description: publicMessage || (isTopic ? '打赏话题' : '打赏回复'),
+        metadata: {
+            message: publicMessage,
             relatedPostId: postId,
             source: 'rewards-extension',
             // Added for history tracking
@@ -99,26 +103,48 @@ export default async function rewardsRoutes(fastify, options) {
         },
       });
 
-      // 记录打赏 (Feature Logic)
-      await db.insert(postRewards).values({
+      // 记录打赏 (Feature Logic)；审核开启时 message 先不落列
+      const [reward] = await db.insert(postRewards).values({
         postId,
         fromUserId: request.user.id,
         toUserId: post.userId,
         amount, // currency default DEFAULT_CURRENCY_CODE
-        message,
-      });
+        message: publicMessage,
+      }).returning({ id: postRewards.id });
 
-      // 发送通知
+      // 留言转入审核（通过后写回 post_rewards.message）；非阻断——打赏已成功，转审失败不回滚
+      if (moderateMsg) {
+        try {
+          await fastify.moderation.submit({
+            targetType: 'reward_message',
+            targetId: reward.id,
+            field: 'message',
+            value: message,
+            submittedBy: request.user.id,
+            snapshot: {
+              field: 'message',
+              new: message,
+              href: `/topic/${post.topicId}#post-${postId}`,
+              meta: { amount, postId, topicId: post.topicId, isTopic },
+            },
+          });
+        } catch (e) {
+          fastify.log.error(e, '[打赏] 留言转审失败（不阻断打赏，留言暂不展示）');
+        }
+      }
+
+      // 发送通知（message 用动作文案；留言原文进 metadata，前端不把留言当动作短语）
       await fastify.notification.send({
         userId: post.userId,
         type: notificationType,
         triggeredByUserId: request.user.id,
         topicId: post.topicId,
         postId: postId,
-        message: message || defaultMessage,
+        message: defaultMessage,
         metadata: {
           amount,
-          isTopic
+          isTopic,
+          rewardMessage: publicMessage,
         }
       });
 

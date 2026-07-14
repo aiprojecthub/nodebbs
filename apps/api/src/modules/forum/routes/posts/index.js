@@ -740,10 +740,6 @@ export default async function postRoutes(fastify, options) {
 
     const postNumber = Number(maxPostNumber) + 1;
 
-    // 检查是否开启内容审核
-    const contentModerationEnabled = await fastify.settings.get('content_moderation_enabled', false);
-    const approvalStatus = contentModerationEnabled ? 'pending' : 'approved';
-
     // ============ 积分扣除逻辑 (Reply Cost) ============
     // 4. 检查积分扣除 (如果配置为负数)
     if (postNumber > 1) {
@@ -800,8 +796,7 @@ export default async function postRoutes(fastify, options) {
       content,
       rawContent: content,
       postNumber,
-      replyToPostId,
-      approvalStatus
+      replyToPostId
     }).returning();
 
     // 更新话题统计
@@ -912,26 +907,28 @@ export default async function postRoutes(fastify, options) {
       }
     }
 
-    // 积分奖励：发布回复后发放积分（仅当不需要审核或已批准时，且不是话题的第一个帖子）
-    if (approvalStatus === 'approved' && postNumber > 1 && fastify.eventBus) {
-      fastify.eventBus.emit(EVENTS.POST_CREATED, {
-        id: newPost.id,
-        userId: newPost.userId,
+    // 通用审核：按配置决定是否转入待审；未开启则直接通过并触发 POST_CREATED（发积分等，仅限楼层>1，由适配器判断）
+    const moderation = await fastify.moderation.submit({
+      targetType: 'post',
+      targetId: newPost.id,
+      submittedBy: request.user.id,
+      snapshot: {
+        preview: content ? content.slice(0, 200) : null,
         topicId: newPost.topicId,
-        postNumber: newPost.postNumber,
-        replyToPostId: newPost.replyToPostId || null,
-        createdAt: newPost.createdAt,
-      });
-    }
+        topicTitle: topic.title,
+      },
+    });
+    newPost.approvalStatus = moderation.status;
 
-    const message = contentModerationEnabled
+    const requiresApproval = moderation.status === 'pending';
+    const message = requiresApproval
       ? '您的回复已提交，等待审核后将公开显示'
       : '回复发布成功';
 
     return {
       post: newPost,
       message,
-      requiresApproval: contentModerationEnabled
+      requiresApproval
     };
   });
 
@@ -991,11 +988,8 @@ export default async function postRoutes(fastify, options) {
       await fastify.permission.check(request, 'post.update');
     }
 
-    // 检查是否开启内容审核
-    const contentModerationEnabled = await fastify.settings.get(
-      'content_moderation_enabled',
-      false
-    );
+    // 检查是否开启内容审核（统一读 moderation_config，含 post 分类型开关）
+    const contentModerationEnabled = await fastify.moderation.isEnabled('post');
 
     // 准备更新数据
     const updates = {
@@ -1049,6 +1043,19 @@ export default async function postRoutes(fastify, options) {
         metadata: { note },
         ip: request.ip,
         targetLabel: content.substring(0, 100),
+      });
+    }
+
+    // 通用审核队列：编辑触发重审时登记队列项，使其出现在统一审核台
+    if (statusChanged) {
+      await fastify.moderation.submitForReview({
+        targetType: 'post',
+        targetId: id,
+        submittedBy: request.user.id,
+        snapshot: {
+          preview: content ? content.slice(0, 200) : null,
+          topicId: post.topicId,
+        },
       });
     }
 

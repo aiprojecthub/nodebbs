@@ -41,6 +41,10 @@ export const getNotificationIcon = (type) => {
       return <CheckCheck className='h-4 w-4 text-green-600' />;
     case 'report_dismissed':
       return <Bell className='h-4 w-4 text-muted-foreground' />;
+    case 'moderation_approved':
+      return <CheckCheck className='h-4 w-4 text-green-600' />;
+    case 'moderation_rejected':
+      return <Bell className='h-4 w-4 text-red-500' />;
     default:
       return <Bell className='h-4 w-4' />;
   }
@@ -85,15 +89,19 @@ export const getNotificationMessage = (notification) => {
     case 'gift_received':
       return notification.message;
     case 'reward':
-      return notification.message || '打赏了你的内容';
+      return '打赏了你的内容';
     case 'reward_topic':
-      return notification.message || '打赏了你的话题';
+      return '打赏了你的话题';
     case 'reward_reply':
-      return notification.message || '打赏了你的回复';
+      return '打赏了你的回复';
     case 'lottery_won':
     case 'lottery_lost':
     case 'lottery_drawn':
       return notification.message;
+    case 'moderation_approved':
+      return notification.message || '你提交的内容已通过审核';
+    case 'moderation_rejected':
+      return notification.message || '你提交的内容未通过审核';
     default:
       return notification.message || '发送了一条通知';
   }
