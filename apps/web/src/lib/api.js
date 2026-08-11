@@ -265,14 +265,25 @@ export const authApi = {
     return apiClient.post('/oauth/wechat_miniprogram/login', { code, userInfo });
   },
 
-  // 获取关联的 OAuth 账号
+  // ============= 三方账号关联 =============
+  // 获取关联的 OAuth 账号及可解绑状态
   async getOAuthAccounts() {
     return apiClient.get('/oauth/accounts');
   },
 
-  // 解除 OAuth 账号关联
-  async unlinkOAuthAccount(provider) {
-    return apiClient.delete(`/oauth/unlink/${provider}`);
+  // 发起关联：获取授权链接（需登录）
+  async getOAuthLinkUrl(provider) {
+    return apiClient.get(`/oauth/${provider}/link/connect`);
+  },
+
+  // 关联回调：用 code 换取三方身份并绑定到当前账号
+  async linkOAuthCallback(provider, code, state) {
+    return apiClient.post(`/oauth/${provider}/link/callback`, { code, state });
+  },
+
+  // 解除 OAuth 账号关联（用 POST：密码不能出现在 query string 里）
+  async unlinkOAuthAccount(provider, password) {
+    return apiClient.post(`/oauth/unlink/${provider}`, { password });
   },
 };
 

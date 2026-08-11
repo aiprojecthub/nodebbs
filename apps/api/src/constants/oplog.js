@@ -19,6 +19,8 @@ export const OPLOG_ACTIONS = {
   RESUBMIT: 'resubmit',
   REPORT_RESOLVE: 'report_resolve',
   REPORT_DISMISS: 'report_dismiss',
+  OAUTH_LINK: 'oauth_link',
+  OAUTH_UNLINK: 'oauth_unlink',
 };
 
 export const OPLOG_TARGET_TYPES = {

@@ -161,6 +161,24 @@ export function UserManagementSettings({ settings, handleChange, handleInputBlur
         )}
       </SettingSection>
 
+      <SettingSection title="三方账号" description="控制用户关联/解绑三方登录账号的行为">
+        {settings.oauth_unlink_requires_password && (
+          <SettingItem
+            title="解绑三方账号需要密码验证"
+            description={settings.oauth_unlink_requires_password.description}
+          >
+            <Switch
+              id='oauth_unlink_requires_password'
+              checked={settings.oauth_unlink_requires_password.value}
+              onCheckedChange={(checked) =>
+                handleChange('oauth_unlink_requires_password', checked)
+              }
+              disabled={saving}
+            />
+          </SettingItem>
+        )}
+      </SettingSection>
+
       <SettingSection title="账号注销" description="控制用户自助注销账号的功能和冷静期">
         {settings.account_deletion_enabled && (
           <SettingItem

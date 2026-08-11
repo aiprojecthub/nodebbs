@@ -7,12 +7,13 @@
  * - google.js         # Google OAuth
  * - apple.js          # Apple OAuth
  * - wechat.js         # 微信 OAuth（开放平台/公众号/小程序）
+ * - link.js           # 三方账号关联/解绑（通用 :provider）
  */
 import { oauthProviders } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import {
-  unlinkOAuthAccount,
   getUserAccounts,
+  getLoginMethods,
 } from '../../services/oauthService.js';
 
 // 导入各 provider 路由
@@ -20,6 +21,7 @@ import githubRoutes from './github.js';
 import googleRoutes from './google.js';
 import appleRoutes from './apple.js';
 import wechatRoutes from './wechat.js';
+import linkRoutes, { LINKABLE_PROVIDERS } from './link.js';
 
 /**
  * OAuth 认证路由
@@ -31,6 +33,7 @@ export default async function oauthRoutes(fastify, options) {
   await fastify.register(googleRoutes);
   await fastify.register(appleRoutes);
   await fastify.register(wechatRoutes);
+  await fastify.register(linkRoutes);
 
   // ============= OAuth 配置管理 =============
 
@@ -289,74 +292,13 @@ export default async function oauthRoutes(fastify, options) {
   );
 
   // ============= OAuth 账号管理 =============
+  // 关联 / 解绑的具体实现见 ./link.js
 
   /**
-   * 关联 OAuth 账号（需要登录）
-   */
-  fastify.post(
-    '/link/:provider',
-    {
-      preHandler: [fastify.authenticate],
-      schema: {
-        tags: ['auth'],
-        description: '关联 OAuth 账号到当前用户',
-        security: [{ bearerAuth: [] }],
-        params: {
-          type: 'object',
-          properties: {
-            provider: { type: 'string', enum: ['github', 'google', 'apple'] },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      // TODO: 实现账号关联流程
-      return reply.code(501).send({ error: '功能开发中' });
-    }
-  );
-
-  /**
-   * 解除 OAuth 账号关联
-   */
-  fastify.delete(
-    '/unlink/:provider',
-    {
-      preHandler: [fastify.authenticate],
-      schema: {
-        tags: ['auth'],
-        description: '解除 OAuth 账号关联',
-        security: [{ bearerAuth: [] }],
-        params: {
-          type: 'object',
-          properties: {
-            provider: { type: 'string', enum: ['github', 'google', 'apple'] },
-          },
-        },
-        response: {
-          200: {
-            type: 'object',
-            properties: {
-              message: { type: 'string' },
-            },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      const { provider } = request.params;
-      const userId = request.user.id;
-
-      try {
-        await unlinkOAuthAccount(userId, provider);
-        return { message: `已解除 ${provider} 账号关联` };
-      } catch (error) {
-        return reply.code(400).send({ error: error.message });
-      }
-    }
-  );
-
-  /**
-   * 获取当前用户的所有关联账号
+   * 获取当前用户的关联账号概览
+   *
+   * 一次返回渲染「关联账号」卡片所需的全部信息：已关联列表、能否解绑、
+   * 是否需要密码验证、以及后端认可的可关联平台白名单（避免前端硬编码而与后端漂移）。
    */
   fastify.get(
     '/accounts',
@@ -364,7 +306,7 @@ export default async function oauthRoutes(fastify, options) {
       preHandler: [fastify.authenticate],
       schema: {
         tags: ['auth'],
-        description: '获取当前用户的所有 OAuth 关联账号',
+        description: '获取当前用户的 OAuth 关联账号及可解绑状态',
         security: [{ bearerAuth: [] }],
         response: {
           200: {
@@ -377,9 +319,26 @@ export default async function oauthRoutes(fastify, options) {
                   properties: {
                     id: { type: 'number' },
                     provider: { type: 'string' },
+                    displayName: { type: ['string', 'null'] },
+                    isEnabled: { type: ['boolean', 'null'] },
+                    displayOrder: { type: ['number', 'null'] },
                     providerAccountId: { type: 'string' },
                     createdAt: { type: 'string' },
                   },
+                },
+              },
+              canUnlink: { type: 'boolean' },
+              unlinkRequiresPassword: { type: 'boolean' },
+              linkableProviders: {
+                type: 'array',
+                items: { type: 'string' },
+              },
+              loginMethods: {
+                type: 'object',
+                properties: {
+                  hasPassword: { type: 'boolean' },
+                  hasPhoneLogin: { type: 'boolean' },
+                  oauthCount: { type: 'number' },
                 },
               },
             },
@@ -389,8 +348,36 @@ export default async function oauthRoutes(fastify, options) {
     },
     async (request, reply) => {
       const userId = request.user.id;
-      const accounts = await getUserAccounts(userId);
-      return { accounts };
+
+      try {
+        const [accounts, loginMethods, requiresPassword] = await Promise.all([
+          getUserAccounts(userId),
+          getLoginMethods(userId),
+          fastify.settings.get('oauth_unlink_requires_password', true),
+        ]);
+
+        // 解绑任一账号后是否仍留有登录方式
+        const canUnlink =
+          loginMethods.hasPassword ||
+          loginMethods.hasPhoneLogin ||
+          loginMethods.providers.length > 1;
+
+        return {
+          accounts,
+          canUnlink,
+          // 无密码用户（纯三方注册）不可能提供密码，这里直接算好，前端无需再判断
+          unlinkRequiresPassword: !!requiresPassword && loginMethods.hasPassword,
+          linkableProviders: LINKABLE_PROVIDERS,
+          loginMethods: {
+            hasPassword: loginMethods.hasPassword,
+            hasPhoneLogin: loginMethods.hasPhoneLogin,
+            oauthCount: loginMethods.providers.length,
+          },
+        };
+      } catch (error) {
+        fastify.log.error(error, '[OAuth] 获取关联账号失败');
+        return reply.code(500).send({ error: '获取关联账号失败' });
+      }
     }
   );
 }

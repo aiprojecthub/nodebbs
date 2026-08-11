@@ -13,7 +13,6 @@ import {
   Save,
   Loader2,
   Edit,
-  Share2,
 } from 'lucide-react';
 import Time from '@/components/common/Time';
 import { useProfileInfo } from '@/hooks/profile/useProfileInfo';
@@ -21,13 +20,16 @@ import { useUsernameChange } from '@/hooks/profile/useUsernameChange';
 import { useSettings } from '@/contexts/SettingsContext';
 import { UsernameChangeDialog } from './UsernameChangeDialog';
 import { AvatarUpload } from './AvatarUpload';
+import { LinkedAccountsCard } from './LinkedAccountsCard';
 import { usePermission } from '@/hooks/usePermission';
 
 /**
  * 个人资料 Tab
  * 内部管理表单状态，消费 useProfileInfo Hook
+ *
+ * @param {Function} [onGoToSecurity] - 跳转到安全设置 Tab（无密码用户设置密码的引导）
  */
-export function ProfileTab() {
+export function ProfileTab({ onGoToSecurity }) {
   const { settings } = useSettings();
   const { hasPermission, isAdmin } = usePermission();
 
@@ -227,25 +229,11 @@ export function ProfileTab() {
               {user.displayRole?.name || (user.isAdmin ? '管理员' : '用户')}
             </Badge>
           </div>
-          <div className='flex items-center justify-between'>
-            <div className='flex items-center space-x-2 text-sm text-muted-foreground'>
-              <Share2 className='h-4 w-4' />
-              <span>关联账号</span>
-            </div>
-            <div className='flex gap-2'>
-              {user.oauthProviders && user.oauthProviders.length > 0 ? (
-                user.oauthProviders.map((provider) => (
-                  <Badge key={provider} variant='secondary' className="capitalize">
-                    {provider}
-                  </Badge>
-                ))
-              ) : (
-                <span className='text-sm text-muted-foreground'>未关联</span>
-              )}
-            </div>
-          </div>
         </div>
       </div>
+
+      {/* 关联账号 */}
+      <LinkedAccountsCard onGoToSecurity={onGoToSecurity} />
 
       {/* 用户名修改对话框 */}
       <UsernameChangeDialog

@@ -244,6 +244,14 @@ export const SETTING_KEYS = {
     category: 'user_settings',
     accessLevel: ACCESS_LEVEL.PUBLIC,
   },
+  OAUTH_UNLINK_REQUIRES_PASSWORD: {
+    key: 'oauth_unlink_requires_password',
+    defaultValue: 'true',
+    valueType: 'boolean',
+    description: '解除三方账号关联是否需要密码验证（无密码用户自动跳过）',
+    category: 'user_settings',
+    accessLevel: ACCESS_LEVEL.PUBLIC,
+  },
   ACCOUNT_DELETION_ENABLED: {
     key: 'account_deletion_enabled',
     defaultValue: 'true',

@@ -6,10 +6,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { authApi } from '@/lib/api';
 import { toast } from 'sonner';
 import { Loading } from '@/components/common/Loading';
+import { getProviderName } from '@/components/auth/OAuthProviderIcon';
 
 /**
  * OAuth 回调页面（动态路由）
  * 支持 GitHub、Google、Apple 等提供商
+ *
+ * 同时承载「登录」与「关联账号」两种流程：三方平台后台只允许注册一个回调地址，
+ * 因此两者共用本页，靠后端下发的 state 前缀区分（见 oauthService.generateLinkState）。
  */
 export default function OAuthCallback() {
   const router = useRouter();
@@ -18,6 +22,7 @@ export default function OAuthCallback() {
   const { updateUser, refreshUser } = useAuth();
   const [status, setStatus] = useState('processing'); // processing, success, error
   const [errorMessage, setErrorMessage] = useState('');
+  const [isLink, setIsLink] = useState(false);
 
   const provider = params.provider; // 从 URL 路径获取 provider
 
@@ -28,6 +33,11 @@ export default function OAuthCallback() {
       const error = searchParams.get('error');
       const token = searchParams.get('token'); // Apple 后端直连返回的 token
 
+      // 关联流程：失败也要回设置页，而不是把用户丢回首页
+      const isLinkFlow = isLinkState(state);
+      const backPath = isLinkFlow ? '/profile/settings' : '/';
+      setIsLink(isLinkFlow);
+
       // 验证 provider
       const validProviders = ['github', 'google', 'apple', 'wechat_open', 'wechat_mp'];
       if (!validProviders.includes(provider)) {
@@ -35,7 +45,7 @@ export default function OAuthCallback() {
         setStatus('error');
         setErrorMessage(`不支持的登录方式: ${provider}`);
         toast.error(`不支持的登录方式: ${provider}`);
-        setTimeout(() => router.push('/'), 2000);
+        setTimeout(() => router.push(backPath), 2000);
         return;
       }
 
@@ -43,10 +53,38 @@ export default function OAuthCallback() {
       if (error) {
         console.error(`${provider} OAuth error:`, error);
         setStatus('error');
-        const errorMsg = getErrorMessage(error, provider);
+        const errorMsg = getErrorMessage(error, provider, isLinkFlow);
         setErrorMessage(errorMsg);
         toast.error(errorMsg);
-        setTimeout(() => router.push('/'), 2000);
+        setTimeout(() => router.push(backPath), 2000);
+        return;
+      }
+
+      // 关联账号流程：绑定到当前登录用户，不签发新 token、不切换身份
+      if (isLinkFlow) {
+        if (!code) {
+          setStatus('error');
+          setErrorMessage('关联失败，缺少授权凭证');
+          setTimeout(() => router.push(backPath), 2000);
+          return;
+        }
+
+        try {
+          setStatus('processing');
+          const result = await authApi.linkOAuthCallback(provider, code, state);
+          setStatus('success');
+          toast.success(result.message || '关联成功');
+          await refreshUser();
+          setTimeout(() => router.push(backPath), 500);
+        } catch (err) {
+          console.error(`${provider} link error:`, err);
+          setStatus('error');
+          const errorMsg =
+            err.message || `${getProviderName(provider)} 关联失败`;
+          setErrorMessage(errorMsg);
+          toast.error(errorMsg);
+          setTimeout(() => router.push(backPath), 3000);
+        }
         return;
       }
 
@@ -163,7 +201,9 @@ export default function OAuthCallback() {
   return (
     <div className='text-center space-y-4 max-w-md px-4'>
         {status === 'processing' && (
-          <Loading text={`正在通过 ${getProviderName(provider)} 登录...`} />
+          <Loading
+            text={`正在${isLink ? '关联' : '通过'} ${getProviderName(provider)}${isLink ? '' : ' 登录'}...`}
+          />
         )}
 
         {status === 'success' && (
@@ -183,7 +223,7 @@ export default function OAuthCallback() {
                 />
               </svg>
             </div>
-            <p className='text-muted-foreground'>登录成功！</p>
+            <p className='text-muted-foreground'>{isLink ? '关联成功！' : '登录成功！'}</p>
           </>
         )}
 
@@ -204,11 +244,13 @@ export default function OAuthCallback() {
                 />
               </svg>
             </div>
-            <p className='text-muted-foreground font-medium'>登录失败</p>
+            <p className='text-muted-foreground font-medium'>{isLink ? '关联失败' : '登录失败'}</p>
             {errorMessage && (
               <p className='text-sm text-muted-foreground'>{errorMessage}</p>
             )}
-            <p className='text-xs text-muted-foreground'>正在返回首页...</p>
+            <p className='text-xs text-muted-foreground'>
+              {isLink ? '正在返回设置页...' : '正在返回首页...'}
+            </p>
           </>
         )}
     </div>
@@ -216,25 +258,24 @@ export default function OAuthCallback() {
 }
 
 /**
- * 获取提供商的显示名称
+ * 关联流程的 state 前缀
+ *
+ * 与后端 oauthService.generateLinkState() 约定：关联流程的 state 为 'lk' + hex，
+ * 登录流程为纯 hex（0-9a-f，绝不会以 'l' 开头），故前缀无歧义。
+ * 注意这里只用于前端选择调用哪个接口，真正的安全校验在后端（独立的 state cookie）。
  */
-function getProviderName(provider) {
-  const names = {
-    github: 'GitHub',
-    google: 'Google',
-    apple: 'Apple',
-    wechat_open: '微信',
-    wechat_mp: '微信公众号',
-    wechat_miniprogram: '微信小程序',
-  };
-  return names[provider] || provider;
+const LINK_STATE_PREFIX = 'lk';
+
+function isLinkState(state) {
+  return typeof state === 'string' && state.startsWith(LINK_STATE_PREFIX);
 }
 
 /**
  * 获取友好的错误信息
  */
-function getErrorMessage(error, provider) {
+function getErrorMessage(error, provider, isLink = false) {
   const providerName = getProviderName(provider);
+  const action = isLink ? '关联' : '登录';
 
   const errorMessages = {
     access_denied: `您拒绝了 ${providerName} 授权`,
@@ -246,5 +287,5 @@ function getErrorMessage(error, provider) {
     temporarily_unavailable: `${providerName} 服务暂时不可用`,
   };
 
-  return errorMessages[error] || `${providerName} 登录失败: ${error}`;
+  return errorMessages[error] || `${providerName} ${action}失败: ${error}`;
 }

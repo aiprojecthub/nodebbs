@@ -21,6 +21,8 @@ export const SELF_ACTION_LABELS = {
   email_change: '修改了邮箱',
   phone_change: '修改了手机号',
   request_deletion: '申请了账号注销',
+  oauth_link: '关联了三方账号',
+  oauth_unlink: '解除了三方账号关联',
 };
 
 /** 管理/审核操作动词，渲染时拼接「了 + 目标类型」 */
@@ -55,6 +57,8 @@ export const ACTION_COLORS = {
   anonymize: 'text-red-600',
   report_resolve: 'text-green-600',
   report_dismiss: 'text-yellow-600',
+  oauth_link: 'text-blue-600',
+  oauth_unlink: 'text-yellow-600',
 };
 
 /** 筛选下拉选项 */
@@ -76,6 +80,8 @@ export const ACTION_FILTER_OPTIONS = [
   { value: 'edit_resubmit', label: '编辑后重新提交' },
   { value: 'report_resolve', label: '处理举报' },
   { value: 'report_dismiss', label: '驳回举报' },
+  { value: 'oauth_link', label: '关联三方账号' },
+  { value: 'oauth_unlink', label: '解绑三方账号' },
 ];
 
 /**

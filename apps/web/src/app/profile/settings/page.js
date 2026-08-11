@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/common/PageHeader';
 import { User, Lock, Shield } from 'lucide-react';
@@ -14,6 +15,9 @@ import { SecurityTab } from './components/SecurityTab';
  * 简洁入口，各 Tab 内部自管理状态
  */
 export default function SettingsPage() {
+  // 受控 tab：无密码用户在「关联账号」里点「去设置密码」需要跳到安全设置
+  const [activeTab, setActiveTab] = useState('profile');
+
   return (
     <div>
       <PageHeader
@@ -21,7 +25,7 @@ export default function SettingsPage() {
         description='管理你的账户信息和偏好设置'
       />
 
-      <Tabs defaultValue='profile' className='space-y-6'>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className='space-y-6'>
         <TabsList className='grid grid-cols-3'>
           <TabsTrigger value='profile'>
             <User className='h-4 w-4' />
@@ -38,7 +42,7 @@ export default function SettingsPage() {
         </TabsList>
 
         <TabsContent value='profile'>
-          <ProfileTab />
+          <ProfileTab onGoToSecurity={() => setActiveTab('security')} />
         </TabsContent>
 
         <TabsContent value='privacy'>

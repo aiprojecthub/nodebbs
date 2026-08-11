@@ -5,7 +5,7 @@
  * 迁移原因：职责分离，将业务逻辑从路由层移至服务层
  */
 import db from '../db/index.js';
-import { users, accounts } from '../db/schema.js';
+import { users, accounts, oauthProviders } from '../db/schema.js';
 import { eq, and, count } from 'drizzle-orm';
 import crypto from 'crypto';
 import { normalizeEmail } from '../utils/normalization.js';
@@ -17,6 +17,28 @@ import { getSetting } from './settingsService.js';
  */
 export function generateRandomState() {
   return crypto.randomBytes(16).toString('hex');
+}
+
+/**
+ * 关联流程 state 前缀
+ *
+ * 随机部分是 hex（字符集 0-9a-f），永远不会以 'l' 开头，因此前缀无歧义；
+ * 且全部为字母数字，满足微信对 state 的限制（仅 a-zA-Z0-9，≤128 字节）。
+ */
+const LINK_STATE_PREFIX = 'lk';
+
+/**
+ * 生成「关联账号」流程的 state
+ */
+export function generateLinkState() {
+  return LINK_STATE_PREFIX + crypto.randomBytes(16).toString('hex');
+}
+
+/**
+ * 判断 state 是否属于「关联账号」流程
+ */
+export function isLinkState(state) {
+  return typeof state === 'string' && state.startsWith(LINK_STATE_PREFIX);
 }
 
 /**
@@ -258,24 +280,172 @@ export async function linkOAuthAccount(userId, provider, oauthData) {
 }
 
 /**
- * 解除 OAuth 账号关联
+ * OAuth 关联/解绑的业务错误
+ *
+ * 路由层据 code 映射 HTTP 状态码，避免把内部错误当 500 抛给用户。
  */
-export async function unlinkOAuthAccount(userId, provider) {
-  // 检查用户是否有密码或其他登录方式
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
+export class OAuthLinkError extends Error {
+  constructor(code, message, statusCode = 400) {
+    super(message);
+    this.name = 'OAuthLinkError';
+    this.code = code;
+    this.statusCode = statusCode;
+  }
+}
 
-  const userAccounts = await db
+/**
+ * 统计用户当前可用的登录方式
+ *
+ * 本站实际可用于「重新登录」的凭证只有三类：
+ * 1. 密码（用户名/邮箱/手机号 + 密码）
+ * 2. 手机验证码（需站点开启手机登录，且手机号已验证）
+ * 3. 三方账号
+ *
+ * 注意：邮箱本身不是登录方式（无邮箱验证码登录），且纯三方注册用户的邮箱
+ * 可能是虚拟的 `xxx@oauth.local`，连找回密码都走不通，故不计入。
+ *
+ * @param {number} userId
+ * @returns {Promise<{hasPassword: boolean, hasPhoneLogin: boolean, providers: string[]}>}
+ */
+export async function getLoginMethods(userId) {
+  const [[user], userAccounts, phoneLoginEnabled] = await Promise.all([
+    db
+      .select({
+        passwordHash: users.passwordHash,
+        phone: users.phone,
+        isPhoneVerified: users.isPhoneVerified,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1),
+    db
+      .select({ provider: accounts.provider })
+      .from(accounts)
+      .where(eq(accounts.userId, userId)),
+    getSetting('phone_login_enabled', false),
+  ]);
+
+  if (!user) {
+    throw new OAuthLinkError('USER_NOT_FOUND', '用户不存在', 404);
+  }
+
+  return {
+    hasPassword: !!user.passwordHash,
+    hasPhoneLogin: !!(user.phone && user.isPhoneVerified && phoneLoginEnabled),
+    providers: userAccounts.map((item) => item.provider),
+  };
+}
+
+/**
+ * 关联 OAuth 账号到指定用户（严格模式，供「关联账号」流程使用）
+ *
+ * 与 linkOAuthAccount 的区别：后者是 upsert，会在用户已绑同平台时静默改掉
+ * providerAccountId（把登录方式换掉却无提示），仅适用于登录流程。
+ * 此处一律拒绝冲突，由调用方给出明确提示。
+ *
+ * @returns {Promise<{account: object, alreadyLinked: boolean}>}
+ */
+export async function linkOAuthAccountForUser({
+  userId,
+  provider,
+  providerAccountId,
+  tokenData = {},
+}) {
+  // 该三方账号是否已被占用（accounts 表有 unique(provider, providerAccountId)）
+  const [occupied] = await db
     .select()
     .from(accounts)
-    .where(eq(accounts.userId, userId));
+    .where(
+      and(
+        eq(accounts.provider, provider),
+        eq(accounts.providerAccountId, providerAccountId)
+      )
+    )
+    .limit(1);
 
-  // 如果用户没有密码且只有一个 OAuth 账号，不允许解绑
-  if (!user.passwordHash && userAccounts.length <= 1) {
-    throw new Error('无法解绑最后一个登录方式，请先设置密码');
+  if (occupied) {
+    if (occupied.userId === userId) {
+      // 重复关联同一个账号：幂等返回成功
+      return { account: occupied, alreadyLinked: true };
+    }
+    throw new OAuthLinkError(
+      'ACCOUNT_OCCUPIED',
+      '该账号已被其他用户关联，请更换账号或先在原账号中解除关联',
+      409
+    );
+  }
+
+  // 同一平台只允许绑定一个账号
+  const [existingSameProvider] = await db
+    .select()
+    .from(accounts)
+    .where(and(eq(accounts.userId, userId), eq(accounts.provider, provider)))
+    .limit(1);
+
+  if (existingSameProvider) {
+    throw new OAuthLinkError(
+      'PROVIDER_ALREADY_LINKED',
+      '已关联该平台账号，请先解绑后再关联新账号',
+      409
+    );
+  }
+
+  const { accessToken, refreshToken, expiresAt, tokenType, scope, idToken } =
+    tokenData;
+
+  try {
+    const [account] = await db
+      .insert(accounts)
+      .values({
+        userId,
+        provider,
+        providerAccountId,
+        accessToken,
+        refreshToken,
+        expiresAt,
+        tokenType,
+        scope,
+        idToken,
+      })
+      .returning();
+
+    return { account, alreadyLinked: false };
+  } catch (error) {
+    // 并发下唯一约束兜底（23505 = unique_violation）
+    if (error?.code === '23505') {
+      throw new OAuthLinkError(
+        'ACCOUNT_OCCUPIED',
+        '该账号已被其他用户关联，请更换账号或先在原账号中解除关联',
+        409
+      );
+    }
+    throw error;
+  }
+}
+
+/**
+ * 解除 OAuth 账号关联
+ *
+ * 解绑后必须至少保留一种登录方式，否则用户会把自己锁在门外。
+ */
+export async function unlinkOAuthAccount(userId, provider) {
+  const loginMethods = await getLoginMethods(userId);
+
+  if (!loginMethods.providers.includes(provider)) {
+    throw new OAuthLinkError('NOT_LINKED', '未关联该平台账号', 404);
+  }
+
+  const remaining =
+    (loginMethods.hasPassword ? 1 : 0) +
+    (loginMethods.hasPhoneLogin ? 1 : 0) +
+    (loginMethods.providers.length - 1);
+
+  if (remaining <= 0) {
+    throw new OAuthLinkError(
+      'LAST_LOGIN_METHOD',
+      '这是你唯一的登录方式，请先设置密码或绑定手机号后再解绑',
+      400
+    );
   }
 
   const result = await db
@@ -293,6 +463,9 @@ export async function unlinkOAuthAccount(userId, provider) {
 
 /**
  * 获取用户的所有 OAuth 账号
+ *
+ * 左连 oauth_providers 带出展示名与启用状态：平台被管理员停用后，
+ * 已关联的记录仍需在设置页展示（否则用户无从解绑）。
  */
 export async function getUserAccounts(userId) {
   const userAccounts = await db
@@ -301,8 +474,12 @@ export async function getUserAccounts(userId) {
       provider: accounts.provider,
       providerAccountId: accounts.providerAccountId,
       createdAt: accounts.createdAt,
+      displayName: oauthProviders.displayName,
+      isEnabled: oauthProviders.isEnabled,
+      displayOrder: oauthProviders.displayOrder,
     })
     .from(accounts)
+    .leftJoin(oauthProviders, eq(oauthProviders.provider, accounts.provider))
     .where(eq(accounts.userId, userId));
 
   return userAccounts;
