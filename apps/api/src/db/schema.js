@@ -397,6 +397,9 @@ export const accounts = pgTable(
       table.provider,
       table.providerAccountId
     ),
+    // 同一用户在同一平台只能绑一个账号。应用层已有检查，但那是先读后写，
+    // 并发关联会插进两行，进而让解绑时的「剩余登录方式」算错
+    unique('accounts_user_provider_unique').on(table.userId, table.provider),
   ]
 );
 

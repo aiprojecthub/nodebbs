@@ -411,7 +411,10 @@ export async function linkOAuthAccountForUser({
 
     return { account, alreadyLinked: false };
   } catch (error) {
-    // 并发下唯一约束兜底（23505 = unique_violation）
+    // unique(provider, provider_account_id) 兜底：该三方账号被他人抢先关联
+    // （23505 = unique_violation）。
+    // 注意上面的 PROVIDER_ALREADY_LINKED 检查不在此保护范围内——那需要
+    // unique(user_id, provider)，见 drizzle/0011_accounts_user_provider_unique.sql
     if (error?.code === '23505') {
       throw new OAuthLinkError(
         'ACCOUNT_OCCUPIED',
@@ -427,38 +430,71 @@ export async function linkOAuthAccountForUser({
  * 解除 OAuth 账号关联
  *
  * 解绑后必须至少保留一种登录方式，否则用户会把自己锁在门外。
+ *
+ * 整个「读 → 判断 → 删」必须在一个事务里，并先对该用户名下所有 accounts 行加锁：
+ * 否则同时发两个解绑请求（两个标签页 / 请求重试）时，两边都读到「还剩 2 个」、
+ * 各算出 remaining = 1、各删一个，无密码无手机号的用户会零登录方式被永久锁死——
+ * 正是这段守卫要防的情况。加锁后第二个事务会阻塞到第一个提交，
+ * 重新读到的才是删完之后的结果，从而正确抛出 LAST_LOGIN_METHOD。
  */
 export async function unlinkOAuthAccount(userId, provider) {
-  const loginMethods = await getLoginMethods(userId);
+  // 站点设置走缓存/独立数据源，先读出来，不夹在行锁中间
+  const phoneLoginEnabled = await getSetting('phone_login_enabled', false);
 
-  if (!loginMethods.providers.includes(provider)) {
-    throw new OAuthLinkError('NOT_LINKED', '未关联该平台账号', 404);
-  }
+  return db.transaction(async (tx) => {
+    const userAccounts = await tx
+      .select({ provider: accounts.provider })
+      .from(accounts)
+      .where(eq(accounts.userId, userId))
+      .for('update');
 
-  const remaining =
-    (loginMethods.hasPassword ? 1 : 0) +
-    (loginMethods.hasPhoneLogin ? 1 : 0) +
-    (loginMethods.providers.length - 1);
+    const [user] = await tx
+      .select({
+        passwordHash: users.passwordHash,
+        phone: users.phone,
+        isPhoneVerified: users.isPhoneVerified,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
 
-  if (remaining <= 0) {
-    throw new OAuthLinkError(
-      'LAST_LOGIN_METHOD',
-      '这是你唯一的登录方式，请先设置密码或绑定手机号后再解绑',
-      400
-    );
-  }
+    if (!user) {
+      throw new OAuthLinkError('USER_NOT_FOUND', '用户不存在', 404);
+    }
 
-  const result = await db
-    .delete(accounts)
-    .where(
-      and(
-        eq(accounts.userId, userId),
-        eq(accounts.provider, provider)
+    const providers = userAccounts.map((item) => item.provider);
+
+    if (!providers.includes(provider)) {
+      throw new OAuthLinkError('NOT_LINKED', '未关联该平台账号', 404);
+    }
+
+    // 按 provider 过滤而非 length - 1：同平台若存在历史重复行，DELETE 会一次删光，
+    // 减一会把剩余登录方式算多
+    const remaining =
+      (user.passwordHash ? 1 : 0) +
+      (user.phone && user.isPhoneVerified && phoneLoginEnabled ? 1 : 0) +
+      providers.filter((item) => item !== provider).length;
+
+    if (remaining <= 0) {
+      throw new OAuthLinkError(
+        'LAST_LOGIN_METHOD',
+        '这是你唯一的登录方式，请先设置密码或绑定手机号后再解绑',
+        400
+      );
+    }
+
+    const result = await tx
+      .delete(accounts)
+      .where(
+        and(
+          eq(accounts.userId, userId),
+          eq(accounts.provider, provider)
+        )
       )
-    )
-    .returning();
+      .returning();
 
-  return result.length > 0;
+    return result.length > 0;
+  });
 }
 
 /**

@@ -33,6 +33,38 @@ export function useEditorCore(onChange, textareaRef) {
     });
   }, [onChange, textareaRef]);
 
+  // 读取当前选区文本（无选区时返回空字符串）
+  const getSelection = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return '';
+    return textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
+  }, [textareaRef]);
+
+  // 用文本替换当前选区（无选区时等同于在光标处插入），插入后光标落在文本末尾
+  // asBlock=true 时确保插入内容另起一行
+  const replaceSelection = useCallback((text, asBlock = false) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const scrollTop = textarea.scrollTop; // 保存滚动位置
+    const value = textarea.value;
+    const needsLineBreak = asBlock && start > 0 && value[start - 1] !== '\n';
+    const insertion = needsLineBreak ? '\n' + text : text;
+
+    onChange?.(value.substring(0, start) + insertion + value.substring(end));
+
+    requestAnimationFrame(() => {
+      if (textarea) {
+        const caret = start + insertion.length;
+        textarea.focus();
+        textarea.setSelectionRange(caret, caret);
+        textarea.scrollTop = scrollTop; // 恢复滚动位置
+      }
+    });
+  }, [onChange, textareaRef]);
+
   // 插入块级元素（确保换行）
   const insertBlock = useCallback((prefix) => {
     const textarea = textareaRef.current;
@@ -48,6 +80,8 @@ export function useEditorCore(onChange, textareaRef) {
 
   return {
     insertText,
-    insertBlock
+    insertBlock,
+    getSelection,
+    replaceSelection
   };
 }

@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { authApi } from '@/lib/api';
 import { useOAuthProviders } from '@/hooks/auth/useOAuthProviders';
+import { getProviderName } from '@/components/auth/OAuthProviderIcon';
 import { toast } from 'sonner';
 
 /**
@@ -19,6 +20,7 @@ export function useLinkedAccounts() {
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // ===== 解绑对话框状态 =====
   const [unlinkTarget, setUnlinkTarget] = useState(null);
@@ -31,10 +33,14 @@ export function useLinkedAccounts() {
   const fetchAccounts = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       const result = await authApi.getOAuthAccounts();
       setData(result);
-    } catch (error) {
-      console.error('获取关联账号失败:', error);
+    } catch (err) {
+      // 不能只吞进 console：rows 会退化成空数组，整张卡片直接从页面消失，
+      // 用户分不清是「没绑过」还是「请求失败」
+      console.error('获取关联账号失败:', err);
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -57,7 +63,7 @@ export function useLinkedAccounts() {
     for (const provider of enabledProviders) {
       merged.set(provider.provider, {
         provider: provider.provider,
-        displayName: provider.displayName || provider.provider,
+        displayName: provider.displayName || getProviderName(provider.provider),
         displayOrder: provider.displayOrder ?? 0,
         isEnabled: true,
         account: linkedMap.get(provider.provider) || null,
@@ -69,7 +75,7 @@ export function useLinkedAccounts() {
       if (merged.has(account.provider)) continue;
       merged.set(account.provider, {
         provider: account.provider,
-        displayName: account.displayName || account.provider,
+        displayName: account.displayName || getProviderName(account.provider),
         displayOrder: account.displayOrder ?? 999,
         isEnabled: false,
         account,
@@ -152,6 +158,7 @@ export function useLinkedAccounts() {
     user,
     rows,
     loading,
+    error,
     loginMethods: data?.loginMethods,
     // 解绑会锁死账号时给出引导文案
     canUnlink: !!data?.canUnlink,

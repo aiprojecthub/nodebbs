@@ -16,10 +16,12 @@ import { UnlinkAccountDialog } from './UnlinkAccountDialog';
  */
 export function LinkedAccountsCard({ onGoToSecurity }) {
   const linkedAccounts = useLinkedAccounts();
-  const { rows, loading, canUnlink, loginMethods, linkingProvider } = linkedAccounts;
+  const { rows, loading, error, canUnlink, loginMethods, linkingProvider, refresh } =
+    linkedAccounts;
 
-  // 平台一个都没启用且没有历史关联时，整张卡片不必出现
-  if (!loading && rows.length === 0) return null;
+  // 平台一个都没启用且没有历史关联时，整张卡片不必出现。
+  // 但请求失败时 rows 同样是空的，此时要留下卡片显示错误，不能悄悄消失
+  if (!loading && !error && rows.length === 0) return null;
 
   const hasLinked = rows.some((row) => row.account);
   // 唯一登录方式就是那个三方账号：解绑会锁死，给出解锁引导
@@ -40,6 +42,15 @@ export function LinkedAccountsCard({ onGoToSecurity }) {
           {loading ? (
             <div className="flex items-center justify-center py-4 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-between gap-3 py-2">
+              <p className="text-sm text-muted-foreground">
+                关联账号加载失败，请稍后重试
+              </p>
+              <Button type="button" variant="outline" size="sm" onClick={refresh}>
+                重试
+              </Button>
             </div>
           ) : (
             <>

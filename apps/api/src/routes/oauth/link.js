@@ -5,8 +5,8 @@
  * - 登录流程走各 provider 自己的 /:provider/connect + /:provider/callback，
  *   回调最终调用 handleOAuthLogin —— 若该三方账号已属于他人，会直接签发**那个人**的
  *   token，把当前登录用户顶掉。因此关联流程必须完全独立，不能复用登录回调。
- * - 隔离手段是**独立的 state cookie**：关联流程写 `oauth_link_state`，登录流程写
- *   `oauth_state`。即便有人把关联流程拿到的 code/state 喂给登录回调，state 也对不上
+ * - 隔离手段是**独立的 state cookie**：关联流程写 `oauth_link_state_<provider>`，
+ *   登录流程写 `oauth_state`。即便有人把关联流程拿到的 code/state 喂给登录回调，state 也对不上
  *   而被拒；反之亦然。隔离是结构性的，无需改动任何现有登录路由。
  *
  * 通用 :provider 路由，一份实现覆盖所有平台。
@@ -33,7 +33,17 @@ import { isProd } from '../../config/env.js';
  */
 export const LINKABLE_PROVIDERS = ['github', 'google', 'wechat_open', 'wechat_mp'];
 
-const LINK_STATE_COOKIE = 'oauth_link_state';
+/**
+ * 关联流程的 state cookie 名（按平台隔离）
+ *
+ * 不能所有平台共用一个 cookie：用户先点 GitHub 关联、未完成又去点 Google 关联时，
+ * 后者会把前者的 state 覆盖掉，回到 GitHub 授权页完成后报「关联请求已失效」。
+ * 按平台分开存还顺带把 state 绑定到了平台，回调只认本平台签发的那一个。
+ * provider 已由 LINKABLE_PROVIDERS 白名单校验过，可安全用于拼 cookie 名。
+ */
+function linkStateCookie(provider) {
+  return `oauth_link_state_${provider}`;
+}
 
 const LINK_STATE_COOKIE_OPTIONS = {
   path: '/',
@@ -143,7 +153,11 @@ export default async function oauthLinkRoutes(fastify, options) {
           state
         );
 
-        reply.setCookie(LINK_STATE_COOKIE, state, LINK_STATE_COOKIE_OPTIONS);
+        reply.setCookie(
+          linkStateCookie(providerName),
+          state,
+          LINK_STATE_COOKIE_OPTIONS
+        );
 
         return { authorizationUri };
       } catch (error) {
@@ -205,15 +219,16 @@ export default async function oauthLinkRoutes(fastify, options) {
         return reply.code(400).send({ error: '该平台暂不支持关联' });
       }
 
-      // state 必须来自本次关联流程：既要与 cookie 一致，也要带关联流程前缀，
+      // state 必须来自本次关联流程：既要与本平台的 cookie 一致，也要带关联流程前缀，
       // 防止把登录流程的 state 拿来走关联通道
-      const savedState = request.cookies[LINK_STATE_COOKIE];
+      const cookieName = linkStateCookie(providerName);
+      const savedState = request.cookies[cookieName];
       if (!state || !savedState || state !== savedState || !isLinkState(state)) {
         return reply
           .code(400)
           .send({ error: '关联请求已失效，请重新发起关联' });
       }
-      reply.clearCookie(LINK_STATE_COOKIE, { path: '/' });
+      reply.clearCookie(cookieName, { path: '/' });
 
       try {
         const providerConfig = await fastify.oauth.getProviderConfig(providerName);
