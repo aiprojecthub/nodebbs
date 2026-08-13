@@ -21,8 +21,9 @@ import { Textarea } from '@/components/ui/textarea';
  * @param {(open:boolean)=>void} props.onOpenChange
  * @param {string} props.initialContent - 打开时预填的内容（通常是编辑器中的选区）
  * @param {(content:string)=>void} props.onConfirm - 确认后回调，参数为去除首尾空白的内容
+ * @param {(e:Event)=>void} props.onCloseAutoFocus - 关闭且焦点锁解除后触发，调用方在此执行插入
  */
-export default function ProtectedDialog({ open, onOpenChange, initialContent = '', onConfirm }) {
+export default function ProtectedDialog({ open, onOpenChange, initialContent = '', onConfirm, onCloseAutoFocus }) {
   const [content, setContent] = useState('');
 
   // 每次打开时同步预填内容（关闭时不重置，避免淡出动画期间闪烁）
@@ -48,7 +49,7 @@ export default function ProtectedDialog({ open, onOpenChange, initialContent = '
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" onCloseAutoFocus={onCloseAutoFocus}>
         <DialogHeader>
           <DialogTitle>插入回复可见内容</DialogTitle>
           <DialogDescription>

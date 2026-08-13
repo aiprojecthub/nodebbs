@@ -25,7 +25,7 @@ import BoundTab from './BoundTab';
  * @param {(pollId:number)=>void} props.onCreated - 插入到编辑器的回调
  * @param {number|undefined} props.topicId - 仅编辑现有话题时传入
  */
-export default function PollDialog({ open, onOpenChange, onCreated, topicId }) {
+export default function PollDialog({ open, onOpenChange, onCreated, topicId, onCloseAutoFocus }) {
   const [activeTab, setActiveTab] = useState('new');
   const [editingDraft, setEditingDraft] = useState(null);
   const [draftsRefreshKey, setDraftsRefreshKey] = useState(0);
@@ -65,7 +65,7 @@ export default function PollDialog({ open, onOpenChange, onCreated, topicId }) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" onCloseAutoFocus={onCloseAutoFocus}>
         <DialogHeader>
           <DialogTitle>
             {editingDraft ? `编辑草稿 #${editingDraft.id}` : '插入投票'}

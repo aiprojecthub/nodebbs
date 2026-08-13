@@ -16,7 +16,7 @@ import BoundTab from './BoundTab';
  * 抽奖创建/编辑/复用对话框
  * Tab 式布局，与 PollDialog 同结构。
  */
-export default function LotteryDialog({ open, onOpenChange, onCreated, topicId }) {
+export default function LotteryDialog({ open, onOpenChange, onCreated, topicId, onCloseAutoFocus }) {
   const [activeTab, setActiveTab] = useState('new');
   const [editingDraft, setEditingDraft] = useState(null);
   const [draftsRefreshKey, setDraftsRefreshKey] = useState(0);
@@ -56,7 +56,7 @@ export default function LotteryDialog({ open, onOpenChange, onCreated, topicId }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto" onCloseAutoFocus={onCloseAutoFocus}>
         <DialogHeader>
           <DialogTitle>
             {editingDraft ? `编辑草稿 #${editingDraft.id}` : '插入抽奖'}

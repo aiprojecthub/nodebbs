@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { 
   Bold, Italic, Strikethrough, Code, Quote, List, ListOrdered, 
   ListTodo, Minus, FileCode, Heading, Heading2, Heading3, Heading4, Heading5, ChevronDown
@@ -53,6 +53,8 @@ export const FormatTool = ({ type, editor, disabled }) => {
 };
 
 export const HeadingTool = ({ editor, disabled }) => {
+  const pendingPrefixRef = useRef(null);
+
   const options = [
     { label: '二级标题', value: '## ', icon: Heading2 },
     { label: '三级标题', value: '### ', icon: Heading3 },
@@ -60,12 +62,23 @@ export const HeadingTool = ({ editor, disabled }) => {
     { label: '五级标题', value: '##### ', icon: Heading5 },
   ];
 
+  // DropdownMenu 默认 modal，菜单打开期间焦点被 trap，而 Radix 是先跑我们的
+  // onClick、后关闭菜单。此时插入会让 execCommand 落空并清空撤销历史，
+  // 因此只暂存选择，等菜单关闭、焦点锁解除后再插入
+  const handleCloseAutoFocus = (e) => {
+    const prefix = pendingPrefixRef.current;
+    if (!prefix) return;
+    pendingPrefixRef.current = null;
+    e.preventDefault(); // 阻止焦点回到触发按钮，让光标落回编辑器
+    editor.insertBlock(prefix);
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           className="h-8 gap-1 px-2"
           disabled={disabled}
           title="标题"
@@ -74,11 +87,11 @@ export const HeadingTool = ({ editor, disabled }) => {
           <ChevronDown className="h-3 w-3 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" onCloseAutoFocus={(e) => e.preventDefault()}>
+      <DropdownMenuContent align="start" onCloseAutoFocus={handleCloseAutoFocus}>
         {options.map((option) => (
-          <DropdownMenuItem 
+          <DropdownMenuItem
             key={option.value}
-            onClick={() => editor.insertBlock(option.value)}
+            onClick={() => { pendingPrefixRef.current = option.value; }}
             className="gap-2"
           >
             <option.icon className="h-4 w-4" />

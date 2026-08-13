@@ -42,6 +42,11 @@ export function useImageUpload({
   }, [onUpload, isAdmin, hasPermission, uploadType]);
 
   // 辅助函数：安全替换文本
+  //
+  // 这里刻意不走 editorCore 的 execCommand 路径（即撤销历史会在此丢失一次）：
+  // 上传是异步的，回调可能在几十秒后才到，此时用户往往已经在填标题/选分类，
+  // 而 execCommand 硬性要求 textarea 处于聚焦态，强行抢焦点会打断用户输入。
+  // 占位符的「插入」是同步的、走 insertBlock，那一步的撤销历史是保留的。
   const safeReplace = useCallback((target, replacement) => {
     // 将替换操作加入队列
     replaceQueue.current = replaceQueue.current.then(() => {
@@ -59,6 +64,7 @@ export function useImageUpload({
           
           // 立即更新 DOM 值，确保后续队列任务能读取到最新值
           // 解决 React 状态更新异步导致的值覆盖问题
+          // 注意：这行是多图并发替换的顺序保证，不可删除
           textarea.value = newVal;
           
           onChange?.(newVal);
