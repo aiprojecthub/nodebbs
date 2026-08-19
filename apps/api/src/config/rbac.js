@@ -5,7 +5,13 @@
  * 这是 RBAC 系统的唯一数据源（Single Source of Truth）
  */
 
-import { EXT_MIME_MAP } from '../constants/upload.js';
+import {
+  DEFAULT_IMAGE_EXTENSIONS,
+  DEFAULT_ATTACHMENT_EXTENSIONS,
+  ATTACHMENT_EXTENSION_CHOICES,
+  MAX_UPLOAD_SIZE_DEFAULT_KB,
+  defaultExtensionsFor,
+} from '../constants/upload.js';
 
 // ============ 权限模块定义 ============
 
@@ -37,6 +43,7 @@ export const MODULE_SPECIAL_ACTIONS = {
   upload: [
     { value: 'avatars', label: '头像' },
     { value: 'topics', label: '话题图片' },
+    { value: 'attachments', label: '话题附件' },
     { value: 'assets', label: '通用资源' },
   ],
   system: [
@@ -82,6 +89,16 @@ export const MODULE_SPECIAL_ACTIONS = {
  *
  * 注意：哪个权限能用哪些条件，由 SYSTEM_PERMISSIONS.conditions 决定
  */
+
+/**
+ * 扩展名数组 → multiSelect 候选项
+ * @param {string[]} exts
+ * @returns {Array<{value: string, label: string}>}
+ */
+function toExtOptions(exts) {
+  return exts.map(ext => ({ value: ext, label: ext.toUpperCase() }));
+}
+
 export const CONDITION_TYPES = {
   // ===== 范围限制 =====
   categories: {
@@ -153,11 +170,14 @@ export const CONDITION_TYPES = {
     label: '允许的文件类型',
     type: 'array',
     component: 'multiSelect',
-    description: '允许上传的文件扩展名，不设置则使用系统默认类型',
-    options: Object.keys(EXT_MIME_MAP).map(ext => ({
-      value: ext,
-      label: ext.toUpperCase(),
-    })),
+    description: '允许上传的文件扩展名，不设置则使用系统默认类型；列表中没有的可直接输入新增（自定义扩展名不参与 MIME 一致性校验）',
+    // 允许管理员在预设之外自由输入扩展名（附件场景类型繁多，无法穷举）
+    creatable: true,
+    // 默认候选只列图片扩展名，否则配头像时要在 DOCX/RAR/TORRENT 里翻找 PNG，
+    // 还容易误勾出一个存 zip 的头像位。附件需要更宽的候选，由权限侧声明——
+    // 见 SYSTEM_PERMISSIONS 里 upload.attachments 的 { key, options } 写法。
+    // 注意这只是 UI 候选，实际生效的永远是已存的 conditions.allowedFileTypes
+    options: toExtOptions(DEFAULT_IMAGE_EXTENSIONS),
   },
 };
 
@@ -316,7 +336,12 @@ export const SYSTEM_PERMISSIONS = [
     module: 'upload',
     action: 'avatars',
     isSystem: true,
-    conditions: ['maxFileSize', 'allowedFileTypes', 'rateLimit', 'accountAge'],
+    conditions: [
+      { key: 'maxFileSize', defaultValue: MAX_UPLOAD_SIZE_DEFAULT_KB },
+      { key: 'allowedFileTypes', defaultValue: defaultExtensionsFor('avatars') },
+      'rateLimit',
+      'accountAge',
+    ],
   },
   {
     slug: 'upload.topics',
@@ -324,7 +349,30 @@ export const SYSTEM_PERMISSIONS = [
     module: 'upload',
     action: 'topics',
     isSystem: true,
-    conditions: ['maxFileSize', 'allowedFileTypes', 'rateLimit', 'accountAge'],
+    conditions: [
+      { key: 'maxFileSize', defaultValue: MAX_UPLOAD_SIZE_DEFAULT_KB },
+      { key: 'allowedFileTypes', defaultValue: defaultExtensionsFor('topics') },
+      'rateLimit',
+      'accountAge',
+    ],
+  },
+  {
+    slug: 'upload.attachments',
+    name: '上传话题附件',
+    module: 'upload',
+    action: 'attachments',
+    isSystem: true,
+    conditions: [
+      { key: 'maxFileSize', defaultValue: MAX_UPLOAD_SIZE_DEFAULT_KB },
+      {
+        key: 'allowedFileTypes',
+        // 附件类型远多于图片，默认的图片候选不够用，这里给更宽的候选
+        options: toExtOptions(ATTACHMENT_EXTENSION_CHOICES),
+        defaultValue: defaultExtensionsFor('attachments'),
+      },
+      'rateLimit',
+      'accountAge',
+    ],
   },
   // {
   //   slug: 'upload.assets',
@@ -523,11 +571,29 @@ export const SYSTEM_PERMISSIONS = [
 // ============ 权限条件映射（自动生成） ============
 
 /**
- * 权限支持的条件类型映射
- * 从 SYSTEM_PERMISSIONS 自动生成
+ * 归一化 conditions：支持 'key' 与 { key, ...特化字段 } 两种写法。
+ * 后者用于同一条件在不同权限下不一样的场景，可带：
+ * - options:      后台可勾选的候选项（附件比图片宽）
+ * - defaultValue: 留空时实际生效的兜底值，供后台展示「不配会怎样」
+ *
+ * 两种形态只在这一处收敛，下游一律拿到对象；返回浅拷贝，避免下游改动污染
+ * SYSTEM_PERMISSIONS。
+ *
+ * @param {Array<string|{key: string}>} [conditions]
+ * @returns {Array<{key: string}>}
+ */
+function normalizeConditions(conditions = []) {
+  return conditions.map(c => (typeof c === 'string' ? { key: c } : { ...c }));
+}
+
+/**
+ * 权限 → 条件定义列表，从 SYSTEM_PERMISSIONS 自动生成。
+ *
+ * 每项形如 { key } 或 { key, options?, defaultValue? }：key 指向 CONDITION_TYPES
+ * 里的通用定义，其余字段是该权限下的特化，由前端合并到通用定义之上。
  */
 export const PERMISSION_CONDITIONS = Object.fromEntries(
-  SYSTEM_PERMISSIONS.map(p => [p.slug, p.conditions || []])
+  SYSTEM_PERMISSIONS.map(p => [p.slug, normalizeConditions(p.conditions)])
 );
 
 // ============ 系统角色定义 ============
@@ -599,6 +665,7 @@ export const ROLE_PERMISSION_MAP = {
     'system.stats',
     // 上传
     'upload.avatars',
+    'upload.attachments',
     // 标签
     'tag.read', 'tag.create',
     // 邀请
@@ -623,6 +690,10 @@ export const ROLE_PERMISSION_CONDITIONS = {
       maxFileSize: 5120, // 5MB (单位：KB)
       allowedFileTypes: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
     },
+    'upload.attachments': {
+      maxFileSize: 20480, // 20MB (单位：KB)
+      allowedFileTypes: DEFAULT_ATTACHMENT_EXTENSIONS,
+    },
   },
 };
 
@@ -646,12 +717,19 @@ export const ALLOWED_ROLES_PERMISSIONS = {
 
 /**
  * 获取权限支持的条件类型
+ * 权限侧声明的特化字段（候选项、兜底值）合并在通用定义之上，不污染 CONDITION_TYPES
  * @param {string} permissionSlug - 权限标识
  * @returns {Array} 条件类型列表
  */
 export function getPermissionConditionTypes(permissionSlug) {
-  const conditions = PERMISSION_CONDITIONS[permissionSlug] || [];
-  return conditions.map(key => CONDITION_TYPES[key]).filter(Boolean);
+  const declared = PERMISSION_CONDITIONS[permissionSlug] || [];
+  return declared
+    .map(({ key, ...scoped }) => {
+      const def = CONDITION_TYPES[key];
+      if (!def) return null;
+      return { ...def, ...scoped };
+    })
+    .filter(Boolean);
 }
 
 /**
@@ -692,11 +770,9 @@ export function validateRbacConfig() {
 
   // 1. 检查 SYSTEM_PERMISSIONS 中的 conditions 引用的条件类型是否有效
   for (const perm of SYSTEM_PERMISSIONS) {
-    if (perm.conditions) {
-      for (const cond of perm.conditions) {
-        if (!conditionKeys.has(cond)) {
-          errors.push(`SYSTEM_PERMISSIONS "${perm.slug}" 引用了未定义的条件类型 "${cond}"`);
-        }
+    for (const { key } of normalizeConditions(perm.conditions)) {
+      if (!conditionKeys.has(key)) {
+        errors.push(`SYSTEM_PERMISSIONS "${perm.slug}" 引用了未定义的条件类型 "${key}"`);
       }
     }
   }
@@ -751,6 +827,20 @@ export function validateRbacConfig() {
     for (const perm of perms) {
       if (!permissionSlugs.has(perm)) {
         errors.push(`ALLOWED_ROLES_PERMISSIONS.${role} 引用了 "${perm}"，但 SYSTEM_PERMISSIONS 中未找到`);
+      }
+    }
+  }
+
+  // 8. 检查条件级候选项覆写（{ key, options }）是否配在吃候选项的组件上
+  //    配到 number/switch 这类组件上不会报错、只是静默失效，所以在这里拦住
+  for (const perm of SYSTEM_PERMISSIONS) {
+    for (const { key, options } of normalizeConditions(perm.conditions)) {
+      if (!options) continue;
+      const component = CONDITION_TYPES[key]?.component;
+      if (component !== 'multiSelect' && component !== 'select') {
+        errors.push(
+          `SYSTEM_PERMISSIONS "${perm.slug}" 给条件 "${key}" 配了 options，但其组件是 "${component}"，不会生效`
+        );
       }
     }
   }

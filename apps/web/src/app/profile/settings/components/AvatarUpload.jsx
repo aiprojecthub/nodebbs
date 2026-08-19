@@ -4,7 +4,7 @@ import { useRef, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
-import { MAX_UPLOAD_SIZE_DEFAULT_KB, DEFAULT_ALLOWED_EXTENSIONS, EXT_MIME_MAP } from '@/constants/upload';
+import { MAX_UPLOAD_SIZE_DEFAULT_KB, DEFAULT_IMAGE_EXTENSIONS, EXT_MIME_MAP } from '@/constants/upload';
 import { uploadApi } from '@/lib/api';
 
 /**
@@ -26,13 +26,13 @@ export function AvatarUpload({
   const fileInputRef = useRef(null);
   const [internalUploading, setInternalUploading] = useState(false);
 
-  // 如果未传入 accept，则根据 DEFAULT_ALLOWED_EXTENSIONS 动态生成
+  // 如果未传入 accept，则根据 DEFAULT_IMAGE_EXTENSIONS 动态生成
   const computedAccept = useMemo(() => {
     if (accept) return accept;
-    
+
     // 从扩展名映射到 MIME 类型
     const mimes = new Set();
-    DEFAULT_ALLOWED_EXTENSIONS.forEach(ext => {
+    DEFAULT_IMAGE_EXTENSIONS.forEach(ext => {
        const mapped = EXT_MIME_MAP[ext];
        if (mapped) mapped.forEach(m => mimes.add(m));
     });
@@ -44,13 +44,11 @@ export function AvatarUpload({
   // 生成友好的扩展名提示文本
   const acceptExtensionsText = useMemo(() => {
      // 如果外部传入了 custom accept string (e.g. "image/*")，则难以反推扩展名，这里简化处理
-     // 优先展示常量中的扩展名，或者如果 accept 比较简单则尝试解析
-     // 为了简单一致，这里暂时显示 DEFAULT_ALLOWED_EXTENSIONS 中属于图片的类型
-     // 或者直接用 uppercase
-     const imageExts = DEFAULT_ALLOWED_EXTENSIONS.filter(ext => 
+     // 只列常见位图格式：svg/ico 虽在白名单内，但作为头像提示给用户没有意义
+     const commonExts = DEFAULT_IMAGE_EXTENSIONS.filter(ext =>
        ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)
      );
-     return imageExts.map(e => e.toUpperCase()).join('、');
+     return commonExts.map(e => e.toUpperCase()).join('、');
   }, []);
 
   const handleClick = () => {

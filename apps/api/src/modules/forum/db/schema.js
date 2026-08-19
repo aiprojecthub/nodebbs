@@ -19,7 +19,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { $defaults, $createdAt } from '#core/db/columns.js';
-import { users } from '#core/db/schema.js';
+import { users, files } from '#core/db/schema.js';
 
 // ============ Categories (分类) ============
 export const categories = pgTable(
@@ -479,4 +479,99 @@ export const lotteryParticipantsRelations = relations(lotteryParticipants, ({ on
 export const lotteryLedgerRefsRelations = relations(lotteryLedgerRefs, ({ one }) => ({
   lottery: one(lotteries, { fields: [lotteryLedgerRefs.lotteryId], references: [lotteries.id] }),
   user: one(users, { fields: [lotteryLedgerRefs.userId], references: [users.id] }),
+}));
+
+// ============ Topic Attachments (话题附件) ============
+//
+// 一条附件 = 一个「附件组」，正文里对应一个 ::attachment{id="N"} 指令，组内可含多个文件。
+// 下载策略、积分购买、权限判定都在组级别；下载与计数按文件粒度（见 topic_attachment_files）。
+//
+// 文件本体仍存 core 的 files 表（category='attachments'），本表只承载论坛语义。
+// 之所以不在 files 上直接加 topic_id，是因为 files 属 core、topics 属 forum 模块，
+// core 不得依赖 modules（见 AGENTS.md 铁律）。
+//
+// 下载不经 /uploads 公开路径（plugins/static.js 已拦截 attachments 前缀），
+// 一律走 /api/attachments/:id/files/:fileId/download 鉴权后出内容。
+export const topicAttachments = pgTable(
+  'topic_attachments',
+  {
+    ...$defaults,
+    topicId: integer('topic_id').references(() => topics.id, { onDelete: 'cascade' }), // NULL = 草稿（与 polls/lotteries 一致）
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: varchar('title', { length: 255 }), // 组名，为空时由服务端按文件数回退
+    description: text('description'),
+    policy: varchar('policy', { length: 20 }).notNull().default('none'), // 'none' | 'login' | 'reply' | 'points' | 'role'
+    pointsCost: integer('points_cost').notNull().default(0), // 仅 policy='points'
+    allowedRoleIds: jsonb('allowed_role_ids'), // 仅 policy='role'：number[]
+  },
+  (table) => [
+    index('topic_attachments_topic_idx').on(table.topicId),
+    index('topic_attachments_user_idx').on(table.userId),
+  ]
+);
+
+// ============ Topic Attachment Files (附件组内的文件) ============
+export const topicAttachmentFiles = pgTable(
+  'topic_attachment_files',
+  {
+    ...$defaults,
+    attachmentId: integer('attachment_id')
+      .notNull()
+      .references(() => topicAttachments.id, { onDelete: 'cascade' }),
+    fileId: integer('file_id')
+      .notNull()
+      .references(() => files.id, { onDelete: 'cascade' }),
+    displayOrder: integer('display_order').notNull().default(0),
+    downloadCount: integer('download_count').notNull().default(0),
+  },
+  (table) => [
+    index('topic_attachment_files_attachment_idx').on(table.attachmentId),
+    // 一个文件只能归属一个附件组，避免同一份文件被挂出两套下载策略
+    uniqueIndex('topic_attachment_files_file_idx').on(table.fileId),
+  ]
+);
+
+// ============ Attachment Purchases (附件积分购买记录) ============
+// policy='points' 时首次付费后组内文件永久可下载；UNIQUE 兜底防并发重复扣费
+export const attachmentPurchases = pgTable(
+  'attachment_purchases',
+  {
+    ...$defaults,
+    attachmentId: integer('attachment_id')
+      .notNull()
+      .references(() => topicAttachments.id, { onDelete: 'cascade' }),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    amountPaid: integer('amount_paid').notNull(),
+  },
+  (table) => [
+    uniqueIndex('attachment_purchases_att_user_idx').on(table.attachmentId, table.userId),
+    index('attachment_purchases_user_idx').on(table.userId),
+  ]
+);
+
+export const topicAttachmentsRelations = relations(topicAttachments, ({ one, many }) => ({
+  topic: one(topics, { fields: [topicAttachments.topicId], references: [topics.id] }),
+  user: one(users, { fields: [topicAttachments.userId], references: [users.id] }),
+  files: many(topicAttachmentFiles),
+  purchases: many(attachmentPurchases),
+}));
+
+export const topicAttachmentFilesRelations = relations(topicAttachmentFiles, ({ one }) => ({
+  attachment: one(topicAttachments, {
+    fields: [topicAttachmentFiles.attachmentId],
+    references: [topicAttachments.id],
+  }),
+  file: one(files, { fields: [topicAttachmentFiles.fileId], references: [files.id] }),
+}));
+
+export const attachmentPurchasesRelations = relations(attachmentPurchases, ({ one }) => ({
+  attachment: one(topicAttachments, {
+    fields: [attachmentPurchases.attachmentId],
+    references: [topicAttachments.id],
+  }),
+  user: one(users, { fields: [attachmentPurchases.userId], references: [users.id] }),
 }));

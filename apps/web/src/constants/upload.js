@@ -12,8 +12,8 @@ export const MAX_UPLOAD_SIZE_ADMIN_KB = MAX_UPLOAD_SIZE_GLOBAL_BYTES / 1024;
 // 普通用户默认上传大小限制 (KB)
 export const MAX_UPLOAD_SIZE_DEFAULT_KB = 5 * 1024;
 
-// 默认允许的文件扩展名
-export const DEFAULT_ALLOWED_EXTENSIONS = [
+// 图片类上传默认允许的扩展名（对应后端 DEFAULT_IMAGE_EXTENSIONS）
+export const DEFAULT_IMAGE_EXTENSIONS = [
   'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'ico'
 ];
 

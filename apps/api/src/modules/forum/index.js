@@ -11,6 +11,7 @@ import {
   cleanupExpiredDraftLotteries,
   drawDueLotteries,
 } from './services/lotteryService.js';
+import { cleanupExpiredDraftAttachments } from './services/attachmentService.js';
 
 const __dirname = dirname(import.meta.url);
 
@@ -34,6 +35,10 @@ async function forumModule(fastify, opts) {
     );
     fastify.cleanup.registerTask('expired-draft-lotteries', () =>
       fastify.ledger ? cleanupExpiredDraftLotteries(fastify.ledger) : 0
+    );
+    // 未绑话题的附件草稿超时回收，连同存储对象一起删，避免孤儿文件长期占空间
+    fastify.cleanup.registerTask('expired-draft-attachments', () =>
+      cleanupExpiredDraftAttachments(fastify.storage)
     );
     // 论坛内容（topics/posts）永久删除后，notifications 已无 FK 级联（schema 拆分时解除耦合），
     // 此任务清理指向已不存在内容的孤儿通知，替代原数据库级 ON DELETE CASCADE。
@@ -79,6 +84,6 @@ async function forumModule(fastify, opts) {
 
 export default fp(forumModule, {
   name: 'forum-module',
-  // cleanup / rbac 提供注册 API；db/认证/权限/账本由 plugins+extensions 先行注册
+  // cleanup / rbac 提供注册 API；db/认证/权限/账本/存储由 plugins+extensions 先行注册
   dependencies: ['db', 'cleanup', 'rbac'],
 });

@@ -99,6 +99,28 @@ export class LocalStorageProvider extends BaseStorageProvider {
     return `${this.baseUrl}/${key}`;
   }
 
+  /**
+   * 本地文件读流。_safePath 复用同一套防路径遍历校验。
+   * 本地存储没有私有读的概念（getSignedDownloadUrl 保持基类的 unsupported），
+   * 受保护文件一律由 API 鉴权后用此流转发。
+   */
+  async getDownloadStream(key) {
+    const filepath = this._safePath(key);
+    let stat;
+    try {
+      stat = await fs.promises.stat(filepath);
+    } catch {
+      throw new StorageError(
+        StorageErrorCode.FILE_NOT_FOUND,
+        '文件不存在'
+      );
+    }
+    return {
+      stream: fs.createReadStream(filepath),
+      size: stat.size,
+    };
+  }
+
   validateConfig(config) {
     // 本地存储无需特殊配置
     return { valid: true };

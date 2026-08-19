@@ -83,6 +83,29 @@ export class BaseStorageProvider {
   }
 
   /**
+   * 获取文件可读流（用于服务端鉴权后转发，如受保护的话题附件）
+   * @param {string} key - 存储路径/key
+   * @returns {Promise<{ stream: import('stream').Readable, size?: number, mimetype?: string }>}
+   */
+  async getDownloadStream(key) {
+    throw new StorageError(
+      StorageErrorCode.UNSUPPORTED_PROVIDER,
+      'getDownloadStream() 方法必须由子类实现'
+    );
+  }
+
+  /**
+   * 获取预签名下载 URL（短时效私有读，支持的 provider 可让流量绕过 API）
+   * 不支持时返回 { supported: false }，调用方应回退到 getDownloadStream。
+   * @param {string} key - 存储路径/key
+   * @param {object} options - { expiresIn, filename, mimetype }
+   * @returns {Promise<{ supported: boolean, url?: string }>}
+   */
+  async getSignedDownloadUrl(key, options = {}) {
+    return { supported: false };
+  }
+
+  /**
    * 验证配置是否完整
    * @param {object} config - 配置对象
    * @returns {{ valid: boolean, message?: string }}

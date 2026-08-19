@@ -7,6 +7,8 @@
  * - delete(key, slug?) - 删除文件
  * - getUrl(key, slug?) - 获取文件 URL
  * - exists(key) - 检查文件是否存在
+ * - getDownloadStream(key, slug?) - 获取文件可读流（鉴权后转发）
+ * - getSignedDownloadUrl(key, slug?, opts) - 获取预签名下载 URL（私有读）
  * - getProvider(slug?) - 获取指定 provider 实例
  * - testConnection(slug) - 测试连接
 
@@ -238,6 +240,39 @@ async function storagePlugin(fastify) {
       const name = record ? record.slug : 'local';
       const config = parseConfig(record);
       return { name, config };
+    },
+
+    /**
+     * 获取文件可读流（服务端鉴权后转发，如受保护的话题附件）
+     *
+     * slug 应传 files.provider —— 文件可能存在旧 provider 上，站点换存储商后
+     * 仍需按当初写入的 provider 读回。
+     * @param {string} key
+     * @param {string} [slug]
+     * @returns {Promise<{ stream: import('stream').Readable, size?: number, mimetype?: string }>}
+     */
+    async getDownloadStream(key, slug) {
+      if (slug) {
+        const provider = await getProvider(slug);
+        return provider.getDownloadStream(key);
+      }
+      const { provider } = await getActiveProvider();
+      return provider.getDownloadStream(key);
+    },
+
+    /**
+     * 获取预签名下载 URL；不支持时返回 { supported: false }，调用方回退到 getDownloadStream
+     * @param {string} key
+     * @param {string} [slug] - 同上，应传 files.provider
+     * @param {object} [options] - { expiresIn, filename, mimetype }
+     */
+    async getSignedDownloadUrl(key, slug, options = {}) {
+      if (slug) {
+        const provider = await getProvider(slug);
+        return provider.getSignedDownloadUrl(key, options);
+      }
+      const { provider } = await getActiveProvider();
+      return provider.getSignedDownloadUrl(key, options);
     },
 
     /**

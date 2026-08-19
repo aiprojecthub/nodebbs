@@ -8,11 +8,13 @@ import remarkMedia from './plugins/remark-media';
 import remarkSticker from './plugins/remark-sticker';
 import remarkPoll from './plugins/remark-poll';
 import remarkLottery from './plugins/remark-lottery';
+import remarkAttachment from './plugins/remark-attachment';
 import remarkProtected from './plugins/remark-protected';
 import remarkRestoreDirectives from './plugins/remark-restore-directives';
 import CodeBlock from './CodeBlock';
 import PollWidget from './components/PollWidget';
 import LotteryWidget from './components/LotteryWidget';
+import AttachmentWidget from './components/AttachmentWidget';
 import AudioPlayer from './components/AudioPlayer';
 import VideoPlayer from './components/VideoPlayer';
 import ContentImage from './components/ContentImage';
@@ -43,6 +45,7 @@ const REMARK_PLUGINS = [
   remarkSticker,
   remarkPoll,
   remarkLottery,
+  remarkAttachment,
   remarkEmoji,
   remarkProtected,
   remarkRestoreDirectives,
@@ -100,6 +103,11 @@ const COMPONENTS = {
   lottery({ node, ...props }) {
     const lotteryId = props['data-lottery-id'];
     return <LotteryWidget lotteryId={lotteryId} />;
+  },
+  // 附件组件
+  attachment({ node, ...props }) {
+    const attachmentId = props['data-attachment-id'];
+    return <AttachmentWidget attachmentId={attachmentId} />;
   },
   // 表情组件
   emoji({ node, ...props }) {

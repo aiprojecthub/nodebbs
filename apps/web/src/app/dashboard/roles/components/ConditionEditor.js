@@ -27,10 +27,39 @@ import { cn } from '@/lib/utils';
 import MultiSelect from '@/components/common/MultiSelect';
 
 /**
+ * 把条件的兜底值渲染成一行说明，仅在管理员没配该条件时展示。
+ * defaultValue 由后端按权限给出（见 SYSTEM_PERMISSIONS 的 conditions），
+ * 与上传路由、RBAC 引擎的兜底逻辑同源，不是这里另算的。
+ */
+function formatDefaultHint({ key, defaultValue }) {
+  if (defaultValue === undefined || defaultValue === null) return null;
+
+  if (Array.isArray(defaultValue)) {
+    if (defaultValue.length === 0) return null;
+    // 扩展名可能几十个，全列会把说明文字撑爆，超出部分只报总数
+    const MAX_SHOWN = 8;
+    const shown = defaultValue.slice(0, MAX_SHOWN).map(v => String(v).toUpperCase()).join('、');
+    return defaultValue.length > MAX_SHOWN
+      ? `留空则按系统默认：${shown} … 共 ${defaultValue.length} 种`
+      : `留空则按系统默认：${shown}`;
+  }
+
+  if (typeof defaultValue === 'number') {
+    // maxFileSize 单位是 KB，超过 1MB 时换算展示（与 ImageUpload 的口径一致）
+    const text = key === 'maxFileSize'
+      ? (defaultValue >= 1024 ? `${(defaultValue / 1024).toFixed(0)}MB` : `${defaultValue}KB`)
+      : String(defaultValue);
+    return `留空则按系统默认：${text}`;
+  }
+
+  return null;
+}
+
+/**
  * 条件字段容器组件
  * 统一处理标题、描述、清除按钮等公共功能
  */
-function ConditionField({ label, description, hasValue, onClear, children, inline = false }) {
+function ConditionField({ label, description, hasValue, onClear, children, defaultHint, inline = false }) {
   return (
     <div className="py-3 border-b last:border-b-0">
       {inline ? (
@@ -61,6 +90,10 @@ function ConditionField({ label, description, hasValue, onClear, children, inlin
           </div>
           {children}
           {description && <p className="text-xs text-muted-foreground">{description}</p>}
+          {/* 已配置时不再提示——此时兜底值不生效，说了反而误导 */}
+          {!hasValue && defaultHint && (
+            <p className="text-xs text-muted-foreground/80">{defaultHint}</p>
+          )}
         </div>
       )}
     </div>
@@ -128,7 +161,7 @@ export function ConditionEditor({
 
   // 渲染条件输入控件
   const renderConditionInput = (conditionType) => {
-    const { key, label, component, description, options, dataSource, placeholder, min, schema } = conditionType;
+    const { key, label, component, description, options, dataSource, placeholder, min, schema, creatable } = conditionType;
     const value = localConditions[key];
 
     // 布尔开关
@@ -152,6 +185,7 @@ export function ConditionEditor({
           description={description}
           hasValue={value !== undefined && value !== ''}
           onClear={() => clearCondition(key)}
+          defaultHint={formatDefaultHint(conditionType)}
         >
           <Input
             type="number"
@@ -170,6 +204,18 @@ export function ConditionEditor({
         ? dynamicDataSources[dataSource]
         : options || [];
 
+      // creatable：允许输入预设之外的值（如附件扩展名无法穷举）。
+      // 统一小写并去掉前导点，避免出现 ".ZIP" / "zip" 这类等价却不相等的条目
+      const handleCreate = creatable
+        ? (raw) => {
+            const normalized = String(raw).trim().toLowerCase().replace(/^\.+/, '');
+            if (!normalized) return;
+            const current = Array.isArray(value) ? value : [];
+            if (current.includes(normalized)) return;
+            updateCondition(key, [...current, normalized]);
+          }
+        : undefined;
+
       return (
         <ConditionField
           key={key}
@@ -177,12 +223,15 @@ export function ConditionEditor({
           description={description}
           hasValue={Array.isArray(value) && value.length > 0}
           onClear={() => clearCondition(key)}
+          defaultHint={formatDefaultHint(conditionType)}
         >
           <MultiSelect
             value={value || []}
             onChange={(val) => updateCondition(key, val.length > 0 ? val : undefined)}
             options={selectOptions}
             placeholder="选择..."
+            searchPlaceholder={creatable ? '搜索或输入新增...' : '搜索...'}
+            onCreate={handleCreate}
           />
         </ConditionField>
       );

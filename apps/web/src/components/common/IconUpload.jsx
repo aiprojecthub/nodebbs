@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { uploadApi } from '@/lib/api';
 
 import { usePermission } from '@/hooks/usePermission';
-import { MAX_UPLOAD_SIZE_ADMIN_KB, MAX_UPLOAD_SIZE_DEFAULT_KB, DEFAULT_ALLOWED_EXTENSIONS, EXT_MIME_MAP } from '@/constants/upload';
+import { MAX_UPLOAD_SIZE_ADMIN_KB, MAX_UPLOAD_SIZE_DEFAULT_KB, DEFAULT_IMAGE_EXTENSIONS, EXT_MIME_MAP } from '@/constants/upload';
 
 /**
  * 紧凑型图标上传组件（用于站点 Logo、Favicon 等小图标）
@@ -56,7 +56,7 @@ export function IconUpload({
     if (types?.includes('*')) {
       return Object.keys(EXT_MIME_MAP);
     }
-    return types || DEFAULT_ALLOWED_EXTENSIONS;
+    return types || DEFAULT_IMAGE_EXTENSIONS;
   }, [uploadConditions]);
 
   // 动态生成 accept 属性 (UX 优化：让文件选择框默认只显示允许的类型)

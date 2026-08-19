@@ -29,6 +29,7 @@ export function RolesTab() {
 
   // RBAC 配置（从后端获取）
   const [conditionTypes, setConditionTypes] = useState({});
+  // 权限 → 条件定义列表，每项形如 { key, options?, defaultValue? }
   const [permissionConditions, setPermissionConditions] = useState({});
   const [moduleOptions, setModuleOptions] = useState([]);
   const [commonActions, setCommonActions] = useState([]);
@@ -274,14 +275,20 @@ export function RolesTab() {
 
   // 获取权限支持的条件类型列表
   const getPermissionConditionTypes = (permissionSlug) => {
-    // 获取该权限支持的条件 key 列表
-    const conditionKeys = permissionConditions[permissionSlug];
-    if (!conditionKeys || conditionKeys.length === 0) {
+    // 该权限声明的条件列表，每项形如 { key, options?, defaultValue? }
+    const declared = permissionConditions[permissionSlug];
+    if (!declared || declared.length === 0) {
       return [];
     }
-    // 根据 key 列表获取完整的条件类型定义，注入 key 属性
-    const allTypes = conditionKeys
-      .map(key => conditionTypes[key] ? { key, ...conditionTypes[key] } : null)
+    // key 指向 conditionTypes 里的通用定义，同项的其余字段是该权限下的特化，合并其上。
+    // 同一条件在不同权限下可以不一样：如「允许的文件类型」，图片类上传只列图片扩展名、
+    // 附件给更宽的候选，两者留空时生效的兜底值（defaultValue）也不同
+    const allTypes = declared
+      .map(({ key, ...scoped }) => {
+        const def = conditionTypes[key];
+        if (!def) return null;
+        return { key, ...def, ...scoped };
+      })
       .filter(Boolean);
 
     // 如果没有选中角色，返回所有类型

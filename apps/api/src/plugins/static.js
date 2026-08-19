@@ -51,6 +51,10 @@ async function staticPlugin(fastify, options) {
   fastify.register(fastifyStatic, {
     root: uploadsDir,
     prefix: '/uploads/',
+    // 话题附件受下载策略约束（登录/回复/积分/角色），不能由公开静态路径直取。
+    // 一律走 /api/attachments/:id/download 鉴权后出内容。
+    // 注意：上方 IPX 图片处理路由的 types 白名单同样不含 attachments，请勿加入。
+    allowedPath: (pathName) => !pathName.startsWith('/attachments/'),
   });
 }
 

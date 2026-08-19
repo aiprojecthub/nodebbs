@@ -19,6 +19,7 @@ import { userEnricher } from '#core/services/user/index.js';
 import { shouldHideUserInfo } from '#core/utils/visibility.js';
 import { bindPollsToTopic } from '../../services/pollService.js';
 import { bindLotteriesToTopic } from '../../services/lotteryService.js';
+import { bindAttachmentsToTopic, deleteAttachmentsByTopicIds } from '../../services/attachmentService.js';
 
 // :::protected{attrs}\n...\n::: 块（行首 ::: 结束）
 // 捕获组：1=attrs，2=content（由详情处理器消费；列表摘要处理仅使用整体匹配）
@@ -33,6 +34,10 @@ const PROTECTED_RE = new RegExp(PROTECTED_BLOCK_PATTERN, 'gm');
 // 需要完整 CommonMark 语义请用 markdown 解析器
 const IMAGE_MD_PATTERN = String.raw`!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)`;
 
+// 行级 leafDirective：::poll{...} / ::lottery{...} / ::attachment{...} 等
+// 摘要里这些是组件占位，直接显示原文没有意义
+const LEAF_DIRECTIVE_LINE_RE = /^[ \t]*::[a-zA-Z][\w-]*\{[^}]*\}[ \t]*$/gm;
+
 /**
  * 分析首帖原文，为列表页生成安全的摘要与图片列表。
  * - 先按 sourceMax 截断（在 JS 层做，避免对 SQL SUBSTRING/LEFT 的依赖；
@@ -40,7 +45,7 @@ const IMAGE_MD_PATTERN = String.raw`!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)`;
  *   抛 22021 invalid byte sequence for encoding "UTF8"）
  * - 再剥除 :::protected{...}:::  块（无论权限，列表内容始终不含受限内容）
  * - 再从剩余文本提取 markdown 图片（最多 imagesMax 张）
- * - 最后去除图片 markdown 语法、折叠空白并截断到 snippetMax 长度
+ * - 最后去除图片 markdown 语法与行级组件指令、折叠空白并截断到 snippetMax 长度
  *
  * 本函数内置对截断造成的未闭合 :::protected 残余的保护。
  */
@@ -64,6 +69,9 @@ function analyzeFirstPostContent(text, { snippetMax = 300, imagesMax = 9, source
 
   // 去掉图片 markdown，避免在 snippet 中显示 ![alt](url) 原文
   s = s.replace(new RegExp(IMAGE_MD_PATTERN, 'g'), '');
+  // 去掉行级指令（投票/抽奖/附件等组件占位），避免露出 ::poll{id="1"} 这类原文
+  s = s.replace(LEAF_DIRECTIVE_LINE_RE, '');
+  LEAF_DIRECTIVE_LINE_RE.lastIndex = 0;
   // 折叠空白
   s = s.replace(/\s+/g, ' ').trim();
   const snippet = s.length > snippetMax ? s.substring(0, snippetMax).trimEnd() : s;
@@ -949,9 +957,10 @@ export default async function topicRoutes(fastify, options) {
         })
         .returning();
 
-      // 绑定正文里的 ::poll{id} 到本话题，剥离非法/盗用引用
+      // 绑定正文里的 ::poll{id} / ::lottery{id} / ::attachment{id} 到本话题，剥离非法/盗用引用
       const afterPolls = await bindPollsToTopic(newTopic.id, content, request.user.id);
-      const cleanContent = await bindLotteriesToTopic(newTopic.id, afterPolls, request.user.id);
+      const afterLotteries = await bindLotteriesToTopic(newTopic.id, afterPolls, request.user.id);
+      const cleanContent = await bindAttachmentsToTopic(newTopic.id, afterLotteries, request.user.id);
 
       // 创建首贴
       const [firstPost] = await db
@@ -1163,11 +1172,12 @@ export default async function topicRoutes(fastify, options) {
           .limit(1);
 
         if (firstPost) {
-          // 绑定正文里的 ::poll{id} / ::lottery{id} 到本话题，剥离非法/盗用引用。
+          // 绑定正文里的 ::poll{id} / ::lottery{id} / ::attachment{id} 到本话题，剥离非法/盗用引用。
           // 使用 topic.userId（话题作者）作为所有权基准，
-          // 避免 admin/版主编辑别人话题时"无声"剥离原作者的投票/抽奖
+          // 避免 admin/版主编辑别人话题时"无声"剥离原作者的投票/抽奖/附件
           const afterPolls = await bindPollsToTopic(id, content, topic.userId);
-          const cleanContent = await bindLotteriesToTopic(id, afterPolls, topic.userId);
+          const afterLotteries = await bindLotteriesToTopic(id, afterPolls, topic.userId);
+          const cleanContent = await bindAttachmentsToTopic(id, afterLotteries, topic.userId);
 
           const postUpdates = {
             content: cleanContent,
@@ -1354,6 +1364,11 @@ export default async function topicRoutes(fastify, options) {
       }
 
       if (permanent) {
+        // 附件必须在删话题之前清：topic_attachments.topic_id 是 CASCADE，
+        // 话题一没组行就跟着没了，files 行与存储对象再也无从反查。
+        // 存储删除本就无法纳入事务，故放在事务外先行。
+        await deleteAttachmentsByTopicIds(existingIds, fastify.storage);
+
         // 彻底删除（事务保护）
         await db.transaction(async (tx) => {
           // 1. 获取并减少标签计数
@@ -1470,7 +1485,11 @@ export default async function topicRoutes(fastify, options) {
 
       if (permanent) {
         // 彻底删除 - 从数据库中移除
-        
+
+        // 0. 先清附件：topic_attachments.topic_id 是 CASCADE，话题一删组行就没了，
+        //    files 行与存储对象再也无从反查，只会变成永久孤儿
+        await deleteAttachmentsByTopicIds(id, fastify.storage);
+
         // 1. 获取关联的标签并减少话题计数
         const currentTags = await db
           .select({ tagId: topicTags.tagId })

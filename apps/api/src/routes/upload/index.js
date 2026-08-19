@@ -5,8 +5,11 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 import sharp from 'sharp';
 import { dirname } from '../../utils/index.js';
-import { MAX_UPLOAD_SIZE_DEFAULT_KB, DEFAULT_ALLOWED_EXTENSIONS, EXT_MIME_MAP } from '../../constants/upload.js';
+import { MAX_UPLOAD_SIZE_DEFAULT_KB, EXT_MIME_MAP, defaultExtensionsFor } from '../../constants/upload.js';
 import { files } from '../../db/schema.js';
+
+// 允许的上传分类（attachments 为话题附件：不走公开 /uploads，只能经鉴权下载路由取回）
+const UPLOAD_CATEGORIES = ['assets', 'avatars', 'badges', 'topics', 'items', 'frames', 'emojis', 'attachments'];
 
 export default async function uploadRoutes(fastify) {
   fastify.post('/', {
@@ -20,7 +23,7 @@ export default async function uploadRoutes(fastify) {
         properties: {
           category: {
             type: 'string',
-            enum: ['assets', 'avatars', 'badges', 'topics', 'items', 'frames', 'emojis'],
+            enum: UPLOAD_CATEGORIES,
             default: 'assets'
           }
         }
@@ -57,11 +60,11 @@ export default async function uploadRoutes(fastify) {
 
     // 2. 获取具体限制数值（从 RBAC 条件中读取或使用合理的后备默认值）
     const maxFileSizeKB = conditions.maxFileSize || MAX_UPLOAD_SIZE_DEFAULT_KB;
-    // allowedFileTypes: ['*'] 表示无限制（如管理员），未设置则使用默认白名单
+    // allowedFileTypes: ['*'] 表示无限制（如管理员），未设置则使用该分类的默认白名单
     const rawAllowedTypes = conditions.allowedFileTypes;
     const allowedExts = rawAllowedTypes?.includes('*')
       ? null  // ['*'] 表示无限制
-      : (rawAllowedTypes || DEFAULT_ALLOWED_EXTENSIONS);
+      : (rawAllowedTypes || defaultExtensionsFor(category));
 
     // 3. 处理文件流
     const data = await request.file();
@@ -80,10 +83,13 @@ export default async function uploadRoutes(fastify) {
     }
 
     // 4b. 验证 MIME 类型一致性 (双重校验，防止伪装绕过)
+    // 注意：管理员可在 RBAC「允许的文件类型」里自由输入扩展名，未收录进 EXT_MIME_MAP 的
+    // 扩展名此处会跳过校验。附件的最终防线是下载路由强制的 Content-Disposition: attachment
+    // + X-Content-Type-Options: nosniff（浏览器不会在同源下执行其内容）。
     const expectedMimes = EXT_MIME_MAP[ext];
     if (expectedMimes && !expectedMimes.includes(data.mimetype)) {
       fastify.log.warn(`文件上传伪装尝试：ext=${ext}, mimetype=${data.mimetype}, user=${request.user.id}`);
-      return reply.code(400).send({ error: '文件内容与后缀不匹配，请上传正确的图片文件' });
+      return reply.code(400).send({ error: '文件内容与后缀不匹配，请上传正确的文件' });
     }
 
     // 5. 生成唯一文件名和存储 key
@@ -235,7 +241,7 @@ export default async function uploadRoutes(fastify) {
           size: { type: 'number' },
           category: {
             type: 'string',
-            enum: ['assets', 'avatars', 'badges', 'topics', 'items', 'frames', 'emojis'],
+            enum: UPLOAD_CATEGORIES,
             default: 'assets'
           }
         }
@@ -270,7 +276,7 @@ export default async function uploadRoutes(fastify) {
     const rawAllowedTypes = conditions.allowedFileTypes;
     const allowedExts = rawAllowedTypes?.includes('*')
       ? null
-      : (rawAllowedTypes || DEFAULT_ALLOWED_EXTENSIONS);
+      : (rawAllowedTypes || defaultExtensionsFor(category));
     if (allowedExts && !allowedExts.includes(ext)) {
       return reply.code(400).send({ error: `不支持的文件类型，允许：${allowedExts.join(', ')}` });
     }
@@ -321,7 +327,10 @@ export default async function uploadRoutes(fastify) {
           originalName: { type: 'string' },
           mimetype: { type: 'string' },
           size: { type: 'number' },
-          category: { type: 'string' },
+          category: {
+            type: 'string',
+            enum: UPLOAD_CATEGORIES
+          },
           provider: { type: 'string' },
           width: { type: ['integer', 'null'] },
           height: { type: ['integer', 'null'] },
@@ -331,9 +340,21 @@ export default async function uploadRoutes(fastify) {
   }, async (request, reply) => {
     const { key, filename, originalName, mimetype, size, category, provider, width, height } = request.body;
 
-    // 1. 校验 key 格式（防路径遍历）
+    // 1. 校验 key 格式（防路径遍历），并确认与 category/filename 自洽——
+    //    否则可以拿 assets 的直传槽位登记出一条 category='attachments' 的记录，
+    //    后续按 `${category}/${filename}` 定位对象时全部错位
     if (!/^[a-z]+\/[a-f0-9-]+\.\w+$/.test(key)) {
       return reply.code(400).send({ error: '无效的文件 key' });
+    }
+    if (key !== `${category}/${filename}`) {
+      return reply.code(400).send({ error: 'key 与 category/filename 不一致' });
+    }
+
+    // 1b. 该分类的上传权限。conditions（大小/类型/频率）已在 presign 阶段评估过，
+    //     这里只确认权限本身仍在，避免重复计入频率限制
+    const allowed = await fastify.permission.hasAnyPermission(request.user.id, [`upload.${category}`]);
+    if (!allowed) {
+      return reply.code(403).send({ error: `没有上传 ${category} 的权限` });
     }
 
     // 2. 验证文件确实已上传到存储

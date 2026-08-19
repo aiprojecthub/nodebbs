@@ -3,7 +3,7 @@
  * 仅管理员可访问
  */
 
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, ne } from 'drizzle-orm';
 import db from '../../db/index.js';
 import { roles, permissions, rolePermissions, userRoles, users, invitationRules } from '../../db/schema.js';
 import { getRbacConfig } from '../../config/rbac.js';
@@ -28,7 +28,15 @@ export default async function rolesRoutes(fastify, options) {
               commonActions: { type: 'array', items: { type: 'object', additionalProperties: true } },
               moduleSpecialActions: { type: 'object', additionalProperties: { type: 'array', items: { type: 'object', additionalProperties: true } } },
               conditionTypes: { type: 'object', additionalProperties: { type: 'object', additionalProperties: true } },
-              permissionConditions: { type: 'object', additionalProperties: { type: 'array', items: { type: 'string' } } },
+              // 每项形如 { key, options?, defaultValue? }；additionalProperties 必须为 true，
+              // 否则权限侧的特化字段会被 Fastify 的 response 序列化静默丢弃
+              permissionConditions: {
+                type: 'object',
+                additionalProperties: {
+                  type: 'array',
+                  items: { type: 'object', additionalProperties: true },
+                },
+              },
               allowedRolePermissions: { type: 'object', additionalProperties: { type: 'array', items: { type: 'string' } } },
             },
           },
@@ -113,6 +121,46 @@ export default async function rolesRoutes(fastify, options) {
         .where(eq(roles.isDisplayed, true))
         .orderBy(desc(roles.priority));
       return publicRoles;
+    }
+  );
+
+  // 角色选项（登录可访问）
+  // 供普通用户在内容侧按角色授权时选择，如话题附件的「限定角色可下载」。
+  // 与 /public 的差别：带 id（授权需要）、不限于 isDisplayed；但只暴露展示字段。
+  fastify.get(
+    '/options',
+    {
+      preHandler: [fastify.authenticate],
+      schema: {
+        tags: ['roles'],
+        description: '获取可选角色列表（用于内容侧按角色授权）',
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'number' },
+                name: { type: 'string' },
+                color: { type: ['string', 'null'] },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      return db
+        .select({
+          id: roles.id,
+          name: roles.name,
+          color: roles.color,
+        })
+        .from(roles)
+        // guest 是未登录用户的角色，按角色授权时选它没有意义（下载本身就要求登录）
+        .where(ne(roles.slug, 'guest'))
+        .orderBy(desc(roles.priority));
     }
   );
 

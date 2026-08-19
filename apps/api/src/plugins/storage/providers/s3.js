@@ -160,4 +160,58 @@ export class S3Provider extends BaseStorageProvider {
     }
     return { valid: true };
   }
+
+  /**
+   * 预签名下载 URL：让受保护文件的流量绕过 API 直连对象存储。
+   * 签名走 S3 endpoint（不走 customDomain/CDN——CDN 域名上的签名无法通过校验）。
+   */
+  async getSignedDownloadUrl(key, options = {}) {
+    const client = await this._getClient();
+    try {
+      const { GetObjectCommand } = await import('@aws-sdk/client-s3');
+      const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner');
+
+      const params = {
+        Bucket: this.config.bucket,
+        Key: key,
+        ResponseContentType: options.mimetype || 'application/octet-stream',
+      };
+      if (options.filename) {
+        params.ResponseContentDisposition =
+          `attachment; filename*=UTF-8''${encodeURIComponent(options.filename)}`;
+      }
+
+      const url = await getSignedUrl(client, new GetObjectCommand(params), {
+        expiresIn: options.expiresIn || 300,
+      });
+      return { supported: true, url };
+    } catch (error) {
+      // 签名失败不是致命错误：调用方会回退到 getDownloadStream 由 API 转发
+      return { supported: false };
+    }
+  }
+
+  /**
+   * 读流兜底：预签名不可用（如 SDK 缺失/权限不足）时由 API 转发内容
+   */
+  async getDownloadStream(key) {
+    const client = await this._getClient();
+    try {
+      const { GetObjectCommand } = await import('@aws-sdk/client-s3');
+      const res = await client.send(new GetObjectCommand({
+        Bucket: this.config.bucket,
+        Key: key,
+      }));
+      return {
+        stream: res.Body,
+        size: res.ContentLength,
+        mimetype: res.ContentType,
+      };
+    } catch (error) {
+      if (error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) {
+        throw new StorageError(StorageErrorCode.FILE_NOT_FOUND, '文件不存在');
+      }
+      throw error;
+    }
+  }
 }

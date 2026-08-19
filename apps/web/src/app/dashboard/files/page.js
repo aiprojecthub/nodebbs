@@ -10,7 +10,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import UserAvatar from '@/components/user/UserAvatar';
 import { confirm } from '@/components/common/ConfirmPopover';
 import ImagePreview from '@/components/common/ImagePreview';
-import { Trash2, ExternalLink, Image, FileText, Film, Music, HardDrive, Cloud } from 'lucide-react';
+import { Trash2, ExternalLink, Download, Eye, Image, FileText, Film, Music, HardDrive, Cloud } from 'lucide-react';
 import { filesApi } from '@/lib/api';
 import { toast } from 'sonner';
 import Time from '@/components/common/Time';
@@ -38,12 +38,50 @@ function getFileIcon(mimetype) {
 const categoryColors = {
   avatars: 'bg-blue-100 text-blue-800',
   topics: 'bg-green-100 text-green-800',
+  attachments: 'bg-teal-100 text-teal-800',
   assets: 'bg-gray-100 text-gray-800',
   badges: 'bg-yellow-100 text-yellow-800',
   items: 'bg-purple-100 text-purple-800',
   frames: 'bg-pink-100 text-pink-800',
   emojis: 'bg-orange-100 text-orange-800',
 };
+
+// 话题附件不走公开的 /uploads 路径（受下载策略保护），后台只能经鉴权路由取内容
+function isPrivateFile(file) {
+  return file.category === 'attachments';
+}
+
+// 可内联预览的 MIME 白名单，必须与后端 routes/files/index.js 的 INLINE_SAFE_MIMES 一致。
+// 不含 image/svg+xml：SVG 可携带脚本，后端不会内联下发，前端也就不该渲染 <img>。
+const INLINE_PREVIEWABLE_MIMES = [
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+  'image/avif',
+];
+
+function canPreviewInline(file) {
+  return INLINE_PREVIEWABLE_MIMES.includes(file.mimetype);
+}
+
+/**
+ * 取文件的可访问地址
+ * @param {object} file
+ * @param {{ download?: boolean, modifiers?: string }} options
+ *        modifiers 仅对公开文件有效（IPX 只处理 /uploads 下的公开路径）
+ */
+function getFileAccessUrl(file, { download = false, modifiers = '' } = {}) {
+  // 公开文件的直链没有 Content-Disposition，浏览器只会内联打开，
+  // 与「查看」毫无区别。要真正触发下载就得走后台 raw 路由（它会带 attachment 头）
+  if (download) {
+    return `/api/files/${file.id}/raw?disposition=attachment`;
+  }
+  if (isPrivateFile(file)) {
+    return `/api/files/${file.id}/raw`;
+  }
+  return modifiers ? getImageUrl(file.url, modifiers) : file.url;
+}
 
 export default function FilesManagement() {
   const { hasPermission } = usePermission();
@@ -125,9 +163,43 @@ export default function FilesManagement() {
       label: '预览',
       width: 'w-20',
       render: (_, file) => {
+        // 私有附件：不铺缩略图。拿不到 IPX 缩图只能铺原图，既费带宽，
+        // 又会在后端拒绝内联的类型（如 SVG）上渲出一个永远加载不出来的 <img>。
+        // 改为按类型给动作按钮。
+        if (isPrivateFile(file)) {
+          const Icon = getFileIcon(file.mimetype);
+          return (
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded border flex items-center justify-center bg-muted shrink-0">
+                <Icon className="w-4 h-4 text-muted-foreground" />
+              </div>
+              {canPreviewInline(file) ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setPreviewUrl(getFileAccessUrl(file));
+                    setPreviewOpen(true);
+                  }}
+                >
+                  <Eye className="w-3.5 h-3.5" /> 预览
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(getFileAccessUrl(file, { download: true }), '_blank')}
+                >
+                  <Download className="w-3.5 h-3.5" /> 下载
+                </Button>
+              )}
+            </div>
+          );
+        }
+
         const isImage = file.mimetype?.startsWith('image/');
         if (isImage) {
-          const fullUrl = getImageUrl(file.url);
+          const fullUrl = getFileAccessUrl(file);
           return (
             <div
               className="w-24 h-24 rounded border overflow-hidden bg-muted cursor-pointer hover:opacity-90 transition-opacity"
@@ -137,9 +209,10 @@ export default function FilesManagement() {
               }}
             >
               <img
-                src={getImageUrl(file.url, 'embed,f_webp,s_200x200')}
+                src={getFileAccessUrl(file, { modifiers: 'embed,f_webp,s_200x200' })}
                 alt={file.originalName || file.filename}
                 className="w-full h-full object-cover"
+                loading="lazy"
               />
             </div>
           );
@@ -242,7 +315,15 @@ export default function FilesManagement() {
             {
               label: '查看',
               icon: ExternalLink,
-              onClick: () => window.open(file.url, '_blank'),
+              onClick: () => window.open(getFileAccessUrl(file), '_blank'),
+              // 私有附件里后端拒绝内联的类型（SVG/压缩包/文档等），新开页只会触发下载，
+              // 再给一个「查看」是误导，直接隐藏
+              hidden: isPrivateFile(file) && !canPreviewInline(file),
+            },
+            {
+              label: '下载',
+              icon: Download,
+              onClick: () => window.open(getFileAccessUrl(file, { download: true }), '_blank'),
             },
             { separator: true },
             {
@@ -281,6 +362,7 @@ export default function FilesManagement() {
             { value: 'all', label: '全部分类' },
             { value: 'avatars', label: '头像' },
             { value: 'topics', label: '话题' },
+            { value: 'attachments', label: '附件' },
             { value: 'assets', label: '资源' },
             { value: 'badges', label: '勋章' },
             { value: 'items', label: '商品' },

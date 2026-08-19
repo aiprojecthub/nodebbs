@@ -11,7 +11,7 @@ import {
   rolePermissions,
   userRoles,
 } from '../../db/schema.js';
-import { MAX_UPLOAD_SIZE_ADMIN_KB, DEFAULT_ALLOWED_EXTENSIONS } from '../../constants/upload.js';
+import { MAX_UPLOAD_SIZE_ADMIN_KB, defaultExtensionsFor } from '../../constants/upload.js';
 
 // 权限缓存 TTL（秒）
 const PERMISSION_CACHE_TTL = 300; // 5 分钟
@@ -417,13 +417,20 @@ class PermissionService {
     }
 
     // allowedFileTypes: ["jpg", "png", "gif"] 表示允许的文件类型
-    // ['*'] 表示无限制（管理员），未设置则使用系统默认扩展名白名单
+    // ['*'] 表示无限制（管理员），未设置则使用该上传分类的默认扩展名白名单
     if (context.fileType !== undefined) {
       // ['*'] 表示无限制，跳过检查
       if (conditions.allowedFileTypes?.includes('*')) {
         // 管理员无限制，不做检查
       } else {
-        const allowedTypes = conditions.allowedFileTypes || DEFAULT_ALLOWED_EXTENSIONS;
+        // 兜底白名单必须区分分类：附件与图片的默认集合本就不同，
+        // 统一取图片集会把未配置角色的附件全拒掉，取两者并集又会放行「zip 当头像」。
+        // 上传权限的 slug 形如 upload.<category>（见 routes/upload：check(`upload.${category}`)），
+        // 由此反推分类，与上传路由共用同一份映射
+        const category = permissionSlug.startsWith('upload.')
+          ? permissionSlug.slice('upload.'.length)
+          : null;
+        const allowedTypes = conditions.allowedFileTypes || defaultExtensionsFor(category);
         const ext = context.fileType.toLowerCase().replace('.', '');
         if (!allowedTypes.includes(ext)) {
           return {
