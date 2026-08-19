@@ -7,6 +7,7 @@ import {
   deleteLottery,
   listDraftLotteries,
   listLotteriesByTopic,
+  maybeDrawDue,
 } from '../../services/lotteryService.js';
 import db from '#core/db/index.js';
 import { lotteries, lotteryParticipants, topics } from '#modules/forum/db/schema.js';
@@ -123,7 +124,7 @@ export default async function lotteryRoutes(fastify, options) {
       if (!isOwner && !hasDashboard) {
         return reply.code(403).send({ error: '没有权限查看此话题的抽奖列表' });
       }
-      return await listLotteriesByTopic(request.params.topicId);
+      return await listLotteriesByTopic(request.params.topicId, fastify.ledger);
     }
   );
 
@@ -144,7 +145,8 @@ export default async function lotteryRoutes(fastify, options) {
     },
     async (request, reply) => {
       const userId = request.user?.id ?? null;
-      const result = await getLottery(request.params.id, userId);
+      // 到期未开奖时在此惰性开奖，用户打开话题即可看到结果，无需等待 2 小时的清理调度
+      const result = await getLottery(request.params.id, userId, fastify.ledger);
       if (!result) {
         return reply.code(404).send({ error: '抽奖不存在' });
       }
@@ -168,6 +170,7 @@ export default async function lotteryRoutes(fastify, options) {
       },
     },
     async (request, reply) => {
+      await maybeDrawDue(request.params.id, fastify.ledger);
       const [row] = await db
         .select({ status: lotteries.status })
         .from(lotteries)
@@ -215,6 +218,8 @@ export default async function lotteryRoutes(fastify, options) {
     },
     async (request, reply) => {
       try {
+        // 先结算到期抽奖，避免把"已到点但未开奖"误报成"已截止"
+        await maybeDrawDue(request.params.id, fastify.ledger);
         return await enterLottery(request.params.id, request.user.id);
       } catch (err) {
         if (err.statusCode) {

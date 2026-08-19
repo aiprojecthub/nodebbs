@@ -203,11 +203,70 @@ export async function createLottery(data, userId, ledger) {
 }
 
 /**
+ * 进程内 in-flight 表：同一 lottery 的并发惰性开奖合并为一次调用。
+ * 跨进程/多实例并发由 drawLottery 内的 SELECT FOR UPDATE + ledger ref 唯一索引兜底。
+ */
+const drawInFlight = new Map();
+
+/**
+ * 惰性开奖：读取抽奖时若已到截止时间且仍 pending，立即开奖，
+ * 不必等待 2 小时一次的 cleanup 调度（cleanup 仍作为无人访问时的兜底）。
+ *
+ * 设计取舍：
+ *  - 先做一次极轻量的预检查（3 列），绝大多数请求在此直接返回，不额外加锁
+ *  - ledger 缺失（如内部调用未传）时跳过，退回定时任务
+ *  - 开奖失败只记日志，不影响本次读取——调用方拿到的仍是 pending 状态
+ *
+ * @returns {Promise<boolean>} 是否实际触发了开奖（调用方据此决定是否重新读取）
+ */
+export async function maybeDrawDue(lotteryId, ledger, { triggerSource = 'lazy-read' } = {}) {
+  if (!ledger) return false;
+
+  const [row] = await db
+    .select({
+      status: lotteries.status,
+      drawAt: lotteries.drawAt,
+      topicId: lotteries.topicId,
+    })
+    .from(lotteries)
+    .where(eq(lotteries.id, lotteryId))
+    .limit(1);
+
+  if (!row) return false;
+  // 草稿（未绑话题）不参与自动开奖，与 drawDueLotteries 的筛选保持一致
+  if (row.status !== 'pending' || row.topicId == null) return false;
+  if (new Date(row.drawAt).getTime() > Date.now()) return false;
+
+  const existing = drawInFlight.get(lotteryId);
+  if (existing) return existing;
+
+  const task = (async () => {
+    try {
+      const res = await drawLottery(lotteryId, ledger, { triggerSource });
+      return !!res?.success && !res.alreadyDrawn;
+    } catch (e) {
+      console.error(`[lottery lazy-draw ${lotteryId}] failed:`, e?.message || e);
+      return false;
+    } finally {
+      drawInFlight.delete(lotteryId);
+    }
+  })();
+
+  drawInFlight.set(lotteryId, task);
+  return task;
+}
+
+/**
  * 获取抽奖详情。
  * - 关联 topic 软删 → 返回 null
  * - prizeDescription 仅对中奖者或创建者返回
+ * - 传入 ledger 时：到期未开奖会先惰性开奖，再返回最新结果
  */
-export async function getLottery(lotteryId, userId) {
+export async function getLottery(lotteryId, userId, ledger = null) {
+  if (ledger) {
+    await maybeDrawDue(lotteryId, ledger);
+  }
+
   const [row] = await db
     .select()
     .from(lotteries)
@@ -763,14 +822,15 @@ export async function updateDraftLottery(lotteryId, data, userId, ledger) {
 
 /**
  * 列出某话题已绑的抽奖（详情列表，不含 winners 完整解析）。
+ * 传入 ledger 时同样支持到期惰性开奖。
  */
-export async function listLotteriesByTopic(topicId) {
+export async function listLotteriesByTopic(topicId, ledger = null) {
   const rows = await db
     .select({ id: lotteries.id })
     .from(lotteries)
     .where(eq(lotteries.topicId, topicId))
     .orderBy(asc(lotteries.createdAt));
-  const detailed = await Promise.all(rows.map((r) => getLottery(r.id, null)));
+  const detailed = await Promise.all(rows.map((r) => getLottery(r.id, null, ledger)));
   return { lotteries: detailed.filter(Boolean) };
 }
 
